@@ -7,7 +7,13 @@
           <v-card-title class="text-h3 font-weight-bold text-white pa-8">
             {{ classInfo.name }}
             <div class="text-subtitle-1 mt-2 text-white-80">
-              Advanced Mathematics • Fall 2024 • 25 Students
+              {{ classInfo.program }} • {{ classInfo.schoolYear }} •
+              {{
+                classInfo.teacher
+                  ? `${classInfo.teacher.firstName} ${classInfo.teacher.lastName}`
+                  : 'No Teacher Assigned'
+              }}
+              • {{ students.length }} Students
             </div>
           </v-card-title>
         </div>
@@ -15,39 +21,23 @@
         <!-- Statistics Cards -->
         <v-card-text class="pa-6">
           <v-row>
-            <v-col cols="12" sm="4" v-for="stat in stats" :key="stat.title">
-              <v-card class="stat-card" elevation="2">
-                <v-card-text class="text-center pa-6">
+            <v-col
+              cols="12"
+              sm="4"
+              v-for="stat in stats"
+              :key="stat.title"
+              class="d-flex align-center justify-center"
+            >
+              <v-card class="stat-card" elevation="2" style="width: 100%">
+                <v-card-text
+                  class="text-center pa-6 d-flex flex-column align-center justify-center"
+                  style="height: 100%"
+                >
                   <v-icon :color="stat.color" size="48" class="mb-3">{{ stat.icon }}</v-icon>
                   <div class="stat-value">{{ stat.value }}</div>
                   <div class="stat-label">{{ stat.title }}</div>
                 </v-card-text>
               </v-card>
-            </v-col>
-          </v-row>
-        </v-card-text>
-      </v-card>
-
-      <!-- Search and Filters -->
-      <v-card class="filters-card mb-6" elevation="2">
-        <v-card-text class="pa-6">
-          <v-row align="center">
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="search"
-                prepend-inner-icon="mdi-magnify"
-                label="Search students by name..."
-                variant="outlined"
-                density="comfortable"
-                clearable
-                class="search-input"
-              />
-            </v-col>
-            <v-col cols="12" md="6" class="d-flex justify-end">
-              <v-btn color="primary" variant="flat" prepend-icon="mdi-download" class="me-3">
-                Export Data
-              </v-btn>
-              <v-btn color="success" variant="flat" prepend-icon="mdi-plus"> Add Student </v-btn>
             </v-col>
           </v-row>
         </v-card-text>
@@ -71,6 +61,7 @@
           show-expand
           item-value="id"
           expand-on-click
+          @click:row="handleRowClick"
         >
           <template v-slot:item.name="{ item }">
             <div class="d-flex align-center">
@@ -79,7 +70,7 @@
               </v-avatar>
               <div>
                 <div class="font-weight-medium">{{ item.name }}</div>
-                <div class="text-caption text-medium-emphasis">{{ item.gender }}</div>
+                <div class="text-caption text-medium-emphasis">ID: {{ item.studentId }}</div>
               </div>
             </div>
           </template>
@@ -110,15 +101,28 @@
             </div>
           </template>
 
-          <template v-slot:item.attendance="{ item }">
+          <template v-slot:item.techAverage="{ item }">
+            <div class="text-center">
+              <v-chip
+                :color="getTechAssessmentColor(item.techAverage || 0)"
+                size="small"
+                variant="flat"
+                class="font-weight-bold"
+              >
+                {{ item.techAverage ? `${item.techAverage}/4` : 'N/A' }}
+              </v-chip>
+            </div>
+          </template>
+
+          <template v-slot:item.attendanceRate="{ item }">
             <div class="text-center">
               <v-progress-circular
-                :model-value="item.attendance"
-                :color="getAttendanceColor(item.attendance)"
+                :model-value="item.attendanceRate || 0"
+                :color="getAttendanceColor(item.attendanceRate || 0)"
                 size="40"
                 width="4"
               >
-                <span class="text-caption font-weight-bold">{{ item.attendance }}</span>
+                <span class="text-caption font-weight-bold">{{ item.attendanceRate || 0 }}</span>
               </v-progress-circular>
             </div>
           </template>
@@ -143,7 +147,7 @@
           <!-- Expanded Row Content -->
           <template v-slot:expanded-row="{ item }">
             <tr>
-              <td colspan="6" class="pa-0">
+              <td colspan="7" class="pa-0">
                 <v-card flat class="ma-4 expanded-content">
                   <v-card-text class="pa-6">
                     <v-row>
@@ -158,16 +162,12 @@
                             <span class="info-value">{{ item.name }}</span>
                           </div>
                           <div class="info-item">
-                            <span class="info-label">Gender:</span>
-                            <span class="info-value">{{ item.gender }}</span>
-                          </div>
-                          <div class="info-item">
                             <span class="info-label">Student ID:</span>
-                            <span class="info-value">{{ generateStudentId(item.name) }}</span>
+                            <span class="info-value">{{ item.studentId }}</span>
                           </div>
                           <div class="info-item">
                             <span class="info-label">Email:</span>
-                            <span class="info-value">{{ generateEmail(item.name) }}</span>
+                            <span class="info-value">{{ generateEmail(item.name || '') }}</span>
                           </div>
                           <div class="info-item">
                             <span class="info-label">Phone:</span>
@@ -188,13 +188,13 @@
                           <v-card variant="outlined" class="pa-4 mb-3">
                             <div class="d-flex justify-space-between align-center">
                               <span class="font-weight-medium">Junior Year Grade</span>
-                              <v-chip :color="getGradeColor(item.juniorGrade)" variant="flat">
-                                {{ item.juniorGrade }}%
+                              <v-chip :color="getGradeColor(item.juniorGrade || 0)" variant="flat">
+                                {{ item.juniorGrade || 0 }}%
                               </v-chip>
                             </div>
                             <v-progress-linear
-                              :model-value="item.juniorGrade"
-                              :color="getGradeColor(item.juniorGrade)"
+                              :model-value="item.juniorGrade || 0"
+                              :color="getGradeColor(item.juniorGrade || 0)"
                               height="6"
                               rounded
                               class="mt-2"
@@ -203,13 +203,13 @@
                           <v-card variant="outlined" class="pa-4 mb-3">
                             <div class="d-flex justify-space-between align-center">
                               <span class="font-weight-medium">Senior Year Grade</span>
-                              <v-chip :color="getGradeColor(item.seniorGrade)" variant="flat">
-                                {{ item.seniorGrade }}%
+                              <v-chip :color="getGradeColor(item.seniorGrade || 0)" variant="flat">
+                                {{ item.seniorGrade || 0 }}%
                               </v-chip>
                             </div>
                             <v-progress-linear
-                              :model-value="item.seniorGrade"
-                              :color="getGradeColor(item.seniorGrade)"
+                              :model-value="item.seniorGrade || 0"
+                              :color="getGradeColor(item.seniorGrade || 0)"
                               height="6"
                               rounded
                               class="mt-2"
@@ -218,13 +218,16 @@
                           <v-card variant="outlined" class="pa-4">
                             <div class="d-flex justify-space-between align-center">
                               <span class="font-weight-medium">Attendance Rate</span>
-                              <v-chip :color="getAttendanceColor(item.attendance)" variant="flat">
-                                {{ item.attendance }}%
+                              <v-chip
+                                :color="getAttendanceColor(item.attendanceRate || 0)"
+                                variant="flat"
+                              >
+                                {{ item.attendanceRate || 0 }}%
                               </v-chip>
                             </div>
                             <v-progress-linear
-                              :model-value="item.attendance"
-                              :color="getAttendanceColor(item.attendance)"
+                              :model-value="item.attendanceRate || 0"
+                              :color="getAttendanceColor(item.attendanceRate || 0)"
                               height="6"
                               rounded
                               class="mt-2"
@@ -266,21 +269,131 @@
                           Technical Assessment
                         </h3>
                         <v-card variant="outlined" class="pa-4">
-                          <div class="assessment-item mb-3">
-                            <div class="d-flex justify-space-between align-center">
-                              <span class="font-weight-medium">Tech Endorse</span>
-                              <v-chip
-                                :color="generateTechEndorse() ? 'success' : 'error'"
-                                size="small"
-                                variant="flat"
-                              >
-                                {{ generateTechEndorse() ? 'Yes' : 'No' }}
-                              </v-chip>
+                          <div
+                            v-if="
+                              item.techAssessment && Object.keys(item.techAssessment).length > 0
+                            "
+                          >
+                            <!-- Overall Average -->
+                            <div class="assessment-item mb-4">
+                              <div class="d-flex justify-space-between align-center mb-2">
+                                <span class="font-weight-bold text-subtitle-1"
+                                  >Overall Average</span
+                                >
+                                <v-chip
+                                  :color="getTechAssessmentColor(item.techAverage || 0)"
+                                  size="large"
+                                  variant="flat"
+                                  class="font-weight-bold"
+                                >
+                                  {{ item.techAverage ? `${item.techAverage}/4` : 'N/A' }}
+                                </v-chip>
+                              </div>
+                              <v-progress-linear
+                                :model-value="(item.techAverage || 0) * 25"
+                                :color="getTechAssessmentColor(item.techAverage || 0)"
+                                height="8"
+                                rounded
+                                class="mb-4"
+                              />
+                            </div>
+
+                            <!-- Detailed Scores -->
+                            <div class="text-subtitle-2 font-weight-bold mb-3">
+                              Semester Breakdown:
+                            </div>
+
+                            <!-- Junior Year -->
+                            <div class="mb-3">
+                              <div class="text-body-2 font-weight-medium mb-2 text-success">
+                                Junior Year
+                              </div>
+                              <v-row dense>
+                                <v-col cols="6">
+                                  <v-card variant="outlined" class="pa-3">
+                                    <div class="text-center">
+                                      <div class="text-caption text-medium-emphasis">
+                                        Semester 1
+                                      </div>
+                                      <div
+                                        class="text-h6 font-weight-bold"
+                                        :class="`text-${getTechAssessmentColor(item.techAssessment?.jrSem1 || 0)}`"
+                                      >
+                                        {{ formatTechScore(item.techAssessment?.jrSem1) }}
+                                      </div>
+                                    </div>
+                                  </v-card>
+                                </v-col>
+                                <v-col cols="6">
+                                  <v-card variant="outlined" class="pa-3">
+                                    <div class="text-center">
+                                      <div class="text-caption text-medium-emphasis">
+                                        Semester 2
+                                      </div>
+                                      <div
+                                        class="text-h6 font-weight-bold"
+                                        :class="`text-${getTechAssessmentColor(item.techAssessment?.jrSem2 || 0)}`"
+                                      >
+                                        {{ formatTechScore(item.techAssessment?.jrSem2) }}
+                                      </div>
+                                    </div>
+                                  </v-card>
+                                </v-col>
+                              </v-row>
+                            </div>
+
+                            <!-- Senior Year -->
+                            <div>
+                              <div class="text-body-2 font-weight-medium mb-2 text-info">
+                                Senior Year
+                              </div>
+                              <v-row dense>
+                                <v-col cols="6">
+                                  <v-card variant="outlined" class="pa-3">
+                                    <div class="text-center">
+                                      <div class="text-caption text-medium-emphasis">
+                                        Semester 1
+                                      </div>
+                                      <div
+                                        class="text-h6 font-weight-bold"
+                                        :class="`text-${getTechAssessmentColor(item.techAssessment?.srSem1 || 0)}`"
+                                      >
+                                        {{ formatTechScore(item.techAssessment?.srSem1) }}
+                                      </div>
+                                    </div>
+                                  </v-card>
+                                </v-col>
+                                <v-col cols="6">
+                                  <v-card variant="outlined" class="pa-3">
+                                    <div class="text-center">
+                                      <div class="text-caption text-medium-emphasis">
+                                        Semester 2
+                                      </div>
+                                      <div
+                                        class="text-h6 font-weight-bold"
+                                        :class="`text-${getTechAssessmentColor(item.techAssessment?.srSem2 || 0)}`"
+                                      >
+                                        {{ formatTechScore(item.techAssessment?.srSem2) }}
+                                      </div>
+                                    </div>
+                                  </v-card>
+                                </v-col>
+                              </v-row>
                             </div>
                           </div>
-                          <div class="text-caption text-medium-emphasis">
-                            Technical endorsement based on overall performance and portfolio
-                            completion
+
+                          <div v-else>
+                            <div class="text-center text-medium-emphasis py-4">
+                              <v-icon size="48" color="grey-lighten-1" class="mb-2"
+                                >mdi-clipboard-off</v-icon
+                              >
+                              <div>No technical assessments recorded</div>
+                            </div>
+                          </div>
+
+                          <div class="text-caption text-medium-emphasis mt-3">
+                            Technical skills are assessed on a scale of 1-4, where 4 represents
+                            mastery level
                           </div>
                         </v-card>
                       </v-col>
@@ -292,51 +405,43 @@
                           Work Based Learning
                         </h3>
                         <v-card variant="outlined" class="pa-4">
-                          <v-row>
-                            <v-col cols="12" md="4">
-                              <div class="wbl-summary">
-                                <div class="d-flex justify-space-between align-center mb-3">
-                                  <span class="font-weight-medium">Status:</span>
-                                  <v-chip
-                                    :color="
-                                      generateWBLStatus() === 'Complete' ? 'success' : 'warning'
-                                    "
-                                    size="small"
-                                    variant="flat"
-                                  >
-                                    {{ generateWBLStatus() }}
-                                  </v-chip>
-                                </div>
-                                <div class="d-flex justify-space-between align-center">
-                                  <span class="font-weight-medium">Total Hours:</span>
-                                  <span class="font-weight-bold text-h6">{{
-                                    generateTotalWBLHours()
-                                  }}</span>
-                                </div>
+                          <div v-if="item.wblHours && item.wblHours.length">
+                            <div class="mb-4">
+                              <span class="font-weight-medium">Total Hours:</span>
+                              <span class="font-weight-bold text-h6 ms-2">
+                                {{ item.wblHours.reduce((sum, w) => sum + Number(w.hours), 0) }}
+                              </span>
+                            </div>
+                            <div>
+                              <div class="text-subtitle-2 font-weight-bold mb-2">
+                                Hours Breakdown:
                               </div>
-                            </v-col>
-                            <v-col cols="12" md="8">
-                              <div class="wbl-breakdown">
-                                <div class="text-subtitle-2 font-weight-bold mb-2">
-                                  Hours Breakdown:
-                                </div>
-                                <div class="wbl-types">
-                                  <div
-                                    class="wbl-type-item"
-                                    v-for="wblType in generateWBLBreakdown()"
-                                    :key="wblType.type"
-                                  >
-                                    <div class="d-flex justify-space-between align-center">
-                                      <span class="text-body-2">{{ wblType.type }}</span>
-                                      <span class="font-weight-medium"
-                                        >{{ wblType.hours }} hrs</span
-                                      >
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </v-col>
-                          </v-row>
+                            </div>
+                            <div class="mt-4">
+                              <div class="text-caption text-medium-emphasis mb-2">Entries:</div>
+                              <v-table density="compact">
+                                <thead>
+                                  <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Hours</th>
+                                    <th>Notes</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  <tr v-for="w in item.wblHours" :key="w.id">
+                                    <td>{{ w.recorded_at }}</td>
+                                    <td>{{ w.wbl_type?.name || 'Other' }}</td>
+                                    <td>{{ w.hours }}</td>
+                                    <td>{{ w.notes }}</td>
+                                  </tr>
+                                </tbody>
+                              </v-table>
+                            </div>
+                          </div>
+                          <div v-else>
+                            <span class="text-medium-emphasis">No WBL hours recorded.</span>
+                          </div>
                         </v-card>
                       </v-col>
                     </v-row>
@@ -373,29 +478,56 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 // Types
+interface WBLHour {
+  id: number
+  hours: string
+  notes: string
+  recorded_at: string
+  student_id: number
+  wbl_type: {
+    id: number
+    name: string
+  }
+  wbl_type_id: number
+}
+
 interface Student {
   id: number
   firstName: string
   lastName: string
   studentId: string
-  gender: string
-  race: string
-  grade: string
-  name?: string // computed field for display
-  juniorGrade?: number
-  seniorGrade?: number
-  averageGrade?: number
+  techAssessment: {
+    jrSem1?: number
+    jrSem2?: number
+    srSem1?: number
+    srSem2?: number
+  }
+  grades: {
+    juniorGrade?: number
+    seniorGrade?: number
+  }
   attendance: {
     absences: number
     absensesUnexcused: number
     absensesExcused: number
   }[]
+  name?: string // computed field for display
+  juniorGrade?: number // computed from grades object
+  seniorGrade?: number // computed from grades object
+  averageGrade?: number // computed field
   attendanceRate?: number // computed field
+  techAverage?: number // computed from techAssessment
+  wblHours?: WBLHour[] // real WBL data from API
 }
 
 interface ClassData {
   id: number
   name: string
+  teacher: {
+    firstName: string
+    lastName: string
+    email: string
+  }
   program: string
   schoolYear: string
 }
@@ -414,6 +546,11 @@ const error = ref('')
 const classInfo = ref<ClassData>({
   id: 1,
   name: 'Loading...',
+  teacher: {
+    firstName: '',
+    lastName: '',
+    email: '',
+  },
   program: '',
   schoolYear: '',
 })
@@ -426,23 +563,48 @@ const fetchClassData = async () => {
   error.value = ''
 
   try {
-    const response = await axios.get<ApiResponse>('http://localhost:3000/api/classes/1/students/')
-    console.log(response.data)
+    const response = await axios.get<ApiResponse>('http://localhost:3000/api/classes/2/students/')
 
     // Update class info
     classInfo.value = response.data.class
 
     // Transform student data to match our component needs
-    students.value = response.data.students.map((student) => ({
-      ...student,
-      name: `${student.firstName} ${student.lastName}`,
-      // Calculate attendance rate
-      attendanceRate: calculateAttendanceRate(student.attendance[0]),
-      // Generate mock grades for now (you can replace with real data later)
-      juniorGrade: Math.floor(Math.random() * 30) + 70,
-      seniorGrade: Math.floor(Math.random() * 30) + 70,
-      averageGrade: Math.floor(Math.random() * 30) + 70,
-    }))
+    students.value = response.data.students.map((student) => {
+      // Calculate attendance rate (handle empty attendance array)
+      const attendanceData = student.attendance.length > 0 ? student.attendance[0] : null
+      const attendanceRate = attendanceData ? calculateAttendanceRate(attendanceData) : 0
+
+      // Extract grades from nested grades object
+      const juniorGrade = student.grades?.juniorGrade || 0
+      const seniorGrade = student.grades?.seniorGrade || 0
+      const averageGrade =
+        juniorGrade && seniorGrade ? Math.round((juniorGrade + seniorGrade) / 2) : 0
+
+      // Calculate technical assessment average
+      const techScores = [
+        student.techAssessment?.jrSem1,
+        student.techAssessment?.jrSem2,
+        student.techAssessment?.srSem1,
+        student.techAssessment?.srSem2,
+      ].filter((score): score is number => score !== undefined && score !== null)
+
+      const techAverage =
+        techScores.length > 0
+          ? Number(
+              (techScores.reduce((sum, score) => sum + score, 0) / techScores.length).toFixed(2),
+            )
+          : 0
+
+      return {
+        ...student,
+        name: `${student.firstName} ${student.lastName}`,
+        attendanceRate,
+        juniorGrade,
+        seniorGrade,
+        averageGrade,
+        techAverage,
+      }
+    })
   } catch (err) {
     console.error('Error fetching class data:', err)
     error.value = 'Failed to load class data. Please try again.'
@@ -502,7 +664,8 @@ const headers = [
   { title: 'Junior Grade', key: 'juniorGrade', sortable: true, align: 'center' as const },
   { title: 'Senior Grade', key: 'seniorGrade', sortable: true, align: 'center' as const },
   { title: 'Average Grade', key: 'averageGrade', sortable: true, align: 'center' as const },
-  { title: 'Attendance', key: 'attendance', sortable: true, align: 'center' as const },
+  { title: 'Tech Skills', key: 'techAverage', sortable: true, align: 'center' as const },
+  { title: 'Attendance', key: 'attendanceRate', sortable: true, align: 'center' as const },
   { title: 'Actions', key: 'actions', sortable: false, align: 'center' as const },
 ]
 
@@ -533,6 +696,17 @@ const getAttendanceColor = (attendance: number): string => {
   if (attendance >= 85) return 'info'
   if (attendance >= 75) return 'warning'
   return 'error'
+}
+
+const getTechAssessmentColor = (score: number): string => {
+  if (score >= 3.5) return 'success'
+  if (score >= 2.5) return 'info'
+  if (score >= 1.5) return 'warning'
+  return 'error'
+}
+
+const formatTechScore = (score: number | undefined): string => {
+  return score ? `${score}/4` : 'N/A'
 }
 
 // Helper functions for expanded content
@@ -587,59 +761,26 @@ const generatePortfolioItems = () => {
   }))
 }
 
-const generateTechEndorse = (): boolean => {
-  // Generate tech endorse based on random but weighted toward yes
-  return Math.random() > 0.2 // 80% chance of getting tech endorse
-}
-
-const generateWBLStatus = (): string => {
-  return Math.random() > 0.3 ? 'Complete' : 'In Progress'
-}
-
-const generateTotalWBLHours = (): number => {
-  return Math.floor(Math.random() * 300) + 100 // Between 100-400 hours
-}
-
-const generateWBLBreakdown = () => {
-  const types = [
-    'Co-op (Unpaid Internship)',
-    'School-Based Paid',
-    'Job Shadowing',
-    'Service Learning',
-    'Apprenticeship',
-  ]
-
-  const totalHours = generateTotalWBLHours()
-  const breakdown = []
-  let remainingHours = totalHours
-
-  for (let i = 0; i < types.length; i++) {
-    if (i === types.length - 1) {
-      // Last item gets remaining hours
-      if (remainingHours > 0) {
-        breakdown.push({
-          type: types[i],
-          hours: remainingHours,
-        })
-      }
-    } else {
-      // Random distribution for other types
-      const maxHours = Math.floor(remainingHours * 0.6)
-      const hours = Math.floor(Math.random() * maxHours)
-      if (hours > 0) {
-        breakdown.push({
-          type: types[i],
-          hours: hours,
-        })
-        remainingHours -= hours
-      }
-    }
-  }
-
-  return breakdown.filter((item) => item.hours > 0)
-}
-
 // Actions
+const handleRowClick = async (event: any, { item }: { item: Student }) => {
+  try {
+    // Make axios call when row is clicked
+    const response = await axios.get(`http://localhost:3000/api/student-wbl-hours/${item.id}`)
+
+    // Store the WBL hours data in the student object
+    item.wblHours = response.data
+
+    // Force reactivity by updating the students array
+    const studentIndex = students.value.findIndex((s) => s.id === item.id)
+    if (studentIndex !== -1) {
+      students.value[studentIndex] = { ...students.value[studentIndex], wblHours: response.data }
+    }
+  } catch (error) {
+    console.error('Error fetching student WBL details:', error)
+    // Optionally show an error message to the user
+  }
+}
+
 const viewStudent = (student: Student) => {
   console.log('View student:', student)
 }
@@ -692,6 +833,10 @@ const emailStudent = (student: Student) => {
   font-weight: 700;
   color: #2c3e50;
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
 .stat-label {
