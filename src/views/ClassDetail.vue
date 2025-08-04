@@ -62,39 +62,39 @@
         >
           <template v-slot:item.name="{ item }">
             <div class="d-flex align-center">
-              <v-avatar size="40" :color="getAvatarColor(item.name)" class="me-3">
-                <span class="text-white font-weight-bold">{{ getInitials(item.name) }}</span>
+              <v-avatar size="40" :color="getAvatarColor(item.name ?? '')" class="me-3">
+                <span class="text-white font-weight-bold">{{ getInitials(item.name ?? '') }}</span>
               </v-avatar>
               <div>
-                <div class="font-weight-medium">{{ item.name }}</div>
-                <div class="text-caption text-medium-emphasis">ID: {{ item.studentId }}</div>
+                <div class="font-weight-medium">{{ item.name ?? '' }}</div>
+                <div class="text-caption text-medium-emphasis">ID: {{ item.studentId ?? '' }}</div>
               </div>
             </div>
           </template>
 
           <template v-slot:item.juniorGrade="{ item }">
-            <v-chip :color="getGradeColor(item.juniorGrade)" size="small" variant="flat">
-              {{ item.juniorGrade }}%
+            <v-chip :color="getGradeColor(item.juniorGrade ?? 0)" size="small" variant="flat">
+              {{ item.juniorGrade ?? 0 }}%
             </v-chip>
           </template>
 
           <template v-slot:item.seniorGrade="{ item }">
-            <v-chip :color="getGradeColor(item.seniorGrade)" size="small" variant="flat">
-              {{ item.seniorGrade }}%
+            <v-chip :color="getGradeColor(item.seniorGrade ?? 0)" size="small" variant="flat">
+              {{ item.seniorGrade ?? 0 }}%
             </v-chip>
           </template>
 
           <template v-slot:item.averageGrade="{ item }">
             <div class="d-flex align-center">
               <v-progress-linear
-                :model-value="item.averageGrade"
-                :color="getGradeColor(item.averageGrade)"
+                :model-value="item.averageGrade ?? 0"
+                :color="getGradeColor(item.averageGrade ?? 0)"
                 height="8"
                 rounded
                 class="me-3"
                 style="width: 80px"
               />
-              <span class="font-weight-bold">{{ item.averageGrade }}%</span>
+              <span class="font-weight-bold">{{ item.averageGrade ?? 0 }}%</span>
             </div>
           </template>
 
