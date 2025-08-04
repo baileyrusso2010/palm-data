@@ -1,29 +1,37 @@
 <template>
   <v-container fluid class="pa-6 bg-background">
-    <!-- Header Section -->
+    <!-- Unified Header/School Card -->
     <v-row class="mb-8">
       <v-col cols="12">
-        <v-card class="pa-8 header-card" elevation="8" rounded="xl">
+        <v-card class="pa-8 header-school-card" elevation="10" rounded="xl">
           <div class="d-flex align-center justify-space-between flex-wrap">
-            <div class="header-content">
-              <div class="d-flex align-center mb-3">
-                <v-icon size="48" color="primary" class="mr-4">mdi-school</v-icon>
-                <div>
-                  <h1 class="text-h2 font-weight-bold text-primary mb-1">CTE School Dashboard</h1>
-                  <p class="text-h6 text-medium-emphasis mb-0">
-                    Career and Technical Education Program Overview
-                  </p>
+            <div class="header-content d-flex align-center">
+              <div>
+                <h1 class="text-h2 font-weight-bold text-primary mb-2">
+                  {{ schoolData?.name || 'Loading School...' }}
+                </h1>
+                <p class="text-h6 text-medium-emphasis mb-4">
+                  Career and Technical Education Program Overview
+                </p>
+
+                <!-- School Info Section -->
+                <div class="school-info-section mb-4">
+                  <!-- Status Chips -->
+                  <div class="d-flex flex-wrap gap-2">
+                    <v-chip
+                      color="teal"
+                      variant="outlined"
+                      prepend-icon="mdi-book-education"
+                      size="small"
+                    >
+                      {{ schoolData?.Classes?.length || 0 }} Active Programs
+                    </v-chip>
+                  </div>
                 </div>
               </div>
-              <v-chip
-                color="success"
-                variant="elevated"
-                prepend-icon="mdi-check-circle"
-                class="mt-2"
-              >
-                System Active
-              </v-chip>
             </div>
+
+            <!-- Action Button -->
             <div class="header-actions">
               <v-btn
                 color="primary"
@@ -63,141 +71,129 @@
 
     <!-- School Data Display -->
     <div v-else-if="schoolData">
-      <!-- School Information Card -->
-      <v-row class="mb-8">
-        <v-col cols="12">
-          <v-card class="pa-6 school-info-card" elevation="6" rounded="xl">
-            <div class="d-flex align-center">
-              <v-avatar size="64" color="primary" class="mr-4">
-                <v-icon size="32" color="white">mdi-school</v-icon>
-              </v-avatar>
-              <div>
-                <v-card-title class="text-h3 text-primary pa-0 mb-2">
-                  {{ schoolData.name }}
-                </v-card-title>
-                <v-card-subtitle class="text-h6 pa-0 mb-2">
-                  School ID: {{ schoolData.id }}
-                </v-card-subtitle>
-                <v-chip color="teal" variant="outlined" prepend-icon="mdi-book-education">
-                  {{ schoolData.Classes.length }} Active Programs
-                </v-chip>
-              </div>
-            </div>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <!-- Classes Card Grid -->
+      <!-- Classes Overview Section -->
       <v-row class="mb-6">
-        <v-col cols="12">
-          <h2 class="text-h4 font-weight-bold text-primary mb-4">
-            <v-icon class="mr-3">mdi-book-education</v-icon>
-            Classes Overview
-          </h2>
+        <v-col cols="12" sm="6" md="4" lg="3">
+          <div class="d-flex align-center mb-4">
+            <v-icon size="32" color="primary" class="mr-3">mdi-book-education</v-icon>
+            <h2 class="text-h4 font-weight-bold text-primary mb-0">Classes Overview</h2>
+          </div>
         </v-col>
       </v-row>
 
       <v-row>
         <v-col v-for="cls in schoolData.Classes" :key="cls.id" cols="12" sm="6" md="4" lg="3">
-          <v-card
-            class="class-card h-100 position-relative"
-            elevation="6"
-            hover
-            @click="$router.push(`/class/${cls.id}`)"
-          >
-            <!-- Card Header with Gradient -->
-            <div class="card-header pa-4">
-              <div class="d-flex align-center justify-space-between">
-                <v-icon :color="getProgramColor(cls.id)" size="28">mdi-book-open-variant</v-icon>
-                <v-chip
-                  :color="getProgramColor(cls.id)"
-                  variant="elevated"
-                  size="small"
-                  class="text-white font-weight-bold"
-                >
-                  {{ getFakeStudentCount(cls.id) }} Students
-                </v-chip>
+          <div class="class-card-stack">
+            <v-card
+              class="class-card h-100 position-relative"
+              elevation="6"
+              hover
+              @click="$router.push(`/class/${cls.id}`)"
+            >
+              <!-- Card Header with Gradient -->
+              <div class="card-header pa-4">
+                <div class="d-flex align-center justify-space-between">
+                  <v-icon :color="getProgramColor(cls.id)" size="28">mdi-book-open-variant</v-icon>
+                  <v-chip
+                    :color="getProgramColor(cls.id)"
+                    variant="elevated"
+                    size="small"
+                    class="text-white font-weight-bold"
+                  >
+                    {{ getFakeStudentCount(cls.id) }} Students
+                  </v-chip>
+                </div>
+                <h3 class="text-h5 font-weight-bold text-white mt-3 mb-1">
+                  {{ cls.name }}
+                </h3>
+                <p class="text-body-2 text-white mb-0">
+                  {{ getFakeProgram(cls.id) }}
+                </p>
               </div>
-              <h3 class="text-h5 font-weight-bold text-white mt-3 mb-1">
-                {{ cls.name }}
-              </h3>
-              <p class="text-body-2 text-white mb-0">
-                {{ getFakeProgram(cls.id) }}
-              </p>
-            </div>
 
-            <!-- Card Content -->
-            <v-card-text class="pa-4 bg-card-content">
-              <!-- Staff Information -->
-              <div class="staff-info mb-3">
-                <div class="d-flex align-center mb-2">
-                  <v-avatar size="32" :color="getProgramColor(cls.id)" class="mr-3">
-                    <span class="text-white font-weight-bold">
-                      {{ getStaffInitials(cls.Staff?.email || '') }}
-                    </span>
-                  </v-avatar>
-                  <div>
-                    <div class="text-body-1 font-weight-medium">
-                      {{ getStaffName(cls.Staff?.email || '') }}
+              <!-- Card Content -->
+              <v-card-text class="pa-4 bg-card-content">
+                <!-- Staff Information -->
+                <div class="staff-info mb-3">
+                  <div class="d-flex align-center mb-2">
+                    <v-avatar size="32" :color="getProgramColor(cls.id)" class="mr-3">
+                      <span class="text-white font-weight-bold">
+                        {{ getStaffInitials(cls.Staff?.email || '') }}
+                      </span>
+                    </v-avatar>
+                    <div>
+                      <div class="text-body-1 font-weight-medium">
+                        {{ getStaffName(cls.Staff?.email || '') }}
+                      </div>
+                      <div class="text-caption text-medium-emphasis">Instructor</div>
                     </div>
-                    <div class="text-caption text-medium-emphasis">Instructor</div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Contact Info -->
-              <div class="contact-info">
-                <v-chip
-                  variant="tonal"
-                  size="small"
-                  prepend-icon="mdi-email"
-                  :color="getProgramColor(cls.id)"
-                  class="mb-2"
-                  @click.stop="openEmail(cls.Staff?.email || '')"
-                >
-                  {{ cls.Staff?.email || 'contact@school.edu' }}
-                </v-chip>
-              </div>
+                <!-- Contact Info -->
+                <div class="contact-info">
+                  <v-chip
+                    variant="tonal"
+                    size="small"
+                    prepend-icon="mdi-email"
+                    :color="getProgramColor(cls.id)"
+                    class="mb-2"
+                    @click.stop="openEmail(cls.Staff?.email || '')"
+                  >
+                    {{ cls.Staff?.email || 'contact@school.edu' }}
+                  </v-chip>
+                </div>
+              </v-card-text>
 
-              <!-- Quick Stats -->
-              <v-divider class="my-3"></v-divider>
-              <div class="quick-stats">
-                <v-row dense>
-                  <v-col cols="4" class="text-center">
-                    <div class="text-h6 font-weight-bold text-teal">
-                      {{ getFakeAttendance(cls.id) }}%
-                    </div>
-                    <div class="text-caption text-medium-emphasis">Attendance</div>
-                  </v-col>
-                  <v-col cols="4" class="text-center">
-                    <div class="text-h6 font-weight-bold text-blue">
-                      {{ getFakeGrade(cls.id) }}%
-                    </div>
-                    <div class="text-caption text-medium-emphasis">Avg Grade</div>
-                  </v-col>
-                  <v-col cols="4" class="text-center">
-                    <div class="text-h6 font-weight-bold text-amber">
-                      {{ getFakeProjects(cls.id) }}
-                    </div>
-                    <div class="text-caption text-medium-emphasis">Projects</div>
-                  </v-col>
-                </v-row>
-              </div>
-            </v-card-text>
-
-            <!-- Hover Effect Overlay -->
-            <div class="card-overlay"></div>
-          </v-card>
+              <!-- Hover Effect Overlay -->
+              <div class="card-overlay"></div>
+            </v-card>
+            <v-card
+              class="quick-stats-card mt-3"
+              :style="{
+                boxShadow:
+                  '0 0 0 0 rgba(0,0,0,0), 0 0 24px 2px var(--' +
+                  getProgramColor(cls.id) +
+                  ', #2563eb33)',
+              }"
+              elevation="8"
+            >
+              <v-card-text>
+                <div class="quick-stats enhanced">
+                  <v-row dense>
+                    <v-col cols="4" class="text-center">
+                      <div class="text-h6 font-weight-bold text-teal enhanced-stat">
+                        {{ getFakeAttendance(cls.id) }}%
+                      </div>
+                      <div class="text-caption text-medium-emphasis">Attendance</div>
+                    </v-col>
+                    <v-col cols="4" class="text-center">
+                      <div class="text-h6 font-weight-bold text-blue enhanced-stat">
+                        {{ getFakeGrade(cls.id) }}%
+                      </div>
+                      <div class="text-caption text-medium-emphasis">Avg Grade</div>
+                    </v-col>
+                    <v-col cols="4" class="text-center">
+                      <div class="text-h6 font-weight-bold text-amber enhanced-stat">
+                        {{ getFakeProjects(cls.id) }}
+                      </div>
+                      <div class="text-caption text-medium-emphasis">Projects</div>
+                    </v-col>
+                  </v-row>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
         </v-col>
       </v-row>
 
       <!-- Statistics Cards -->
       <v-row class="mt-8">
-        <v-col cols="12">
-          <h2 class="text-h4 font-weight-bold text-primary mb-4">
-            <v-icon class="mr-3">mdi-chart-box</v-icon>
-            School Statistics
-          </h2>
+        <v-col cols="12" md="4">
+          <div class="d-flex align-center mb-4">
+            <v-icon size="32" color="primary" class="mr-3">mdi-chart-box</v-icon>
+            <h2 class="text-h4 font-weight-bold text-primary mb-0">School Statistics</h2>
+          </div>
         </v-col>
       </v-row>
 
@@ -371,7 +367,7 @@ function fetchData() {
   error.value = null
 
   axios
-    .get<ApiResponse>('http://localhost:3000/api/cte-school/1/summary')
+    .get<ApiResponse>(`${import.meta.env.VITE_API_BASE_URL}/api/cte-school/1/summary`)
     .then((response) => {
       console.log('Data fetched:', response.data)
       schoolData.value = response.data.cteSchool
@@ -489,6 +485,39 @@ onMounted(() => {
   opacity: 1;
 }
 
+/* Stack the main card and quick stats card */
+.class-card-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.quick-stats-card {
+  border-radius: 16px !important;
+  background: linear-gradient(90deg, #fafdff 80%, #e3f0ff 100%);
+  margin-top: 12px;
+  margin-bottom: 12px;
+  padding: 0;
+  transition: box-shadow 0.2s;
+}
+
+.quick-stats-card:hover {
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.18) !important;
+}
+
+.quick-stats.enhanced {
+  background: transparent;
+  border: none;
+  padding: 8px 0 0 0;
+}
+
+.enhanced-stat {
+  font-size: 1.5rem;
+  letter-spacing: 0.5px;
+  filter: brightness(1.1);
+}
+
 /* Statistics cards */
 .stat-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -519,33 +548,23 @@ onMounted(() => {
   transform: scale(1.1);
 }
 
-/* Header card */
-.header-card {
+/* Unified header/school card */
+.header-school-card {
   background: var(--card-bg);
   color: var(--text-primary);
   position: relative;
   overflow: hidden;
   border-radius: 24px !important;
   border: 1px solid rgba(209, 213, 219, 0.2);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 32px rgba(37, 99, 235, 0.1);
+  z-index: 1;
 }
 
-.header-card::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
-  animation: shimmer 4s ease-in-out infinite;
-}
-
-.header-card .text-primary {
+.header-school-card .text-primary {
   color: var(--primary) !important;
 }
 
-.header-card .text-medium-emphasis {
+.header-school-card .text-medium-emphasis {
   color: var(--text-secondary) !important;
 }
 

@@ -13,7 +13,6 @@
                   ? `${classInfo.teacher.firstName} ${classInfo.teacher.lastName}`
                   : 'No Teacher Assigned'
               }}
-              • {{ students.length }} Students
             </div>
           </v-card-title>
         </div>
@@ -48,8 +47,6 @@
         <v-card-title class="table-header pa-6">
           <v-icon class="me-3" color="primary">mdi-account-group</v-icon>
           <span class="text-h5 font-weight-bold">Student Roster</span>
-          <v-spacer></v-spacer>
-          <v-chip color="primary" variant="flat">{{ students.length }} Students</v-chip>
         </v-card-title>
 
         <v-data-table
@@ -124,23 +121,6 @@
               >
                 <span class="text-caption font-weight-bold">{{ item.attendanceRate || 0 }}</span>
               </v-progress-circular>
-            </div>
-          </template>
-
-          <template v-slot:item.actions="{ item }">
-            <div class="d-flex">
-              <v-btn icon size="small" variant="text" @click="viewStudent(item)">
-                <v-icon color="primary">mdi-eye</v-icon>
-                <v-tooltip activator="parent" location="top">View Details</v-tooltip>
-              </v-btn>
-              <v-btn icon size="small" variant="text" @click="editStudent(item)">
-                <v-icon color="warning">mdi-pencil</v-icon>
-                <v-tooltip activator="parent" location="top">Edit Student</v-tooltip>
-              </v-btn>
-              <v-btn icon size="small" variant="text" @click="emailStudent(item)">
-                <v-icon color="info">mdi-email</v-icon>
-                <v-tooltip activator="parent" location="top">Send Email</v-tooltip>
-              </v-btn>
             </div>
           </template>
 
@@ -563,7 +543,9 @@ const fetchClassData = async () => {
   error.value = ''
 
   try {
-    const response = await axios.get<ApiResponse>('http://localhost:3000/api/classes/2/students/')
+    const response = await axios.get<ApiResponse>(
+      `${import.meta.env.VITE_API_BASE_URL}/api/classes/2/students/`,
+    )
 
     // Update class info
     classInfo.value = response.data.class
@@ -666,7 +648,6 @@ const headers = [
   { title: 'Average Grade', key: 'averageGrade', sortable: true, align: 'center' as const },
   { title: 'Tech Skills', key: 'techAverage', sortable: true, align: 'center' as const },
   { title: 'Attendance', key: 'attendanceRate', sortable: true, align: 'center' as const },
-  { title: 'Actions', key: 'actions', sortable: false, align: 'center' as const },
 ]
 
 // Helper functions
@@ -765,7 +746,9 @@ const generatePortfolioItems = () => {
 const handleRowClick = async (event: any, { item }: { item: Student }) => {
   try {
     // Make axios call when row is clicked
-    const response = await axios.get(`http://localhost:3000/api/student-wbl-hours/${item.id}`)
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_BASE_URL}/api/student-wbl-hours/${item.id}`,
+    )
 
     // Store the WBL hours data in the student object
     item.wblHours = response.data
@@ -832,7 +815,6 @@ const emailStudent = (student: Student) => {
   font-size: 2.5rem;
   font-weight: 700;
   color: #2c3e50;
-  margin-bottom: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
