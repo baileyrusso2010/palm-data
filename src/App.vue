@@ -1,5 +1,6 @@
 <template>
   <v-app>
+    <SidebarNav />
     <v-main>
       <router-view />
     </v-main>
@@ -7,8 +8,7 @@
 </template>
 
 <script setup lang="ts">
-// App.vue is now a simple layout component
-// All dashboard functionality has been moved to Home.vue
+import SidebarNav from './components/SidebarNav.vue'
 </script>
 
 <style scoped></style>
