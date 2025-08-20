@@ -7,171 +7,166 @@
       all.
     </v-alert>
 
-    <v-form ref="formRef" @submit.prevent="addDraft">
-      <v-row>
-        <v-col cols="12" md="4" lg="4">
-          <v-autocomplete
-            v-model="selectedProgramId"
-            :items="programOptions"
-            :loading="loadingPrograms"
-            :item-title="programTitleFn"
-            item-value="id"
-            label="Program"
-            placeholder="Search program"
-            variant="outlined"
-            clearable
-            density="comfortable"
-            :search="programSearch"
-            @update:search="onProgramSearch"
-            :rules="[(v) => !!v || 'Program required']"
-          />
-          <div v-if="programError" class="error-msg mt-1">
-            <v-icon size="14" color="error" class="mr-1">mdi-alert-circle</v-icon>
-            {{ programError }}
-            <v-btn size="x-small" variant="text" color="primary" class="ml-1" @click="initialLoad">
-              Retry
-            </v-btn>
-          </div>
-        </v-col>
-        <v-col cols="12" md="4" lg="3">
-          <v-autocomplete
-            v-model="selectedCourseId"
-            :items="courseOptions"
-            :loading="loadingCourses"
-            :item-title="courseTitleFn"
-            item-value="id"
-            label="Course (Code)"
-            placeholder="Search course code / name"
-            variant="outlined"
-            clearable
-            density="comfortable"
-            :search="courseSearch"
-            @update:search="onCourseSearch"
-            :rules="[(v) => !!v || 'Course required']"
-            @update:model-value="onCourseSelected"
-          />
-          <div v-if="courseError" class="error-msg mt-1">
-            <v-icon size="14" color="error" class="mr-1">mdi-alert-circle</v-icon>
-            {{ courseError }}
-            <v-btn
-              size="x-small"
-              variant="text"
-              color="primary"
-              class="ml-1"
-              @click="initialCourseLoad"
-            >
-              Retry
-            </v-btn>
-          </div>
-        </v-col>
-        <v-col cols="12" md="4" lg="3">
-          <v-text-field
-            v-model="alias"
-            label="Class Alias"
-            placeholder="e.g. Intro to Bio (Evening)"
-            variant="outlined"
-            density="comfortable"
-            :rules="aliasRules"
-            clearable
-          />
-        </v-col>
-        <v-col cols="12" md="12" lg="2" class="d-flex align-end">
-          <v-btn color="primary" :disabled="!canAdd" @click="addDraft" prepend-icon="mdi-plus-box">
-            Add
-          </v-btn>
-        </v-col>
-      </v-row>
-    </v-form>
+    <!-- Add Single Class -->
+    <v-card class="mb-8 elevation-2">
+      <v-card-title class="py-3 text-subtitle-1 font-weight-medium">Add Class</v-card-title>
+      <v-divider />
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="3">
+            <v-autocomplete
+              v-model="selectedProgramId"
+              :items="programOptions"
+              :loading="loadingPrograms"
+              :item-title="programTitleFn"
+              item-value="id"
+              label="Program"
+              placeholder="Search program"
+              variant="outlined"
+              clearable
+              density="comfortable"
+              :search="programSearch"
+              @update:search="onProgramSearch"
+              :rules="[requiredIdRule]"
+            />
+            <div v-if="programError" class="error-msg mt-1">
+              <v-icon size="14" color="error" class="mr-1">mdi-alert-circle</v-icon
+              >{{ programError }}
+              <v-btn size="x-small" variant="text" color="primary" class="ml-1" @click="initialLoad"
+                >Retry</v-btn
+              >
+            </div>
+          </v-col>
+          <v-col cols="12" md="3">
+            <v-autocomplete
+              v-model="selectedCourseId"
+              :items="courseOptions"
+              :loading="loadingCourses"
+              :item-title="courseTitleFn"
+              item-value="id"
+              label="Course"
+              placeholder="Search course code / name"
+              variant="outlined"
+              clearable
+              density="comfortable"
+              :search="courseSearch"
+              @update:search="onCourseSearch"
+              @update:model-value="onCourseSelected"
+              :rules="[requiredIdRule]"
+            />
+            <div v-if="courseError" class="error-msg mt-1">
+              <v-icon size="14" color="error" class="mr-1">mdi-alert-circle</v-icon
+              >{{ courseError }}
+              <v-btn
+                size="x-small"
+                variant="text"
+                color="primary"
+                class="ml-1"
+                @click="initialCourseLoad"
+                >Retry</v-btn
+              >
+            </div>
+          </v-col>
+          <v-col cols="12" md="3">
+            <v-autocomplete
+              v-model="selectedTeacherId"
+              :items="teacherOptions"
+              :loading="loadingTeachers"
+              :item-title="teacherTitleFn"
+              item-value="id"
+              label="Teacher"
+              placeholder="Search teacher"
+              variant="outlined"
+              clearable
+              density="comfortable"
+              :search="teacherSearch"
+              @update:search="onTeacherSearch"
+              :rules="[requiredIdRule]"
+            />
+            <div v-if="teacherError" class="error-msg mt-1">
+              <v-icon size="14" color="error" class="mr-1">mdi-alert-circle</v-icon
+              >{{ teacherError }}
+              <v-btn
+                size="x-small"
+                variant="text"
+                color="primary"
+                class="ml-1"
+                @click="initialTeacherLoad"
+                >Retry</v-btn
+              >
+            </div>
+          </v-col>
+          <v-col cols="12" md="3">
+            <v-text-field
+              v-model="alias"
+              label="Alias"
+              placeholder="Auto-fills from course"
+              variant="outlined"
+              density="comfortable"
+              :rules="aliasRules"
+              clearable
+            />
+          </v-col>
+        </v-row>
+        <div class="d-flex gap-2">
+          <v-btn
+            color="primary"
+            :disabled="!canSave"
+            :loading="adding"
+            prepend-icon="mdi-content-save"
+            @click="addClass"
+            >Save Class</v-btn
+          >
+          <v-btn variant="text" color="default" @click="resetForm" :disabled="adding">Clear</v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
 
-    <v-divider class="my-6" />
-
-    <v-card class="elevation-2" v-if="drafts.length">
+    <!-- Existing Classes -->
+    <v-card class="elevation-2">
+      <v-card-title
+        class="py-3 text-subtitle-1 font-weight-medium d-flex align-center justify-space-between"
+      >
+        <span>Existing Classes</span>
+        <v-btn
+          size="small"
+          icon="mdi-refresh"
+          variant="text"
+          @click="fetchClasses"
+          :loading="loadingClassesList"
+        />
+      </v-card-title>
+      <v-divider />
       <v-data-table
-        :headers="draftHeaders"
-        :items="drafts"
-        item-key="uid"
-        hide-default-footer
+        :headers="classHeaders"
+        :items="classes"
+        item-key="id"
+        :loading="loadingClassesList"
         density="comfortable"
         class="drafts-table"
+        :no-data-text="loadingClassesList ? 'Loading...' : 'No classes yet'"
+        hide-default-footer
       >
         <template #item.program="{ item }">
-          <div class="text-truncate">{{ item.programText }}</div>
+          <div class="text-truncate">{{ item.program }}</div>
         </template>
-        <template #item.courseText="{ item }">
-          <div class="text-truncate">{{ item.courseText }}</div>
+        <template #item.course="{ item }">
+          <div class="text-truncate">{{ item.course }}</div>
+        </template>
+        <template #item.teacher="{ item }">
+          <div class="text-truncate">{{ item.teacher }}</div>
         </template>
         <template #item.alias="{ item }">
-          <v-text-field
-            v-model="item.alias"
-            variant="outlined"
-            density="compact"
-            hide-details
-            :rules="aliasRules"
-          />
+          <div class="text-truncate">{{ item.alias }}</div>
         </template>
-        <template #item.status="{ item }">
-          <v-chip
-            v-if="item.status !== 'error'"
-            :color="
-              item.status === 'saved' ? 'success' : item.status === 'saving' ? 'primary' : 'grey'
-            "
-            size="x-small"
-            label
-          >
-            <v-progress-circular
-              v-if="item.status === 'saving'"
-              indeterminate
-              size="12"
-              width="2"
-              color="primary"
-              class="mr-1"
-            />
-            {{
-              item.status === 'saved' ? 'Saved' : item.status === 'saving' ? 'Saving' : 'Pending'
-            }}
-          </v-chip>
-          <v-chip v-else color="error" size="x-small" label>Failed</v-chip>
+        <template #item.school_year="{ item }">
+          <div class="text-truncate">{{ item.school_year || '—' }}</div>
         </template>
-        <template #item.actions="{ item }">
-          <v-btn
-            icon="mdi-content-save"
-            size="x-small"
-            variant="text"
-            color="success"
-            :disabled="item.status === 'saving' || !item.alias"
-            @click="saveSingle(item)"
-          />
-          <v-btn
-            icon="mdi-delete"
-            size="x-small"
-            variant="text"
-            color="error"
-            :disabled="item.status === 'saving'"
-            @click="removeDraft(item.uid)"
-          />
-        </template>
-        <template #no-data>
-          <div class="pa-6 text-medium-emphasis text-caption">No class drafts yet.</div>
+        <template #item.created_at="{ item }">
+          <span class="text-caption">{{ item.created_at }}</span>
         </template>
       </v-data-table>
-      <div class="d-flex justify-space-between flex-wrap pa-4">
-        <div class="text-caption text-medium-emphasis">
-          {{ drafts.length }} draft{{ drafts.length === 1 ? '' : 's' }}
-        </div>
-        <div>
-          <v-btn
-            color="success"
-            prepend-icon="mdi-content-save-all"
-            :disabled="!drafts.length || savingAny || !allAliasesValid"
-            :loading="bulkSaving"
-            @click="saveAll"
-          >
-            Save All
-          </v-btn>
-        </div>
-      </div>
     </v-card>
-    <div v-else class="text-medium-emphasis text-caption">No drafts added yet.</div>
 
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000" location="top right">
       {{ snackbar.message }}
@@ -196,22 +191,26 @@ interface SchoolProgramOption {
   name: string
 }
 
-interface ClassDraft {
-  uid: string
-  programId: string | number
-  courseId: string | number // this is the course catalog id (catalog_id)
-  programText: string
-  courseText: string
+// Simplified single-add flow
+interface ExistingClass {
+  id: string | number
+  program: string
+  course: string
+  teacher: string
   alias: string
-  status: 'pending' | 'saving' | 'saved' | 'error'
-  errorMessage?: string
+  school_year?: string
+  created_at?: string
 }
 
 const programOptions = ref<SchoolProgramOption[]>([])
 const loadingPrograms = ref(false)
 const programError = ref('')
 const programSearch = ref('')
+// Form selections
 const selectedProgramId = ref<string | number | null>(null)
+const selectedCourseId = ref<string | number | null>(null)
+const selectedTeacherId = ref<string | number | null>(null)
+const alias = ref('')
 // Course search state
 interface CourseItem {
   id: string | number
@@ -223,12 +222,20 @@ const courseOptions = ref<CourseItem[]>([])
 const loadingCourses = ref(false)
 const courseError = ref('')
 const courseSearch = ref('')
-const selectedCourseId = ref<string | number | null>(null)
-const alias = ref('')
+// Teacher search state
+interface TeacherItem {
+  id: string | number
+  name: string
+  email: string
+}
+const teacherOptions = ref<TeacherItem[]>([])
+const loadingTeachers = ref(false)
+const teacherError = ref('')
+const teacherSearch = ref('')
 const formRef = ref()
-
-const drafts = ref<ClassDraft[]>([])
-const bulkSaving = ref(false)
+const adding = ref(false)
+const classes = ref<ExistingClass[]>([])
+const loadingClassesList = ref(false)
 const snackbar = ref<{ show: boolean; message: string; color: string }>({
   show: false,
   message: '',
@@ -240,11 +247,15 @@ const aliasRules = [
   (v: string) => (v ? v.trim().length <= 120 : true) || 'Max 120 characters',
 ]
 
-const canAdd = computed(
-  () => !!selectedProgramId.value && !!selectedCourseId.value && !!alias.value.trim(),
+// Treat 0 as valid
+const requiredIdRule = (v: any) => (v !== null && v !== undefined && v !== '') || 'Required'
+const canSave = computed(
+  () =>
+    selectedProgramId.value !== null &&
+    selectedCourseId.value !== null &&
+    selectedTeacherId.value !== null &&
+    !!alias.value.trim(),
 )
-const allAliasesValid = computed(() => drafts.value.every((d) => !!d.alias.trim()))
-const savingAny = computed(() => drafts.value.some((d) => d.status === 'saving'))
 
 function programTitleFn(p: SchoolProgramOption) {
   return `${p.code} — ${p.name}`
@@ -252,6 +263,10 @@ function programTitleFn(p: SchoolProgramOption) {
 
 function courseTitleFn(c: CourseItem) {
   return `${c.course_code} — ${c.course_name}`
+}
+
+function teacherTitleFn(t: TeacherItem) {
+  return `${t.name} — ${t.email}`
 }
 
 async function fetchPrograms(query?: string) {
@@ -318,10 +333,32 @@ function initialCourseLoad() {
 }
 
 function onCourseSelected() {
-  // Auto-fill alias if empty
   if (!alias.value.trim()) {
     const c = courseOptions.value.find((c) => c.id === selectedCourseId.value)
     if (c) alias.value = c.course_name
+  }
+}
+
+let teacherSearchTimeout: any = null
+function onTeacherSearch(q: string) {
+  teacherSearch.value = q
+  if (teacherSearchTimeout) clearTimeout(teacherSearchTimeout)
+  teacherSearchTimeout = setTimeout(() => fetchTeachers(q), 350)
+}
+
+async function fetchTeachers(query?: string) {
+  loadingTeachers.value = true
+  teacherError.value = ''
+  try {
+    const base = 'http://localhost:3000/api/teachers/teachers'
+    const url = query && query.trim() ? `${base}?q=${encodeURIComponent(query.trim())}` : base
+    const { data } = await axios.get(url)
+    const raw: any[] = Array.isArray(data) ? data : data?.items || []
+    teacherOptions.value = raw.map((t) => ({ id: t.id, name: t.name, email: t.email }))
+  } catch (e: any) {
+    teacherError.value = e?.message || 'Failed to load teachers'
+  } finally {
+    loadingTeachers.value = false
   }
 }
 
@@ -329,115 +366,80 @@ function initialLoad() {
   fetchPrograms()
 }
 
-function addDraft() {
-  if (!canAdd.value) return
-  const program = programOptions.value.find((p) => p.id === selectedProgramId.value)
-  if (!program) return
-  const course = courseOptions.value.find((c) => c.id === selectedCourseId.value)
-  if (!course) return
-  // Prevent duplicate (same program + alias) pending
-  if (
-    drafts.value.some(
-      (d) =>
-        d.programId === program.id &&
-        d.courseId === course.id &&
-        d.alias.trim().toLowerCase() === alias.value.trim().toLowerCase(),
-    )
-  ) {
-    snackbar.value = { show: true, message: 'Duplicate draft already added', color: 'warning' }
-    return
-  }
-  drafts.value.push({
-    uid: Math.random().toString(36).slice(2),
-    programId: program.id,
-    courseId: course.id,
-    programText: programTitleFn(program),
-    courseText: courseTitleFn(course),
-    alias: alias.value.trim(),
-    status: 'pending',
-  })
-  alias.value = ''
-  selectedProgramId.value = null
-  selectedCourseId.value = null
+function initialTeacherLoad() {
+  fetchTeachers()
 }
 
-function removeDraft(uid: string) {
-  drafts.value = drafts.value.filter((d) => d.uid !== uid)
-}
-
-async function saveSingle(draft: ClassDraft) {
-  if (!draft.alias.trim()) return
-  draft.status = 'saving'
-  draft.errorMessage = ''
+async function addClass() {
+  if (!canSave.value) return
+  adding.value = true
   try {
     const payload = {
-      program_id: draft.programId,
-      catalog_id: draft.courseId, // backend expects catalog_id (course catalog)
-      alias: draft.alias.trim(),
+      program_id: selectedProgramId.value,
+      catalog_id: selectedCourseId.value,
+      teacher_id: selectedTeacherId.value,
+      alias: alias.value.trim(),
+      school_id: 1, //Fix later
     }
     await axios.post(CREATE_CLASSES_ENDPOINT, payload)
-    draft.status = 'saved'
+    snackbar.value = { show: true, message: 'Class saved', color: 'success' }
+    resetForm()
+    await fetchClasses()
   } catch (e: any) {
-    draft.status = 'error'
-    draft.errorMessage = e?.message || 'Save failed'
-  }
-}
-
-async function saveAll() {
-  if (!drafts.value.length) return
-  const targets = drafts.value.filter((d) => d.status === 'pending' || d.status === 'error')
-  if (!targets.length) return
-  bulkSaving.value = true
-  // Mark all target drafts as saving
-  targets.forEach((d) => {
-    d.status = 'saving'
-    d.errorMessage = ''
-  })
-  try {
-    const payload = targets.map((d) => ({
-      program_id: d.programId,
-      catalog_id: d.courseId,
-      alias: d.alias.trim(),
-    }))
-    // Attempt bulk create. If your backend uses a different path (e.g. /classes/bulk) adjust below.
-    await axios.post(CREATE_CLASSES_ENDPOINT, payload)
-    targets.forEach((d) => (d.status = 'saved'))
-    snackbar.value = { show: true, message: 'All classes saved', color: 'success' }
-  } catch (e: any) {
-    // If bulk failed, attempt fallback per-item to salvage partial success
-    try {
-      for (const d of targets) {
-        if (d.status === 'saved') continue
-        await saveSingle(d)
-      }
-      if (targets.every((d) => d.status === 'saved')) {
-        snackbar.value = { show: true, message: 'All classes saved', color: 'success' }
-        return
-      }
-    } catch (_) {
-      // ignore; statuses updated individually
-    }
-    if (targets.some((d) => d.status === 'error')) {
-      snackbar.value = { show: true, message: 'Some classes failed to save', color: 'warning' }
-    } else {
-      snackbar.value = { show: true, message: e?.message || 'Bulk save failed', color: 'error' }
-    }
+    snackbar.value = { show: true, message: e?.message || 'Save failed', color: 'error' }
   } finally {
-    bulkSaving.value = false
+    adding.value = false
   }
 }
 
-const draftHeaders = [
+function resetForm() {
+  selectedProgramId.value = null
+  selectedCourseId.value = null
+  selectedTeacherId.value = null
+  alias.value = ''
+}
+
+async function fetchClasses() {
+  loadingClassesList.value = true
+  try {
+    const { data } = await axios.get(CREATE_CLASSES_ENDPOINT)
+    const raw: any[] = Array.isArray(data) ? data : data?.items || []
+    classes.value = raw.map((c) => ({
+      id: c.id,
+      program:
+        c.program?.program_catalog?.code && c.program?.program_catalog?.name
+          ? `${c.program.program_catalog.code} — ${c.program.program_catalog.name}`
+          : c.program_code_name || c.program?.name || '—',
+      course:
+        c.course_catalog?.course_code && c.course_catalog?.course_name
+          ? `${c.course_catalog.course_code} — ${c.course_catalog.course_name}`
+          : c.course_code_name || c.course_catalog?.course_name || '—',
+      teacher: c.users?.name || '—',
+      alias: c.alias,
+      school_year: c.school_year || c.schoolYear || '',
+      // created_at: c.created_at ? new Date(c.created_at).toLocaleDateString() : '',
+    }))
+  } catch (e) {
+    snackbar.value = { show: true, message: 'Failed to load classes', color: 'error' }
+  } finally {
+    loadingClassesList.value = false
+  }
+}
+
+const classHeaders = [
   { title: 'Program', key: 'program', sortable: true },
-  { title: 'Course', key: 'courseText', sortable: true },
-  { title: 'Alias', key: 'alias', sortable: false, width: 240 },
-  { title: 'Status', key: 'status', sortable: false, width: 100 },
-  { title: 'Actions', key: 'actions', sortable: false, width: 100 },
+  { title: 'Course', key: 'course', sortable: true },
+  { title: 'Teacher', key: 'teacher', sortable: true },
+  { title: 'Alias', key: 'alias', sortable: true },
+  { title: 'School Year', key: 'school_year', sortable: true },
+  // { title: 'Created', key: 'created_at', sortable: true },
 ]
 
 onMounted(() => {
   initialLoad()
   initialCourseLoad()
+  initialTeacherLoad()
+  fetchClasses()
 })
 </script>
 

@@ -1,14 +1,52 @@
 <template>
   <v-app>
-    <v-main>
+    <SidebarNav v-model="drawer" @toggle-theme="toggleTheme" />
+    <v-app-bar flat density="comfortable" color="surface">
+      <v-btn icon="mdi-menu" class="d-lg-none" variant="text" @click="drawer = !drawer" />
+      <v-toolbar-title class="text-h6">{{ currentTitle }}</v-toolbar-title>
+      <v-spacer />
+      <v-btn
+        variant="text"
+        size="small"
+        :icon="isDark ? 'mdi-weather-sunny' : 'mdi-moon-waning-crescent'"
+        @click="toggleTheme"
+      />
+    </v-app-bar>
+    <v-main color="background">
       <router-view />
     </v-main>
   </v-app>
 </template>
-
 <script setup lang="ts">
-// App.vue is now a simple layout component
-// All dashboard functionality has been moved to Home.vue
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useTheme } from 'vuetify'
+import SidebarNav from './components/SidebarNav.vue'
+
+const drawer = ref(true)
+const route = useRoute()
+const theme = useTheme()
+const isDark = computed(() => theme.global.current.value.dark)
+
+const titles: Record<string, string> = {
+  '/': 'Programs',
+  '/classes': 'Classes',
+}
+const currentTitle = computed(() => titles[route.path] || 'App')
+
+function toggleTheme() {
+  theme.global.name.value = isDark.value ? 'light' : 'dark'
+}
 </script>
 
-<style scoped></style>
+<style>
+.v-list-item--active {
+  background-color: rgba(0, 0, 0, 0.064) !important; /* Light theme */
+  color: rgb(40, 6, 255) !important;
+  /* color: var(--v-theme-primary) !important; */
+}
+
+.v-list-item:hover {
+  background-color: rgba(0, 0, 0, 0.064);
+}
+</style>
