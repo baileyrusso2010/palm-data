@@ -179,8 +179,8 @@ import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
 /** Assumed backend endpoint (adjust if different) */
-const CREATE_CLASSES_ENDPOINT = 'http://localhost:3000/api/courses/courses'
-const COURSE_SEARCH_ENDPOINT = 'http://localhost:3000/api/courses/course-catalogs' // adjust to real endpoint
+const CREATE_CLASSES_ENDPOINT = 'http://localhost:3000/api/courses'
+const COURSE_SEARCH_ENDPOINT = 'http://localhost:3000/api/course-catalogs' // adjust to real endpoint
 
 interface SchoolProgramOption {
   // program instance id (school-specific)
@@ -274,7 +274,7 @@ async function fetchPrograms(query?: string) {
   programError.value = ''
   try {
     // Fetch only programs attached to this school
-    const base = 'http://localhost:3000/api/programs/programs'
+    const base = 'http://localhost:3000/api/programs'
     const url = query && query.trim() ? `${base}?q=${encodeURIComponent(query.trim())}` : base
     const { data } = await axios.get(url)
     // Expected shape from user example:
@@ -350,7 +350,7 @@ async function fetchTeachers(query?: string) {
   loadingTeachers.value = true
   teacherError.value = ''
   try {
-    const base = 'http://localhost:3000/api/teachers/teachers'
+    const base = 'http://localhost:3000/api/teachers'
     const url = query && query.trim() ? `${base}?q=${encodeURIComponent(query.trim())}` : base
     const { data } = await axios.get(url)
     const raw: any[] = Array.isArray(data) ? data : data?.items || []

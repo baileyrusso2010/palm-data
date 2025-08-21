@@ -166,7 +166,7 @@ async function saveApprovalData() {
         approved_through: approval.approvedThrough || null,
       }
     })
-    await axios.post('http://localhost:3000/api/programs/programs/', payload)
+    await axios.post('http://localhost:3000/api/programs/', payload)
     snackbar.value = { show: true, message: 'Approval data saved successfully!', color: 'success' }
   } catch (e: any) {
     snackbar.value = {
@@ -189,8 +189,8 @@ async function fetchPrograms(query?: string) {
   try {
     const url =
       query && query.trim()
-        ? `http://localhost:3000/api/programs/program-catalogs?q=${encodeURIComponent(query.trim())}`
-        : 'http://localhost:3000/api/programs/program-catalogs'
+        ? `http://localhost:3000/api/program-catalogs?q=${encodeURIComponent(query.trim())}`
+        : 'http://localhost:3000/api/program-catalogs'
     const { data } = await axios.get(url)
     programOptions.value = Array.isArray(data) ? data : data?.items || []
   } catch (e: any) {
@@ -208,7 +208,7 @@ function handleProgramSearch(q: string) {
 
 async function fetchExistingPrograms() {
   try {
-    const { data } = await axios.get('http://localhost:3000/api/programs/programs')
+    const { data } = await axios.get('http://localhost:3000/api/programs')
     if (Array.isArray(data)) {
       for (const prog of data) {
         if (!selectedPrograms.value.includes(prog.program_catalog_id)) {

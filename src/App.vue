@@ -28,11 +28,17 @@ const route = useRoute()
 const theme = useTheme()
 const isDark = computed(() => theme.global.current.value.dark)
 
-const titles: Record<string, string> = {
+const staticTitles: Record<string, string> = {
   '/': 'Programs',
   '/classes': 'Classes',
 }
-const currentTitle = computed(() => titles[route.path] || 'App')
+
+const currentTitle = computed(() => {
+  if (route.name === 'class-view') {
+    return 'Class Admin'
+  }
+  return staticTitles[route.path] || 'App'
+})
 
 function toggleTheme() {
   theme.global.name.value = isDark.value ? 'light' : 'dark'
