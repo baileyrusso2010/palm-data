@@ -133,15 +133,18 @@
             height="520"
           >
             <template #item.name="{ item }">
-              <div class="d-flex align-center gap-3 py-1">
+              <RouterLink
+                class="d-flex align-center gap-3 py-1 text-decoration-none text-high-emphasis"
+                :to="{ name: 'student-profile', params: { id: item.id } }"
+              >
                 <v-avatar size="32" color="secondary" class="elevation-1">
                   <span class="text-body-2">{{ initials(item.name) }}</span>
                 </v-avatar>
                 <div>
-                  <div class="font-weight-medium">{{ item.name }}</div>
+                  <div class="font-weight-medium link-hover">{{ item.name }}</div>
                   <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
                 </div>
-              </div>
+              </RouterLink>
             </template>
             <template #item.status="{ item }">
               <v-chip

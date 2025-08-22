@@ -3,6 +3,7 @@ import Home from './views/Home.vue'
 import Classes from './views/Classes.vue'
 import ClassView from './views/ClassView.vue'
 import WBLAdmin from './views/WBLAdmin.vue'
+import StudentProfile from './views/StudentProfile.vue'
 
 const routes = [
   { path: '/', component: Home, name: 'home', meta: { title: 'Programs' } },
@@ -19,6 +20,13 @@ const routes = [
     component: WBLAdmin,
     name: 'wbladmin',
     meta: { title: 'WBL Types' },
+  },
+  {
+    path: '/students/:id',
+    component: StudentProfile,
+    name: 'student-profile',
+    meta: { title: 'Student Profile' },
+    props: true,
   },
 ]
 
