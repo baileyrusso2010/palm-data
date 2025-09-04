@@ -34,7 +34,12 @@ import api from '../api'
 import { ref } from 'vue'
 import { onMounted } from 'vue'
 
-const files = ref([])
+interface ListedFile {
+  key: string
+  url: string
+  [k: string]: any
+}
+const files = ref<ListedFile[]>([])
 
 onMounted(() => {})
 

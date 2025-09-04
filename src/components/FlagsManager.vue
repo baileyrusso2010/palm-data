@@ -39,7 +39,7 @@
           <div
             class="color-swatch mr-2"
             :style="{ background: item.color || '#ccc' }"
-            :title="item.color"
+            :title="item.color || ''"
           />
           <code class="text-caption">{{ item.color || '—' }}</code>
         </div>

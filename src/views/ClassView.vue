@@ -477,7 +477,12 @@ import api from '../api'
 // Data shape example provided by user.
 
 const route = useRoute()
-const classId = computed(() => route.params.id ?? '1')
+// Route param may be string | string[] | undefined; normalize to string
+const classId = computed(() => {
+  const raw = route.params.id
+  if (Array.isArray(raw)) return raw[0] ?? '1'
+  return raw ?? '1'
+})
 
 interface ApiTeacher {
   id: number

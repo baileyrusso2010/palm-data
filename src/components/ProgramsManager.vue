@@ -180,8 +180,12 @@ async function saveApprovalData() {
   }
 }
 
-function programTitleFn(p: ProgramCatalog) {
-  return `${p.code} — ${p.name}`
+// Accept a generic item since SearchMultiSelect expects (item: GenericItem)=>string
+function programTitleFn(p: ProgramCatalog | { [k: string]: any }) {
+  // Fallbacks guard against missing fields on generic items
+  const code = (p as any).code ?? ''
+  const name = (p as any).name ?? ''
+  return `${code} — ${name}`.trim()
 }
 
 async function fetchPrograms(query?: string) {
