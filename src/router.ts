@@ -10,6 +10,8 @@ import FileUpload from './views/FileUpload.vue'
 import Home from './views/Home.vue'
 import Login from './views/Login.vue'
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
+import ProgramsManager from './components/ProgramsManager.vue'
+import OnBoard from './views/OnBoard.vue'
 
 const routes = [
   // Public / guest routes
@@ -21,6 +23,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   // Protected routes
+  {
+    path: '/onboard',
+    component: OnBoard,
+    name: 'onboard',
+    meta: { title: 'Onboard', requiresAuth: true },
+  },
   {
     path: '/classes',
     component: ClassManager,

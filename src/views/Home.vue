@@ -96,6 +96,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
+import chalk from 'chalk'
 
 // Basic school info (placeholder endpoint; adjust if different)
 const schoolName = ref<string>('')
@@ -106,10 +107,11 @@ async function fetchSchool() {
   loadingSchool.value = true
   try {
     // Adjust endpoint to your backend; using placeholder
-    const { data } = await api.get('/school')
+    const { data } = await api.get('/cte-school-district/1') //change later
     // Accept flexible shapes
     schoolName.value = data?.name || data?.school_name || 'Your School'
     schoolMotto.value = data?.motto || ''
+    console.log(chalk.blue('Hello world!'))
   } catch {
     schoolName.value = 'Your School'
   } finally {

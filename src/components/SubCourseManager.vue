@@ -1,6 +1,6 @@
 <template>
   <v-container class="py-10">
-    <h1 class="text-h4 font-weight-bold mb-8">Create Classes</h1>
+    <h1 class="text-h4 font-weight-bold mb-8">Create Sub-Classes</h1>
 
     <v-alert type="info" variant="tonal" class="mb-6" density="comfortable">
       Select a program and enter a class alias. Add multiple classes to the pending list, then save
@@ -13,30 +13,6 @@
       <v-divider />
       <v-card-text>
         <v-row>
-          <v-col cols="12" md="3">
-            <v-autocomplete
-              v-model="selectedProgramId"
-              :items="programOptions"
-              :loading="loadingPrograms"
-              :item-title="programTitleFn"
-              item-value="id"
-              label="Program"
-              placeholder="Search program"
-              variant="outlined"
-              clearable
-              density="comfortable"
-              :search="programSearch"
-              @update:search="onProgramSearch"
-              :rules="[requiredIdRule]"
-            />
-            <div v-if="programError" class="error-msg mt-1">
-              <v-icon size="14" color="error" class="mr-1">mdi-alert-circle</v-icon
-              >{{ programError }}
-              <v-btn size="x-small" variant="text" color="primary" class="ml-1" @click="initialLoad"
-                >Retry</v-btn
-              >
-            </div>
-          </v-col>
           <v-col cols="12" md="3">
             <v-autocomplete
               v-model="selectedCourseId"
@@ -179,17 +155,8 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../api'
 
 /** Assumed backend endpoint (adjust if different) */
-const CREATE_CLASSES_ENDPOINT = '/courses'
+const CREATE_CLASSES_ENDPOINT = '/sub-courses'
 const COURSE_SEARCH_ENDPOINT = '/course-catalogs' // adjust to real endpoint
-
-interface SchoolProgramOption {
-  // program instance id (school-specific)
-  id: string | number
-  // underlying catalog id
-  programCatalogId: string | number
-  code: string
-  name: string
-}
 
 // Simplified single-add flow
 interface ExistingClass {
@@ -202,12 +169,7 @@ interface ExistingClass {
   created_at?: string
 }
 
-const programOptions = ref<SchoolProgramOption[]>([])
-const loadingPrograms = ref(false)
-const programError = ref('')
-const programSearch = ref('')
 // Form selections
-const selectedProgramId = ref<string | number | null>(null)
 const selectedCourseId = ref<string | number | null>(null)
 const selectedTeacherId = ref<string | number | null>(null)
 const alias = ref('')
@@ -250,16 +212,8 @@ const aliasRules = [
 // Treat 0 as valid
 const requiredIdRule = (v: any) => (v !== null && v !== undefined && v !== '') || 'Required'
 const canSave = computed(
-  () =>
-    selectedProgramId.value !== null &&
-    selectedCourseId.value !== null &&
-    selectedTeacherId.value !== null &&
-    !!alias.value.trim(),
+  () => selectedCourseId.value !== null && selectedTeacherId.value !== null && !!alias.value.trim(),
 )
-
-function programTitleFn(p: SchoolProgramOption) {
-  return `${p.code} — ${p.name}`
-}
 
 function courseTitleFn(c: CourseItem) {
   return `${c.course_code} — ${c.course_name}`
@@ -269,36 +223,7 @@ function teacherTitleFn(t: TeacherItem) {
   return `${t.name} — ${t.email}`
 }
 
-async function fetchPrograms(query?: string) {
-  loadingPrograms.value = true
-  programError.value = ''
-  try {
-    // Fetch only programs attached to this school
-    const base = '/programs'
-    const url = query && query.trim() ? `${base}?q=${encodeURIComponent(query.trim())}` : base
-    const { data } = await api.get(url)
-    // Expected shape from user example:
-    // [{ id, programCatalogId, program_catalog_id, program_catalog: { id, code, name }, ... }]
-    const raw: any[] = Array.isArray(data) ? data : data?.items || []
-    programOptions.value = raw.map((p) => ({
-      id: p.id, // program (school specific) id
-      programCatalogId: p.program_catalog_id || p.programCatalogId,
-      code: p.program_catalog?.code || p.code,
-      name: p.program_catalog?.name || p.name,
-    }))
-  } catch (e: any) {
-    programError.value = e?.message || 'Failed to load programs'
-  } finally {
-    loadingPrograms.value = false
-  }
-}
-
 let searchTimeout: any = null
-function onProgramSearch(q: string) {
-  programSearch.value = q
-  if (searchTimeout) clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => fetchPrograms(q), 350)
-}
 
 let courseSearchTimeout: any = null
 function onCourseSearch(q: string) {
@@ -362,10 +287,6 @@ async function fetchTeachers(query?: string) {
   }
 }
 
-function initialLoad() {
-  fetchPrograms()
-}
-
 function initialTeacherLoad() {
   fetchTeachers()
 }
@@ -375,13 +296,12 @@ async function addClass() {
   adding.value = true
   try {
     const payload = {
-      program_id: selectedProgramId.value,
       catalog_id: selectedCourseId.value,
       teacher_id: selectedTeacherId.value,
-      alias: alias.value.trim(),
+      name: alias.value.trim(),
       // school_id: 1, //Fix later
     }
-    await api.post('/courses', payload)
+    await api.post(CREATE_CLASSES_ENDPOINT, payload)
     snackbar.value = { show: true, message: 'Class saved', color: 'success' }
     resetForm()
     await fetchClasses()
@@ -393,7 +313,6 @@ async function addClass() {
 }
 
 function resetForm() {
-  selectedProgramId.value = null
   selectedCourseId.value = null
   selectedTeacherId.value = null
   alias.value = ''
@@ -402,51 +321,34 @@ function resetForm() {
 async function fetchClasses() {
   loadingClassesList.value = true
   try {
-    const { data } = await api.get(CREATE_CLASSES_ENDPOINT)
-    // Accept multiple shapes: array, { courses: [] }, { items: [] }
-    const raw: any[] = Array.isArray(data)
-      ? data
-      : Array.isArray((data as any)?.courses)
-        ? (data as any).courses
-        : Array.isArray((data as any)?.items)
-          ? (data as any).items
-          : []
-    classes.value = raw.map((c) => {
-      const userObj = Array.isArray(c.users) ? c.users[0] : c.users
-      return {
-        id: c.id,
-        program:
-          c.program?.program_catalog?.code && c.program?.program_catalog?.name
-            ? `${c.program.program_catalog.code} — ${c.program.program_catalog.name}`
-            : c.program_code_name || c.program?.name || '—',
-        course:
-          c.course_catalog?.course_code && c.course_catalog?.course_name
-            ? `${c.course_catalog.course_code} — ${c.course_catalog.course_name}`
-            : c.course_code_name || c.course_catalog?.course_name || '—',
-        teacher: userObj?.name || '—',
-        alias: c.alias || c.course_catalog?.course_name || 'Untitled',
-        school_year: c.school_year || c.schoolYear || '',
-        // created_at: c.created_at ? new Date(c.created_at).toLocaleDateString() : '',
-      }
-    })
-  } catch (e) {
-    snackbar.value = { show: true, message: 'Failed to load classes', color: 'error' }
+    const { data } = await api.get('/sub-courses')
+    // Map API data to ExistingClass[]
+    classes.value = (Array.isArray(data) ? data : data?.items || []).map((c: any) => ({
+      id: c.id,
+      course: c.course_catalog.course_name || '',
+      teacher: c.users.name || '',
+      alias: c.name || '',
+      school_year: c.school_year || '',
+      created_at: c.created_at || '',
+    }))
+    console.log(data)
+  } catch (e: any) {
+    console.log(e)
+    snackbar.value = { show: true, message: e?.message || 'Failed to load classes', color: 'error' }
   } finally {
     loadingClassesList.value = false
   }
 }
 
 const classHeaders = [
-  { title: 'Program', key: 'program', sortable: true },
   { title: 'Course', key: 'course', sortable: true },
-  { title: 'Teacher', key: 'teacher', sortable: true },
   { title: 'Alias', key: 'alias', sortable: true },
+  { title: 'Teacher', key: 'teacher', sortable: true },
   { title: 'School Year', key: 'school_year', sortable: true },
   // { title: 'Created', key: 'created_at', sortable: true },
 ]
 
 onMounted(() => {
-  initialLoad()
   initialCourseLoad()
   initialTeacherLoad()
   fetchClasses()

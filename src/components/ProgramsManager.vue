@@ -6,21 +6,32 @@
       <v-card-text>
         <v-row>
           <v-col cols="12" md="7" lg="6">
-            <search-multi-select
-              v-model="selectedPrograms"
-              :items="programOptions"
-              :loading="loadingPrograms"
+            <v-autocomplete
+              v-model="newProgramId"
+              :items="availablePrograms"
               :item-title="programTitleFn"
               item-value="id"
-              label="Add Programs"
+              :loading="loadingPrograms"
+              v-model:search="searchText"
+              label="Add Program"
               placeholder="Search programs"
-              hint="Select one or more programs"
-              chip-color="success"
-              chips
-              closable-chips
-              show-search-icon
-              @search="handleProgramSearch"
-            />
+              hide-details="auto"
+              clearable
+              variant="outlined"
+              density="comfortable"
+              @update:modelValue="onSelectProgram"
+              @update:search="handleProgramSearch"
+            >
+              <template #prepend-inner>
+                <v-icon size="18" color="primary">mdi-magnify</v-icon>
+              </template>
+              <template #no-data>
+                <div class="pa-4 text-medium-emphasis text-caption">
+                  <v-icon size="16" class="mr-1" color="warning">mdi-alert</v-icon>
+                  No results found
+                </div>
+              </template>
+            </v-autocomplete>
             <div v-if="programError" class="error-msg mt-2">
               <v-icon size="14" color="error" class="mr-1">mdi-alert-circle</v-icon>
               {{ programError }}
@@ -39,35 +50,44 @@
             density="comfortable"
             hide-default-footer
           >
+            <template #item.actions="{ item }">
+              <v-btn
+                size="small"
+                variant="text"
+                color="error"
+                prepend-icon="mdi-close"
+                @click="removeProgram(item)"
+              >
+                Remove
+              </v-btn>
+            </template>
             <template #item.originalApprovalDate="{ item }">
-              <v-text-field
+              <v-date-input
+                :key="`original-${item.id}`"
                 v-model="approvalData[item.id].originalApprovalDate"
-                type="date"
                 variant="outlined"
                 density="compact"
                 hide-details
                 class="date-field"
                 :rules="dateRules"
+                :name="`original-approval-date-${item.id}`"
+                :disabled="approvalData[item.id]?.isExisting"
                 required
               />
             </template>
             <template #item.approvedThrough="{ item }">
-              <v-text-field
+              <v-date-input
+                :key="`through-${item.id}`"
                 v-model="approvalData[item.id].approvedThrough"
-                type="date"
                 variant="outlined"
                 density="compact"
                 hide-details
                 class="date-field"
                 :rules="dateRules"
+                :name="`approved-through-date-${item.id}`"
+                :disabled="approvalData[item.id]?.isExisting"
                 required
               />
-            </template>
-            <template #item.actions="{ item }">
-              <v-btn color="primary" variant="text" size="small" @click="goToClasses(item)">
-                <v-icon start size="18">mdi-book-open-variant</v-icon>
-                Manage Classes
-              </v-btn>
             </template>
             <template #no-data>
               <div class="pa-6 text-medium-emphasis text-caption">No programs selected.</div>
@@ -97,7 +117,6 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
-import SearchMultiSelect from '@/components/SearchMultiSelect.vue'
 import api from '../api'
 
 interface ProgramCatalog {
@@ -112,6 +131,8 @@ const loadingPrograms = ref(false)
 const programError = ref('')
 const lastSearch = ref('')
 let searchTimeout: any = null
+const searchText = ref('')
+const newProgramId = ref<string | number | null>(null)
 const saving = ref(false)
 const snackbar = ref<{ show: boolean; message: string; color: string }>({
   show: false,
@@ -121,7 +142,10 @@ const snackbar = ref<{ show: boolean; message: string; color: string }>({
 const formRef = ref()
 
 const approvalData = ref<
-  Record<string | number, { originalApprovalDate: string; approvedThrough: string }>
+  Record<
+    string | number,
+    { originalApprovalDate: string | ''; approvedThrough: string | ''; isExisting?: boolean }
+  >
 >({})
 
 const programHeadersWithActions = [
@@ -142,7 +166,11 @@ const programRowsOrdered = ref<any[]>([])
 function buildRows() {
   for (const prog of programOptions.value) {
     if (selectedPrograms.value.includes(prog.id) && !approvalData.value[prog.id]) {
-      approvalData.value[prog.id] = { originalApprovalDate: '', approvedThrough: '' }
+      approvalData.value[prog.id] = {
+        originalApprovalDate: '',
+        approvedThrough: '',
+        isExisting: false,
+      }
     }
   }
   for (const key of Object.keys(approvalData.value)) {
@@ -155,18 +183,51 @@ function buildRows() {
   )
 }
 
+const availablePrograms = computed(() =>
+  programOptions.value.filter((p) => !selectedPrograms.value.includes(p.id)),
+)
+
+function onSelectProgram(val: string | number | null) {
+  if (val == null) return
+  if (!selectedPrograms.value.includes(val)) {
+    selectedPrograms.value.push(val)
+    // Ensure approval data initialized
+    if (!approvalData.value[val]) {
+      approvalData.value[val] = { originalApprovalDate: '', approvedThrough: '', isExisting: false }
+    }
+    buildRows()
+  }
+  // reset the select so you can add another
+  newProgramId.value = null
+}
+
+function removeProgram(item: ProgramCatalog) {
+  const idx = selectedPrograms.value.findIndex((id) => id === item.id)
+  if (idx !== -1) {
+    selectedPrograms.value.splice(idx, 1)
+    buildRows()
+  }
+}
+
 async function saveApprovalData() {
   saving.value = true
   try {
-    const payload = programRowsOrdered.value.map((row) => {
-      const approval = approvalData.value[row.id]
-      return {
-        program_catalog_id: row.id,
-        active: true,
-        original_approval_date: approval.originalApprovalDate || null,
-        approved_through: approval.approvedThrough || null,
-      }
-    })
+    // Only send NEWLY added programs (not ones loaded from API)
+    const payload = programRowsOrdered.value
+      .filter((row) => !approvalData.value[row.id]?.isExisting)
+      .map((row) => {
+        const approval = approvalData.value[row.id]
+        return {
+          program_catalog_id: row.id,
+          active: true,
+          original_approval_date: approval.originalApprovalDate || null,
+          approved_through: approval.approvedThrough || null,
+        }
+      })
+    if (!payload.length) {
+      snackbar.value = { show: true, message: 'No new programs to save', color: 'info' }
+      return
+    }
     await api.post('/programs/', payload)
     snackbar.value = { show: true, message: 'Approval data saved successfully!', color: 'success' }
   } catch (e: any) {
@@ -222,6 +283,7 @@ async function fetchExistingPrograms() {
         approvalData.value[prog.program_catalog_id] = {
           originalApprovalDate: prog.original_approval_date?.slice(0, 10) || '',
           approvedThrough: prog.approved_through?.slice(0, 10) || '',
+          isExisting: true,
         }
         if (
           !programOptions.value.some((p) => p.id === prog.program_catalog_id) &&
@@ -249,13 +311,16 @@ onMounted(() => {
   buildRows()
 })
 
-const dateRules = [(v: string) => !!v || 'Required']
-const allDatesValid = computed(() =>
-  programRowsOrdered.value.every((r) => {
+const dateRules = [(v: string | null) => !!v || 'Required']
+const allDatesValid = computed(() => {
+  // Only require dates for newly added programs
+  const newRows = programRowsOrdered.value.filter((r) => !approvalData.value[r.id]?.isExisting)
+  if (!newRows.length) return false
+  return newRows.every((r) => {
     const d = approvalData.value[r.id]
     return d && d.originalApprovalDate && d.approvedThrough
-  }),
-)
+  })
+})
 
 watch([selectedPrograms, programOptions], () => buildRows())
 </script>
