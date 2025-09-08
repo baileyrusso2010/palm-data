@@ -10,6 +10,10 @@
       <v-divider />
 
       <v-stepper-item title="Create Courses" :value="3" />
+
+      <v-divider />
+
+      <v-stepper-item title="Assign Sub-Classes" :value="4" />
     </v-stepper-header>
 
     <v-stepper-window>
@@ -24,10 +28,14 @@
       <v-stepper-window-item :value="3">
         <ClassManager />
       </v-stepper-window-item>
+
+      <v-stepper-window-item :value="4">
+        <AssignSubClasses :active="step === 4" />
+      </v-stepper-window-item>
     </v-stepper-window>
 
     <v-stepper-actions
-      :next-text="step === 3 ? 'Finish' : 'Next'"
+      :next-text="step === 4 ? 'Finish' : 'Next'"
       @click:prev="onPrev"
       @click:next="onNext"
     />
@@ -46,6 +54,7 @@ import { ref } from 'vue'
 import ProgramsManager from '@/components/ProgramsManager.vue'
 import ClassManager from '@/components/ClassManager.vue'
 import SubCourseManager from '@/components/SubCourseManager.vue'
+import AssignSubClasses from '@/components/AssignSubClasses.vue'
 
 const step = ref(1)
 
@@ -54,6 +63,6 @@ function onPrev() {
 }
 
 function onNext() {
-  if (step.value < 3) step.value += 1
+  if (step.value < 4) step.value += 1
 }
 </script>
