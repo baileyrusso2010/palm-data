@@ -86,9 +86,28 @@
       </v-row>
     </section>
 
-    <v-alert v-else-if="!loadingClasses" type="info" variant="tonal" density="comfortable">
-      No classes yet. Use Manage Classes to create your first class.
-    </v-alert>
+    <!-- Empty state when there are no classes -->
+    <div
+      v-else-if="!loadingClasses"
+      class="empty-state d-flex flex-column align-center justify-center text-center my-16"
+    >
+      <v-sheet class="pa-10 empty-sheet" color="surface" rounded="xl" elevation="0" border>
+        <v-icon size="56" color="primary" class="mb-3">mdi-school-outline</v-icon>
+        <h2 class="text-h5 font-weight-bold mb-2">No classes yet</h2>
+        <p class="text-body-2 text-medium-emphasis mb-6">
+          Set up your programs and create your first class to get started.
+        </p>
+        <v-btn
+          color="primary"
+          size="large"
+          rounded="lg"
+          prepend-icon="mdi-rocket-launch-outline"
+          :to="{ name: 'onboard' }"
+        >
+          Start onboarding
+        </v-btn>
+      </v-sheet>
+    </div>
   </v-container>
 </template>
 
@@ -234,6 +253,13 @@ onMounted(() => {
 }
 .gap-4 {
   gap: 1rem;
+}
+/* Empty state */
+.empty-state {
+  min-height: 50vh;
+}
+.empty-sheet {
+  max-width: 560px;
 }
 /* Portfolio style cards */
 .class-image-card {
