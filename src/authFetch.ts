@@ -5,6 +5,15 @@ import { fetchAuthSession } from 'aws-amplify/auth'
  * Uses the access token (recommended for API authorization) by default.
  */
 export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  // In development, don't require login/session. Perform a plain fetch.
+  if (import.meta.env.DEV) {
+    const headers = new Headers(init.headers || {})
+    if (!headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json')
+    }
+    return fetch(input, { ...init, headers })
+  }
+
   const session = await fetchAuthSession()
   const accessToken = session.tokens?.accessToken?.toString()
   if (!accessToken) {

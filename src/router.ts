@@ -1,17 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ClassView from './views/ClassView.vue'
-import WBLAdmin from './views/WBLAdmin.vue'
-import StudentProfile from './views/StudentProfile.vue'
-import Gradebook from './views/Gradebook.vue'
-import Assignments from './views/Assignments.vue'
-import Settings from './views/Settings.vue'
-import ClassManager from './components/ClassManager.vue'
+import type { RouteLocationNormalized } from 'vue-router'
 import FileUpload from './views/FileUpload.vue'
 import Home from './views/Home.vue'
 import Login from './views/Login.vue'
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
-import ProgramsManager from './components/ProgramsManager.vue'
-import OnBoard from './views/OnBoard.vue'
+import OnBoarding from './views/OnBoarding.vue'
+import ClassCreation from './views/ClassCreation.vue'
+import ClassView from './views/ClassView.vue'
 
 const routes = [
   // Public / guest routes
@@ -22,54 +17,20 @@ const routes = [
     name: 'home',
     meta: { requiresAuth: true },
   },
-  // Protected routes
+  {
+    path: '/class_view',
+    component: ClassView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/class_creation',
+    component: ClassCreation,
+    meta: { requiresAuth: true },
+  },
   {
     path: '/onboard',
-    component: OnBoard,
-    name: 'onboard',
-    meta: { title: 'Onboard', requiresAuth: true },
-  },
-  {
-    path: '/classes',
-    component: ClassManager,
-    name: 'classes',
-    meta: { title: 'Classes', requiresAuth: true },
-  },
-  {
-    path: '/classes/:id',
-    component: ClassView,
-    name: 'class-view',
-    meta: { title: 'Class Admin', requiresAuth: true },
-    props: true,
-  },
-  {
-    path: '/wbl-admin',
-    component: WBLAdmin,
-    name: 'wbladmin',
-    meta: { title: 'WBL Types', requiresAuth: true },
-  },
-  {
-    path: '/students/:id',
-    component: StudentProfile,
-    name: 'student-profile',
-    meta: { title: 'Student Profile', requiresAuth: true },
-    props: true,
-  },
-  {
-    path: '/gradebook',
-    component: Gradebook,
+    component: OnBoarding,
     meta: { requiresAuth: true },
-  },
-  {
-    path: '/assignments',
-    component: Assignments,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/settings',
-    component: Settings,
-    name: 'settings',
-    meta: { title: 'Settings', requiresAuth: true },
   },
   {
     path: '/upload',
@@ -85,9 +46,19 @@ const router = createRouter({
 })
 
 // Global auth / guest routing guard
-router.beforeEach(async (to) => {
-  const requiresAuth = to.meta.requiresAuth
-  const guestOnly = to.meta.guestOnly
+router.beforeEach(async (to: RouteLocationNormalized) => {
+  // In development mode, skip all auth checks and send users past Login
+  if (import.meta.env.DEV) {
+    // If the route is guestOnly (e.g., Login), send them to a sane default
+    if (to.meta.guestOnly) {
+      return { name: 'home' }
+    }
+    // Otherwise, allow navigation without checking auth
+    return true
+  }
+
+  const requiresAuth = Boolean(to.meta.requiresAuth)
+  const guestOnly = Boolean(to.meta.guestOnly)
 
   // Helper to check auth quickly
   async function isSignedIn() {
@@ -112,7 +83,7 @@ router.beforeEach(async (to) => {
 
   if (guestOnly && signedIn) {
     // If user came from a redirect param (unlikely), respect it, else go to a default
-    return { name: 'classes' }
+    return { name: 'home' }
   }
 })
 

@@ -7,6 +7,10 @@ const api = axios.create({
 // Interceptor to add Authorization header
 api.interceptors.request.use(
   async (config) => {
+    // In development, do not attempt to fetch a session/token
+    if (import.meta.env.DEV) {
+      return config
+    }
     try {
       const session = await fetchAuthSession()
       const accessToken = session.tokens?.accessToken?.toString()
