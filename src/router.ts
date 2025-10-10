@@ -7,6 +7,7 @@ import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
 import OnBoarding from './views/OnBoarding.vue'
 import ClassCreation from './views/ClassCreation.vue'
 import ClassView from './views/ClassView.vue'
+import StudentProfile from './views/StudentProfile.vue'
 
 const routes = [
   // Public / guest routes
@@ -20,6 +21,11 @@ const routes = [
   {
     path: '/class_view',
     component: ClassView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/profile',
+    component: StudentProfile,
     meta: { requiresAuth: true },
   },
   {

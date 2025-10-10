@@ -43,6 +43,7 @@
                 :class="{ 'on-hover': hovered === student.id }"
                 @mouseover="hovered = student.id"
                 @mouseleave="hovered = null"
+                @click="router.push({ path: '/profile', query: { student_id: student.id } })"
               >
                 <v-card-text class="pa-4">
                   <div class="d-flex align-center mb-2">
@@ -94,6 +95,9 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 type Sex = 'M' | 'F' | 'Other'
 interface Student {

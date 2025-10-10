@@ -44,7 +44,13 @@
 
           <!-- Grid of Classes -->
           <v-row class="cards-row mt-8">
-            <v-col v-for="n in 3" :key="n" cols="12" sm="6" md="3">
+            <v-col
+              v-for="cls in classesForSchool(s.id).value"
+              :key="cls.id"
+              cols="12"
+              sm="6"
+              md="3"
+            >
               <v-card
                 class="class-card pa-4 ma-2"
                 elevation="4"
@@ -54,16 +60,22 @@
                 hover
                 color="white"
                 link
+                @click="router.push({ path: '/class_view', query: { class_id: cls.id } })"
               >
                 <v-card-title class="text-h6 font-weight-bold primary--text">
-                  Welding 101
+                  {{ cls.alias || cls.course_catalog.title }}
                 </v-card-title>
                 <v-card-subtitle class="text-subtitle-2 text-grey-darken-1 mt-1">
-                  Mrs. Shay - Morning
+                  {{ cls.program_catalog.title }}
                 </v-card-subtitle>
                 <v-card-text class="mt-2">
-                  <v-chip color="success" variant="flat" size="small" class="font-weight-medium">
-                    Active
+                  <v-chip
+                    :color="isActive(cls) ? 'success' : 'grey'"
+                    variant="flat"
+                    size="small"
+                    class="font-weight-medium"
+                  >
+                    {{ isActive(cls) ? 'Active' : 'Inactive' }}
                   </v-chip>
                 </v-card-text>
               </v-card>
@@ -86,7 +98,10 @@
 
 <script lang="ts" setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../api'
+
+const router = useRouter()
 
 type School = {
   id: number
@@ -105,12 +120,57 @@ type District = {
   schools?: School[]
 }
 
+type CourseCatalog = {
+  id: number
+  course_code: string
+  title: string
+  description?: string | null
+}
+
+type ProgramCatalog = {
+  id: number
+  state_program_code: string
+  title: string
+  description?: string | null
+}
+
+type ClassInstance = {
+  id: number
+  cte_school_id: number
+  program_catalog_id: number
+  course_catalog_id: number
+  alias: string
+  instructorId?: number | null
+  start_date?: string
+  end_date?: string | null
+  school_year_id?: number | null
+  term_id?: number | null
+  course_catalog: CourseCatalog
+  program_catalog: ProgramCatalog
+}
+
 const loading = ref(false)
 const error = ref<string | null>(null)
 const district = ref<District | null>(null)
+const classes = ref<ClassInstance[]>([])
 
 // In the future this could come from a route param
 const districtId = 1
+
+async function fetchClassInstances() {
+  try {
+    const resp = await api.get(`/course-instances`)
+    const raw = resp?.data
+    const payload: any = raw?.data ?? raw
+    if (!Array.isArray(payload)) {
+      throw new Error('Unexpected response from server')
+    }
+    classes.value = payload as ClassInstance[]
+  } catch (e: any) {
+    console.error('Failed to fetch class instances:', e)
+    // Don't set error here, as it's secondary
+  }
+}
 
 async function fetchDistrict() {
   loading.value = true
@@ -170,7 +230,22 @@ const districtTitle = computed(
   () => (district.value as any)?.name || (district.value as any)?.district_name || 'District',
 )
 
-onMounted(fetchDistrict)
+const classesForSchool = (schoolId: number) =>
+  computed(() => classes.value.filter((c) => c.cte_school_id === schoolId))
+
+function isActive(cls: ClassInstance): boolean {
+  const now = new Date()
+  const start = cls.start_date ? new Date(cls.start_date) : null
+  const end = cls.end_date ? new Date(cls.end_date) : null
+  if (start && now < start) return false
+  if (end && now > end) return false
+  return true
+}
+
+onMounted(async () => {
+  await fetchDistrict()
+  await fetchClassInstances()
+})
 </script>
 
 <style scoped>

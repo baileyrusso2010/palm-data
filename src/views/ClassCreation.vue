@@ -21,9 +21,10 @@
                 v-model="selectedProgram"
                 :items="programs"
                 label="Select Program"
-                item-title="name"
+                item-title="title"
                 item-value="id"
-                :rules="[(v) => !!v || 'Program is required']"
+                return-object
+                :rules="[rules.programRequired]"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -34,8 +35,8 @@
                 <template #item="{ props, item }">
                   <v-list-item
                     v-bind="props"
-                    :title="item.raw.name"
-                    :subtitle="item.raw.category"
+                    :title="item.raw.title"
+                    :subtitle="item.raw.state_program_code || item.raw.category || ''"
                   />
                 </template>
                 <template #no-data>
@@ -50,7 +51,7 @@
                 label="Select Courses"
                 item-title="name"
                 item-value="id"
-                :rules="[(v) => !!v || 'Course is required']"
+                :rules="[rules.courseRequired]"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -63,7 +64,7 @@
                 v-model="timeSlot"
                 :items="timeSlots"
                 label="Session"
-                :rules="[(v) => !!v || 'Session is required']"
+                :rules="[rules.sessionRequired]"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -74,7 +75,7 @@
                 v-model="instructor"
                 :items="instructors"
                 label="Instructor"
-                :rules="[(v) => !!v || 'Instructor is required']"
+                :rules="[rules.instructorRequired]"
                 variant="outlined"
                 density="comfortable"
                 class="mb-4"
@@ -85,7 +86,7 @@
               <v-text-field
                 v-model="alias"
                 label="Class Alias"
-                :rules="[(v) => !!v || 'Alias is required']"
+                :rules="[rules.aliasRequired]"
                 variant="outlined"
                 density="comfortable"
                 placeholder="e.g., Welding 101"
@@ -121,12 +122,14 @@
       <v-col cols="12" md="6">
         <v-card class="pa-6" elevation="2" rounded="lg">
           <v-card-title class="text-h5 font-weight-medium"> Current Classes </v-card-title>
-          <v-card-text>
+          <v-card-text class="overflow-auto" style="max-height: 50vh">
             <v-list v-if="currentClasses.length > 0">
               <v-list-item v-for="classItem in currentClasses" :key="classItem.id" class="mb-2">
                 <v-list-item-content>
                   <v-list-item-title class="text-h6">{{ classItem.alias }}</v-list-item-title>
-                  <v-list-item-subtitle>Program: {{ classItem.program.name }}</v-list-item-subtitle>
+                  <v-list-item-subtitle
+                    >Program: {{ classItem.program.title }}</v-list-item-subtitle
+                  >
                   <v-list-item-subtitle
                     >Session: {{ classItem.session ?? '-' }}</v-list-item-subtitle
                   >
@@ -134,7 +137,7 @@
                     Courses: {{ truncate(classItem.courses.map((c) => c.name).join(', '), 100) }}
                   </v-list-item-subtitle>
                 </v-list-item-content>
-                <v-list-item-action>
+                <!-- <template #append>
                   <v-btn
                     color="error"
                     icon
@@ -143,7 +146,7 @@
                   >
                     <v-icon>mdi-delete</v-icon>
                   </v-btn>
-                </v-list-item-action>
+                </template> -->
               </v-list-item>
             </v-list>
             <v-alert v-else type="info" variant="outlined"> No classes created yet. </v-alert>
@@ -163,19 +166,25 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, reactive, computed } from 'vue'
+import { defineComponent, ref, reactive, computed, onMounted } from 'vue'
 import type { VForm } from 'vuetify/components'
+import api from '../api'
 
 interface Program {
   id: number
-  name: string
-  category: string
+  state_program_code: string
+  title: string
+  description?: string
+  // Optional fields in case backend includes categorization
+  category?: string | null
 }
 
 interface Course {
   id: number
   name: string
-  programId: number
+  course_code?: string
+  title?: string
+  description?: string | null
 }
 
 interface Class {
@@ -213,40 +222,180 @@ export default defineComponent({
       color: 'success',
     })
 
-    // Mock programs (from state list, as in AddProgram.vue)
-    const programs: Program[] = [
-      { id: 1, name: 'Welding Technology', category: 'Trades' },
-      { id: 2, name: 'Nursing Assistant', category: 'Healthcare' },
-      { id: 3, name: 'Cybersecurity', category: 'Information Technology' },
-    ]
+    // Typed validation rules for Vuetify inputs
+    const rules = {
+      programRequired: (v: unknown) => (!!v ? true : 'Program is required'),
+      courseRequired: (v: unknown) => (!!v ? true : 'Course is required'),
+      sessionRequired: (v: unknown) => (!!v ? true : 'Session is required'),
+      instructorRequired: (v: unknown) => (!!v ? true : 'Instructor is required'),
+      aliasRequired: (v: unknown) =>
+        typeof v === 'string' && v.trim() ? true : 'Alias is required',
+    }
 
-    // Mock courses tied to programs (replace with API call)
-    const allCourses: Course[] = [
-      { id: 1, name: 'Welding Basics', programId: 1 },
-      { id: 2, name: 'Advanced Welding', programId: 1 },
-      { id: 3, name: 'Patient Care Fundamentals', programId: 2 },
-      { id: 4, name: 'Medical Terminology', programId: 2 },
-      { id: 5, name: 'Network Security', programId: 3 },
-      { id: 6, name: 'Ethical Hacking', programId: 3 },
-    ]
+    // Programs from API (/cte-districts/:id/programs/current)
+    const programs = ref<Program[]>([])
 
-    // Mock current classes (replace with API call)
-    const currentClasses = ref<Class[]>([
-      {
-        id: 1,
-        alias: 'Welding 101',
-        program: { id: 1, name: 'Welding Technology', category: 'Trades' },
-        courses: [
-          { id: 1, name: 'Welding Basics', programId: 1 },
-          { id: 2, name: 'Advanced Welding', programId: 1 },
-        ],
-      },
-    ])
+    // Courses from API (/course-catalogs)
+    const allCourses = ref<Course[]>([])
+
+    // District context (replace with dynamic source as needed)
+    const districtId = 1
+
+    async function fetchSchools() {
+      loadingPrograms.value = true
+
+      try {
+        const resp = await api.get('/cte-districts/1/schools')
+      } catch (error) {
+        console.error('Failed to fetch schools:', error)
+        snackbar.show = true
+        snackbar.message = 'Unable to load school information.'
+        snackbar.color = 'error'
+      } finally {
+        loadingPrograms.value = false
+      }
+    }
+
+    async function fetchCurrentPrograms() {
+      try {
+        const resp = await api.get(`/cte-district-programs`)
+        const list = Array.isArray(resp.data) ? resp.data : resp.data?.items || []
+        // Filter by district and active if present
+        const filtered = list.filter(
+          (dp: any) =>
+            (dp?.cte_district_id == null || Number(dp.cte_district_id) === districtId) &&
+            (dp?.active == null || dp.active === true),
+        )
+        // Map to Program and de-duplicate by id
+        const byId = new Map<number, Program>()
+        for (const dp of filtered) {
+          const cat = dp?.program_catalog || dp?.program || dp?.catalog || {}
+          const programId = Number(dp?.program_id ?? cat?.id)
+          const prog: Program = {
+            id: programId,
+            state_program_code: cat?.state_program_code ?? '',
+            title: cat?.title ?? '',
+            description: cat?.description ?? undefined,
+            category: null,
+          }
+          if (!byId.has(prog.id)) byId.set(prog.id, prog)
+        }
+        programs.value = Array.from(byId.values())
+      } catch (err) {
+        console.error('Failed to load current programs', err)
+        snackbar.show = true
+        snackbar.message = 'Unable to load current programs.'
+        snackbar.color = 'error'
+      }
+    }
+
+    async function fetchCourseCatalogs() {
+      try {
+        const resp = await api.get('/course-catalogs')
+        const items = Array.isArray(resp.data) ? resp.data : resp.data?.items
+        allCourses.value = (items || []).map((c: any) => ({
+          id: Number(c.id),
+          name: c.title
+            ? `${c.course_code ?? ''}${c.course_code ? ' - ' : ''}${c.title}`
+            : (c.course_code ?? ''),
+          course_code: c.course_code,
+          title: c.title,
+          description: c.description ?? null,
+        }))
+      } catch (err) {
+        console.error('Failed to load courses', err)
+        snackbar.show = true
+        snackbar.message = 'Unable to load courses.'
+        snackbar.color = 'error'
+      }
+    }
+
+    onMounted(async () => {
+      await Promise.all([fetchCurrentPrograms(), fetchCourseCatalogs(), fetchCurrentClasses()])
+    })
+
+    const currentClasses = ref<Class[]>([])
+
+    function normalizeToProgram(src: any): Program {
+      return {
+        id: Number(src?.id ?? src?.program_id ?? 0),
+        state_program_code: src?.state_program_code ?? src?.code ?? '',
+        title: src?.title ?? src?.name ?? '',
+        description: src?.description ?? undefined,
+        category: src?.category ?? null,
+      }
+    }
+
+    function normalizeToCourse(c: any): Course {
+      const title = c?.title ?? c?.name ?? ''
+      const course_code = c?.course_code
+      return {
+        id: Number(c?.id ?? c?.course_id ?? 0),
+        name: title
+          ? `${course_code ?? ''}${course_code ? ' - ' : ''}${title}`
+          : (course_code ?? ''),
+        course_code,
+        title,
+        description: c?.description ?? null,
+      }
+    }
+
+    function normalizeToClass(input: any): Class | null {
+      if (!input) return null
+      const id = Number(input.id)
+      const alias = input.alias ?? input.name ?? input.title ?? `Class #${id || ''}`
+      const programSrc = input.program_catalog || input.program || input.programCatalog
+      const program: Program = normalizeToProgram(programSrc ?? { id: input.program_id })
+      const rawCourses = input.courses || input.class_courses || input.course_catalogs
+      let courses: Course[] = []
+      if (Array.isArray(rawCourses)) {
+        courses = rawCourses.map((rc: any) => {
+          const cat = rc?.course_catalog || rc?.catalog || rc
+          return normalizeToCourse(cat)
+        })
+      } else if (input.course_catalog) {
+        courses = [normalizeToCourse(input.course_catalog)]
+      }
+      const session = input.session ?? input.time_slot ?? input.term ?? undefined
+      return { id, alias, program, courses, session }
+    }
+
+    async function fetchCurrentClasses() {
+      try {
+        // Primary endpoint: course-instances
+        let data: any[] | undefined
+        const resp = await api.get('/course-instances')
+        const payload = resp.data
+        data = Array.isArray(payload) ? payload : payload?.items || payload?.classes
+        // Fallbacks if needed
+        if (!data || data.length === 0) {
+          try {
+            const dResp = await api.get(`/cte-districts/${districtId}/classes`)
+            const dPayload = dResp.data
+            data = Array.isArray(dPayload) ? dPayload : dPayload?.items || dPayload?.classes
+          } catch {}
+        }
+        if (!data || data.length === 0) {
+          try {
+            const cResp = await api.get('/classes')
+            const cPayload = cResp.data
+            data = Array.isArray(cPayload) ? cPayload : cPayload?.items || cPayload?.classes
+          } catch {}
+        }
+        currentClasses.value = (data || []).map(normalizeToClass).filter(Boolean) as Class[]
+      } catch (err) {
+        console.error('Failed to load current classes', err)
+        snackbar.show = true
+        snackbar.message = 'Unable to load current classes.'
+        snackbar.color = 'error'
+      }
+    }
 
     // Filter courses based on selected program
     const availableCourses = computed<Course[]>(() => {
       if (!selectedProgram.value) return []
-      return allCourses.filter((course) => course.programId === selectedProgram.value!.id)
+      // Without program-course mapping from the API, present all courses for now
+      return allCourses.value
     })
 
     // Load courses when program changes
@@ -279,17 +428,16 @@ export default defineComponent({
       loading.value = true
       try {
         // Simulate API call to add class
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // Mock delay
         if (selectedProgram.value) {
           // Check for duplicate class by program
-          const existingClass = currentClasses.value.find(
-            (c) => c.program.id === selectedProgram.value!.id,
-          )
-          if (existingClass) {
-            throw new Error('A class for this program already exists.')
-          }
+          // const existingClass = currentClasses.value.find(
+          //   (c) => c.program.id === selectedProgram.value!.id,
+          // )
+          // if (existingClass) {
+          //   throw new Error('A class for this program already exists.')
+          // }
 
-          const picked = allCourses.find((c) => c.id === selectedCourse.value)
+          const picked = allCourses.value.find((c) => c.id === selectedCourse.value)
           if (!picked) {
             throw new Error('Selected course not found.')
           }
@@ -300,7 +448,15 @@ export default defineComponent({
             courses: [picked],
             session: timeSlot.value,
           }
-          currentClasses.value.push(newClass)
+
+          await api.post('/course-instances', {
+            cte_school_id: 1, // Replace with actual school ID
+            program_catalog_id: newClass.program.id,
+            course_catalog_id: selectedCourse.value,
+            alias: newClass.alias,
+          })
+
+          await fetchCurrentCourseInstances()
           snackbar.show = true
           snackbar.message = `Class ${alias.value} added successfully!`
           snackbar.color = 'success'
@@ -314,6 +470,22 @@ export default defineComponent({
       } catch (error: any) {
         snackbar.show = true
         snackbar.message = error.message || 'Failed to add class. Please try again.'
+        snackbar.color = 'error'
+      } finally {
+        loading.value = false
+      }
+    }
+
+    async function fetchCurrentCourseInstances() {
+      loading.value = true
+      try {
+        const resp = await api.get('/course-instances') //put schoolID later as filter
+        const items = Array.isArray(resp.data) ? resp.data : resp.data?.items || []
+        currentClasses.value = (items || []).map(normalizeToClass).filter(Boolean) as Class[]
+      } catch (error) {
+        console.error('Failed to fetch current classes:', error)
+        snackbar.show = true
+        snackbar.message = 'Unable to load current classes.'
         snackbar.color = 'error'
       } finally {
         loading.value = false
@@ -359,6 +531,7 @@ export default defineComponent({
       loadCourses,
       addClass,
       removeClass,
+      rules,
     }
   },
 })

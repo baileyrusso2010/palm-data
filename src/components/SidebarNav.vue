@@ -106,7 +106,8 @@ const items = computed<NavItem[]>(() => [
     iconComp: PhHouseLine, // Using PhExam per request
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
-  { to: '/onboard', title: 'Onboard', iconComp: PhGear },
+  { to: '/onboard', title: 'Add Programs', iconComp: PhGear },
+  { to: '/class_creation', title: 'Add Class', iconComp: PhGear },
 ])
 
 function isActive(to: string) {
