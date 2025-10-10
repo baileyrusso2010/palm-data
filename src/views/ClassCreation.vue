@@ -242,7 +242,7 @@ export default defineComponent({
     const districtId = 1
 
     async function fetchSchools() {
-      loadingPrograms.value = true
+      loading.value = true
 
       try {
         const resp = await api.get('/cte-districts/1/schools')
@@ -252,7 +252,7 @@ export default defineComponent({
         snackbar.message = 'Unable to load school information.'
         snackbar.color = 'error'
       } finally {
-        loadingPrograms.value = false
+        loading.value = false
       }
     }
 
