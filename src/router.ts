@@ -8,6 +8,8 @@ import OnBoarding from './views/OnBoarding.vue'
 import ClassCreation from './views/ClassCreation.vue'
 import ClassView from './views/ClassView.vue'
 import StudentProfile from './views/StudentProfile.vue'
+import PDFView from './views/PDFView.vue'
+import ProgramData from './views/ProgramData.vue'
 
 const routes = [
   // Public / guest routes
@@ -16,6 +18,16 @@ const routes = [
     path: '/home',
     component: Home,
     name: 'home',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/pdf_view',
+    component: PDFView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/program_data',
+    component: ProgramData,
     meta: { requiresAuth: true },
   },
   {
