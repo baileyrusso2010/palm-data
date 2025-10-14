@@ -130,7 +130,7 @@
         color="white"
       >
         <div class="text-h6 font-weight-bold mb-2">Student Population Based on Registration</div>
-        <div class="text-caption mb-3">(See Actual Graduation Data Below)</div>
+        <div class="text-caption mb-3"></div>
         <v-table density="compact" class="student-table">
           <thead>
             <tr>
@@ -170,6 +170,280 @@
               <td>10.5</td>
               <td>15.3</td>
               <td>25.8</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card>
+    </v-col>
+  </v-row>
+
+  <v-row style="max-width: 1600px; margin: 0 auto">
+    <v-col cols="12" md="4" class="d-flex flex-column">
+      <v-card
+        class="pa-6 flex-grow-1 d-flex flex-column justify-center"
+        elevation="4"
+        rounded="lg"
+        color="white"
+      >
+        <div class="text-h6 font-weight-bold mb-2">504 Population</div>
+        <div class="text-caption mb-3"></div>
+        <v-table density="compact" class="student-table">
+          <thead>
+            <tr>
+              <th>School Year</th>
+              <th>Sr.</th>
+              <th>Jr.</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2024-2025</td>
+              <td>11</td>
+              <td>19</td>
+              <td>30</td>
+            </tr>
+            <tr>
+              <td>2023-2024</td>
+              <td>12</td>
+              <td>15</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>2022-2023</td>
+              <td>11</td>
+              <td>16</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>2021-2022</td>
+              <td>8</td>
+              <td>11</td>
+              <td>19</td>
+            </tr>
+            <tr class="font-weight-bold">
+              <td>4 Yr Avg.</td>
+              <td>10.5</td>
+              <td>15.3</td>
+              <td>25.8</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card>
+    </v-col>
+    <v-col cols="12" md="4" class="d-flex flex-column">
+      <v-card
+        class="pa-6 flex-grow-1 d-flex flex-column justify-center"
+        elevation="4"
+        rounded="lg"
+        color="white"
+      >
+        <div class="text-h6 font-weight-bold mb-2">Non-Traditional Students</div>
+        <div class="text-caption mb-3"></div>
+        <v-table density="compact" class="student-table">
+          <thead>
+            <tr>
+              <th>School Year</th>
+              <th>Sr.</th>
+              <th>Jr.</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2024-2025</td>
+              <td>11</td>
+              <td>19</td>
+              <td>30</td>
+            </tr>
+            <tr>
+              <td>2023-2024</td>
+              <td>12</td>
+              <td>15</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>2022-2023</td>
+              <td>11</td>
+              <td>16</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>2021-2022</td>
+              <td>8</td>
+              <td>11</td>
+              <td>19</td>
+            </tr>
+            <tr class="font-weight-bold">
+              <td>4 Yr Avg.</td>
+              <td>10.5</td>
+              <td>15.3</td>
+              <td>25.8</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card>
+    </v-col>
+    <v-col cols="12" md="4" class="d-flex flex-column">
+      <v-card
+        class="pa-6 flex-grow-1 d-flex flex-column justify-center"
+        elevation="4"
+        rounded="lg"
+        color="white"
+      >
+        <div class="text-h6 font-weight-bold mb-2">IEP Population</div>
+        <div class="text-caption mb-3"></div>
+        <v-table density="compact" class="student-table">
+          <thead>
+            <tr>
+              <th>School Year</th>
+              <th>Sr.</th>
+              <th>Jr.</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2024-2025</td>
+              <td>11</td>
+              <td>19</td>
+              <td>30</td>
+            </tr>
+            <tr>
+              <td>2023-2024</td>
+              <td>12</td>
+              <td>15</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>2022-2023</td>
+              <td>11</td>
+              <td>16</td>
+              <td>27</td>
+            </tr>
+            <tr>
+              <td>2021-2022</td>
+              <td>8</td>
+              <td>11</td>
+              <td>19</td>
+            </tr>
+            <tr class="font-weight-bold">
+              <td>4 Yr Avg.</td>
+              <td>10.5</td>
+              <td>15.3</td>
+              <td>25.8</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card>
+    </v-col>
+  </v-row>
+
+  <h1>Work Based Learning</h1>
+
+  <v-row style="max-width: 1600px; margin: 0 auto">
+    <v-col cols="12" md="4" class="d-flex flex-column">
+      <v-card
+        class="pa-6 flex-grow-1 d-flex flex-column justify-center"
+        elevation="4"
+        rounded="lg"
+        color="white"
+      >
+        <div class="text-h6 font-weight-bold mb-2">WBL Achieving 54 Hours</div>
+        <div class="text-caption mb-3"></div>
+        <v-table density="compact" class="student-table">
+          <thead>
+            <tr>
+              <th>School Year</th>
+              <th>Total</th>
+              <th>%</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2024-2025</td>
+              <td>-</td>
+              <td>-%</td>
+            </tr>
+            <tr>
+              <td>2023-2024</td>
+              <td>12</td>
+              <td>100%</td>
+            </tr>
+            <tr>
+              <td>2022-2023</td>
+              <td>11</td>
+              <td>100%</td>
+            </tr>
+            <tr>
+              <td>2021-2022</td>
+              <td>11</td>
+              <td>100%</td>
+            </tr>
+            <tr class="font-weight-bold">
+              <td>3 Yr Avg.</td>
+              <td>10.5</td>
+              <td>100%</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card>
+    </v-col>
+
+    <v-col cols="12" md="8" class="d-flex flex-column">
+      <v-card
+        class="pa-6 flex-grow-1 d-flex flex-column justify-center"
+        elevation="4"
+        rounded="lg"
+        color="white"
+      >
+        <div class="text-h6 font-weight-bold mb-2">WBL Activities</div>
+        <div class="text-caption mb-3"></div>
+        <v-table density="compact" class="student-table">
+          <thead>
+            <tr>
+              <th>School Year</th>
+              <th>Grad Students</th>
+              <th>Paid Co-Op</th>
+              <th>School Based Enterprise</th>
+              <th>Unpaid Internships</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2024-2025</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td>2023-2024</td>
+              <td>12</td>
+              <td>0</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+            <tr>
+              <td>2022-2023</td>
+              <td>12</td>
+              <td>10</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+            <tr>
+              <td>2021-2022</td>
+              <td>1</td>
+              <td>6</td>
+              <td>0</td>
+              <td>0</td>
+            </tr>
+            <tr class="font-weight-bold">
+              <td>3 Yr Avg.</td>
+              <td>10.5</td>
+              <td>100%</td>
+              <td>0</td>
+              <td>0</td>
             </tr>
           </tbody>
         </v-table>
