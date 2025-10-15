@@ -3,16 +3,26 @@
   <v-row class="mb-4" style="max-width: 1000px; margin: 0 auto">
     <v-col cols="12" sm="6">
       <v-select
-        label="Select"
-        :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
-        variant="outlined"
+        :items="programItems"
+        v-model="selectedProgram"
+        item-title="label"
+        item-value="value"
+        label="Select Program"
+        @update:modelValue="onProgramSelected"
       ></v-select>
     </v-col>
     <v-col cols="12" sm="6">
       <v-select
-        label="Select"
-        :items="['California', 'Colorado', 'Florida', 'Georgia', 'Texas', 'Wyoming']"
-        variant="outlined"
+        :items="instructorItems"
+        v-model="selectedInstructor"
+        item-title="label"
+        item-value="value"
+        label="Select Instructor"
+        :disabled="instructorItems.length === 0"
+        :placeholder="
+          instructorItems.length === 0 ? 'No instructors available' : 'Select Instructor'
+        "
+        @update:modelValue="onInstructorSelected"
       ></v-select>
     </v-col>
   </v-row>
@@ -452,7 +462,9 @@
   </v-row>
 </template>
 
-<script setup lang="ts">
+<script setup>
+// Use shared API client and typed interfaces for program data
+import api from '../api'
 import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -463,39 +475,42 @@ import {
   CategoryScale,
   LinearScale,
 } from 'chart.js'
+import { ref, computed, onMounted } from 'vue'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
-// Define the Program type with all the required attributes
-type Program = {
-  cipProgramName: string
-  approvedCipCode: string
-  cteProgram: string
-  sedProgramNumber: string
-  teacher: string
-  scedCourseCode: string
-  school: string
-  approvedThrough: string
-  teacherSupport: string
-  originalApprovalDate: string
-}
+// Instructor list for the select
+const instructors = ref([])
+const loadingClasses = ref(false)
+const selectedInstructor = ref(null)
 
-// Sample program data - in a real app, this would come from an API
-const program: Program = {
-  cipProgramName: 'Welding Technology/Welder',
-  approvedCipCode: '48.0508',
-  cteProgram: 'Welding',
-  sedProgramNumber: '00210-N',
-  teacher: 'Bailey Russo',
-  scedCourseCode: '13207',
-  school: 'Niagra Boces',
-  approvedThrough: '6/30/2029',
-  teacherSupport: 'Aide',
-  originalApprovalDate: '2002-2003',
-}
+// Items for v-select
+const instructorItems = computed(() => instructors.value)
 
-// Chart data and options for Bar chart
-import { ref } from 'vue'
+// Class data storage
+const classData = ref([])
+
+// Program list for the select
+const programs = ref([])
+const loadingPrograms = ref(false)
+const selectedProgram = ref(null)
+
+// Items for v-select
+const programItems = computed(() => programs.value)
+
+// Initialize with empty/defaults; will be populated from API
+const program = ref({
+  cipProgramName: '',
+  approvedCipCode: '',
+  cteProgram: '',
+  sedProgramNumber: '',
+  teacher: '',
+  scedCourseCode: '',
+  school: '',
+  approvedThrough: '',
+  teacherSupport: '',
+  originalApprovalDate: '',
+})
 
 const chartData = ref({
   labels: ['2019', '2020', '2021', '2022', '2023'],
@@ -513,7 +528,7 @@ const chartOptions = ref({
   plugins: {
     legend: {
       display: true,
-      position: 'top' as const,
+      position: 'top',
     },
     title: {
       display: true,
@@ -521,6 +536,94 @@ const chartOptions = ref({
     },
   },
 })
+
+async function fetchProgramData() {
+  loadingPrograms.value = true
+  console.log('Fetching program data...')
+  try {
+    const response = await api.get('/cte-district-programs')
+
+    for (const program of response.data) {
+      if (!program.program_catalog) continue
+      programs.value.push({
+        label: program.program_catalog.title,
+        value: program.id,
+        raw: program,
+      })
+    }
+
+    console.log(programItems.value)
+    // Auto-select first program
+    if (programs.value.length > 0) {
+      selectedProgram.value = programs.value[0].value
+      onProgramSelected(programs.value[0])
+    }
+  } catch (error) {
+    console.error('Error fetching programs:', error)
+  } finally {
+    loadingPrograms.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProgramData()
+})
+
+function onInstructorSelected(opt) {
+  if (!opt) return
+  program.value.teacher = `${opt.raw.first_name} ${opt.raw.last_name}`
+}
+
+function onProgramSelected(opt) {
+  if (!opt) return
+  let programObj = opt
+  // If opt is a value (id), find the full object
+  if (typeof opt === 'string' || typeof opt === 'number') {
+    programObj = programs.value.find((p) => p.value === opt)
+  }
+  if (!programObj || !programObj.raw || !programObj.raw.program_catalog) {
+    console.error('Invalid program selection:', opt)
+    return
+  }
+  program.value = { ...program.value, ...programObj.raw.program_catalog }
+  fetchClassData(programObj.raw.id)
+}
+
+async function fetchClassData(programCatalogId) {
+  loadingClasses.value = true
+  try {
+    const response = await api.get(
+      `/course-instances?programCatalogId=${programCatalogId}&schoolYearId=1`,
+    )
+    console.log('Program Catalog ID:', programCatalogId)
+    // Deduplicate instructors by id
+    const seen = new Set()
+    instructors.value = response.data
+      .map((inst) => {
+        if (!inst.instructor) return null
+        return {
+          label: `${inst.instructor.first_name} ${inst.instructor.last_name}`,
+          value: inst.instructor.id,
+          raw: inst.instructor,
+        }
+      })
+      .filter(Boolean)
+      .filter((instructor) => {
+        if (seen.has(instructor.value)) return false
+        seen.add(instructor.value)
+        return true
+      })
+    // Auto-select first instructor
+    if (instructors.value.length > 0) {
+      selectedInstructor.value = instructors.value[0].value
+      onInstructorSelected(instructors.value[0])
+    }
+  } catch (error) {
+    console.error('Error fetching class data:', error)
+  } finally {
+    loadingClasses.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -581,9 +684,6 @@ const chartOptions = ref({
   color: #222;
   word-break: break-word;
   max-width: 200px;
-  display: inline-block;
-}
-.v-card {
   box-shadow: 0 4px 24px 0 rgba(60, 60, 100, 0.1);
   border-radius: 18px;
 }
