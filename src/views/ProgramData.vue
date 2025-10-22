@@ -151,35 +151,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>2024-2025</td>
-              <td>11</td>
-              <td>19</td>
-              <td>30</td>
-            </tr>
-            <tr>
-              <td>2023-2024</td>
-              <td>12</td>
-              <td>15</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2022-2023</td>
-              <td>11</td>
-              <td>16</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2021-2022</td>
-              <td>8</td>
-              <td>11</td>
-              <td>19</td>
-            </tr>
-            <tr class="font-weight-bold">
-              <td>4 Yr Avg.</td>
-              <td>10.5</td>
-              <td>15.3</td>
-              <td>25.8</td>
+            <tr v-for="row in studentPopulationData" :key="row.year">
+              <td>{{ row.year }}</td>
+              <td>{{ row.sr }}</td>
+              <td>{{ row.jr }}</td>
+              <td>{{ row.total }}</td>
             </tr>
           </tbody>
         </v-table>
@@ -207,35 +183,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>2024-2025</td>
-              <td>11</td>
-              <td>19</td>
-              <td>30</td>
-            </tr>
-            <tr>
-              <td>2023-2024</td>
-              <td>12</td>
-              <td>15</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2022-2023</td>
-              <td>11</td>
-              <td>16</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2021-2022</td>
-              <td>8</td>
-              <td>11</td>
-              <td>19</td>
-            </tr>
-            <tr class="font-weight-bold">
-              <td>4 Yr Avg.</td>
-              <td>10.5</td>
-              <td>15.3</td>
-              <td>25.8</td>
+            <tr v-for="row in population504Data" :key="row.year">
+              <td>{{ row.year }}</td>
+              <td>{{ row.sr }}</td>
+              <td>{{ row.jr }}</td>
+              <td>{{ row.total }}</td>
             </tr>
           </tbody>
         </v-table>
@@ -313,35 +265,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>2024-2025</td>
-              <td>11</td>
-              <td>19</td>
-              <td>30</td>
-            </tr>
-            <tr>
-              <td>2023-2024</td>
-              <td>12</td>
-              <td>15</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2022-2023</td>
-              <td>11</td>
-              <td>16</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2021-2022</td>
-              <td>8</td>
-              <td>11</td>
-              <td>19</td>
-            </tr>
-            <tr class="font-weight-bold">
-              <td>4 Yr Avg.</td>
-              <td>10.5</td>
-              <td>15.3</td>
-              <td>25.8</td>
+            <tr v-for="row in populationIEPData" :key="row.year">
+              <td>{{ row.year }}</td>
+              <td>{{ row.sr }}</td>
+              <td>{{ row.jr }}</td>
+              <td>{{ row.total }}</td>
             </tr>
           </tbody>
         </v-table>
@@ -488,7 +416,7 @@ const selectedInstructor = ref(null)
 const instructorItems = computed(() => instructors.value)
 
 // Class data storage
-const classData = ref([])
+const studentStats = ref({})
 
 // Program list for the select
 const programs = ref([])
@@ -512,16 +440,16 @@ const program = ref({
   originalApprovalDate: '',
 })
 
-const chartData = ref({
-  labels: ['2019', '2020', '2021', '2022', '2023'],
-  datasets: [
-    {
-      label: 'Enrollment',
-      backgroundColor: '#3949ab',
-      data: [30, 45, 40, 50, 60],
-    },
-  ],
-})
+// const chartData = ref({
+//   labels: ['2019', '2020', '2021', '2022', '2023'],
+//   datasets: [
+//     {
+//       label: 'Enrollment',
+//       backgroundColor: '#3949ab',
+//       data: [30, 45, 40, 50, 60],
+//     },
+//   ],
+// })
 
 const chartOptions = ref({
   responsive: true,
@@ -536,6 +464,17 @@ const chartOptions = ref({
     },
   },
 })
+
+const chartData = computed(() => ({
+  labels: studentPopulationData.value.map((row) => row.year),
+  datasets: [
+    {
+      label: 'Enrollment',
+      backgroundColor: '#4db',
+      data: studentPopulationData.value.map((row) => row.total),
+    },
+  ],
+}))
 
 async function fetchProgramData() {
   loadingPrograms.value = true
@@ -567,6 +506,111 @@ async function fetchProgramData() {
 
 onMounted(() => {
   fetchProgramData()
+  getProgramData()
+})
+
+async function getProgramData(id = 2484) {
+  try {
+    const response = await api.get('http://localhost:3000/api/course-instances/2484/stats')
+    studentStats.value = response.data
+    console.log('Fetched Students Stats: ', studentStats.value)
+
+    console.log(response)
+  } catch (error) {
+    console.error('Error fetching programs:', error)
+  }
+}
+
+const populationIEPData = computed(() => {
+  const years = ['2023', '2024', '2025', '2026']
+  const data = years.map((year) => {
+    const yearData = studentStats.value.byYear?.[year] || {}
+    const jr = Object.values(yearData.byGrade || {}).reduce(
+      (sum, grade) => sum + (grade.flags?.IEP || 0),
+      0,
+    ) // Assuming flags are per grade
+    const sr = Object.values(yearData.byGrade || {}).reduce(
+      (sum, grade) => sum + (grade.flags?.IEP || 0),
+      0,
+    ) // Adjust if flags are not per grade
+    return {
+      year: `${year}-${parseInt(year) + 1}`,
+      jr,
+      sr,
+      total: jr + sr,
+    }
+  })
+  // Similar average calculation as above
+  const avgJr = data.reduce((sum, row) => sum + row.jr, 0) / data.length
+  const avgSr = data.reduce((sum, row) => sum + row.sr, 0) / data.length
+  const avgTotal = data.reduce((sum, row) => sum + row.total, 0) / data.length
+  data.push({
+    year: '4 Yr Avg.',
+    jr: avgJr.toFixed(1),
+    sr: avgSr.toFixed(1),
+    total: avgTotal.toFixed(1),
+  })
+  return data
+})
+
+const population504Data = computed(() => {
+  const years = ['2023', '2024', '2025', '2026']
+  const data = years.map((year) => {
+    const yearData = studentStats.value.byYear?.[year] || {}
+    const jr = Object.values(yearData.byGrade || {}).reduce(
+      (sum, grade) => sum + (grade.flags?.['504'] || 0),
+      0,
+    ) // Assuming flags are per grade
+    const sr = Object.values(yearData.byGrade || {}).reduce(
+      (sum, grade) => sum + (grade.flags?.['504'] || 0),
+      0,
+    ) // Adjust if flags are not per grade
+    return {
+      year: `${year}-${parseInt(year) + 1}`,
+      jr,
+      sr,
+      total: jr + sr,
+    }
+  })
+  // Similar average calculation as above
+  const avgJr = data.reduce((sum, row) => sum + row.jr, 0) / data.length
+  const avgSr = data.reduce((sum, row) => sum + row.sr, 0) / data.length
+  const avgTotal = data.reduce((sum, row) => sum + row.total, 0) / data.length
+  data.push({
+    year: '4 Yr Avg.',
+    jr: avgJr.toFixed(1),
+    sr: avgSr.toFixed(1),
+    total: avgTotal.toFixed(1),
+  })
+  return data
+})
+
+const studentPopulationData = computed(() => {
+  const years = ['2023', '2024', '2025', '2026']
+
+  const data = years.map((year) => {
+    const yearData = studentStats.value.byYear?.[year] || {}
+    const jr = yearData.byGrade?.['11']?.students || 0
+    const sr = yearData.byGrade?.['12']?.students || 0
+
+    return {
+      year: `${year}-${parseInt(year) + 1}`,
+      jr,
+      sr,
+      total: jr + sr,
+    }
+  })
+
+  const avgJr = data.reduce((sum, row) => sum + row.jr, 0) / data.length
+  const avgSr = data.reduce((sum, row) => sum + row.sr, 0) / data.length
+  const avgTotal = data.reduce((sum, row) => sum + row.total, 0) / data.length
+  data.push({
+    year: '4 Yr Avg.',
+    jr: avgJr.toFixed(1),
+    sr: avgSr.toFixed(1),
+    total: avgTotal.toFixed(1),
+  })
+  return data
 })
 
 function onInstructorSelected(opt) {
