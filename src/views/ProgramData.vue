@@ -13,17 +13,15 @@
     </v-col>
     <v-col cols="12" sm="6">
       <v-select
-        :items="instructorItems"
+        :items="instructors"
         v-model="selectedInstructor"
         item-title="label"
         item-value="value"
         label="Select Instructor"
-        :disabled="instructorItems.length === 0"
-        :placeholder="
-          instructorItems.length === 0 ? 'No instructors available' : 'Select Instructor'
-        "
+        :disabled="instructors.length === 0"
+        :placeholder="instructors.length === 0 ? 'No instructors available' : 'Select Instructor'"
         @update:modelValue="onInstructorSelected"
-      ></v-select>
+      />
     </v-col>
   </v-row>
   <v-container fluid class="pa-6" style="max-width: 1600px; margin: 0 auto">
@@ -212,35 +210,11 @@
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>2024-2025</td>
-              <td>11</td>
-              <td>19</td>
-              <td>30</td>
-            </tr>
-            <tr>
-              <td>2023-2024</td>
-              <td>12</td>
-              <td>15</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2022-2023</td>
-              <td>11</td>
-              <td>16</td>
-              <td>27</td>
-            </tr>
-            <tr>
-              <td>2021-2022</td>
-              <td>8</td>
-              <td>11</td>
-              <td>19</td>
-            </tr>
-            <tr class="font-weight-bold">
-              <td>4 Yr Avg.</td>
-              <td>10.5</td>
-              <td>15.3</td>
-              <td>25.8</td>
+            <tr v-for="row in population504Data" :key="row.year">
+              <td>{{ row.year }}</td>
+              <td>{{ row.sr }}</td>
+              <td>{{ row.jr }}</td>
+              <td>{{ row.total }}</td>
             </tr>
           </tbody>
         </v-table>
@@ -276,118 +250,6 @@
       </v-card>
     </v-col>
   </v-row>
-
-  <h1>Work Based Learning</h1>
-
-  <v-row style="max-width: 1600px; margin: 0 auto">
-    <v-col cols="12" md="4" class="d-flex flex-column">
-      <v-card
-        class="pa-6 flex-grow-1 d-flex flex-column justify-center"
-        elevation="4"
-        rounded="lg"
-        color="white"
-      >
-        <div class="text-h6 font-weight-bold mb-2">WBL Achieving 54 Hours</div>
-        <div class="text-caption mb-3"></div>
-        <v-table density="compact" class="student-table">
-          <thead>
-            <tr>
-              <th>School Year</th>
-              <th>Total</th>
-              <th>%</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2024-2025</td>
-              <td>-</td>
-              <td>-%</td>
-            </tr>
-            <tr>
-              <td>2023-2024</td>
-              <td>12</td>
-              <td>100%</td>
-            </tr>
-            <tr>
-              <td>2022-2023</td>
-              <td>11</td>
-              <td>100%</td>
-            </tr>
-            <tr>
-              <td>2021-2022</td>
-              <td>11</td>
-              <td>100%</td>
-            </tr>
-            <tr class="font-weight-bold">
-              <td>3 Yr Avg.</td>
-              <td>10.5</td>
-              <td>100%</td>
-            </tr>
-          </tbody>
-        </v-table>
-      </v-card>
-    </v-col>
-
-    <v-col cols="12" md="8" class="d-flex flex-column">
-      <v-card
-        class="pa-6 flex-grow-1 d-flex flex-column justify-center"
-        elevation="4"
-        rounded="lg"
-        color="white"
-      >
-        <div class="text-h6 font-weight-bold mb-2">WBL Activities</div>
-        <div class="text-caption mb-3"></div>
-        <v-table density="compact" class="student-table">
-          <thead>
-            <tr>
-              <th>School Year</th>
-              <th>Grad Students</th>
-              <th>Paid Co-Op</th>
-              <th>School Based Enterprise</th>
-              <th>Unpaid Internships</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>2024-2025</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-              <td>-</td>
-            </tr>
-            <tr>
-              <td>2023-2024</td>
-              <td>12</td>
-              <td>0</td>
-              <td>0</td>
-              <td>0</td>
-            </tr>
-            <tr>
-              <td>2022-2023</td>
-              <td>12</td>
-              <td>10</td>
-              <td>0</td>
-              <td>0</td>
-            </tr>
-            <tr>
-              <td>2021-2022</td>
-              <td>1</td>
-              <td>6</td>
-              <td>0</td>
-              <td>0</td>
-            </tr>
-            <tr class="font-weight-bold">
-              <td>3 Yr Avg.</td>
-              <td>10.5</td>
-              <td>100%</td>
-              <td>0</td>
-              <td>0</td>
-            </tr>
-          </tbody>
-        </v-table>
-      </v-card>
-    </v-col>
-  </v-row>
 </template>
 
 <script setup>
@@ -407,13 +269,11 @@ import { ref, computed, onMounted } from 'vue'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
-// Instructor list for the select
-const instructors = ref([])
+// Instruc tor lis''for the selec t,onst instructors = ref([])
 const loadingClasses = ref(false)
 const selectedInstructor = ref(null)
 
-// Items for v-select
-const instructorItems = computed(() => instructors.value)
+const instructors = ref([])
 
 // Class data storage
 const studentStats = ref({})
@@ -424,7 +284,7 @@ const loadingPrograms = ref(false)
 const selectedProgram = ref(null)
 
 // Items for v-select
-const programItems = computed(() => programs.value)
+const programItems = computed(() => [{ label: '', value: null }, ...programs.value])
 
 // Initialize with empty/defaults; will be populated from API
 const program = ref({
@@ -439,17 +299,6 @@ const program = ref({
   teacherSupport: '',
   originalApprovalDate: '',
 })
-
-// const chartData = ref({
-//   labels: ['2019', '2020', '2021', '2022', '2023'],
-//   datasets: [
-//     {
-//       label: 'Enrollment',
-//       backgroundColor: '#3949ab',
-//       data: [30, 45, 40, 50, 60],
-//     },
-//   ],
-// })
 
 const chartOptions = ref({
   responsive: true,
@@ -491,12 +340,10 @@ async function fetchProgramData() {
       })
     }
 
-    console.log(programItems.value)
-    // Auto-select first program
-    if (programs.value.length > 0) {
-      selectedProgram.value = programs.value[0].value
-      onProgramSelected(programs.value[0])
-    }
+    // if (programs.value.length > 0) {
+    //   selectedProgram.value = programs.value[0].value
+    //   onProgramSelected(programs.value[0])
+    // }
   } catch (error) {
     console.error('Error fetching programs:', error)
   } finally {
@@ -506,20 +353,7 @@ async function fetchProgramData() {
 
 onMounted(() => {
   fetchProgramData()
-  getProgramData()
 })
-
-async function getProgramData(id = 2484) {
-  try {
-    const response = await api.get('http://localhost:3000/api/course-instances/2484/stats')
-    studentStats.value = response.data
-    console.log('Fetched Students Stats: ', studentStats.value)
-
-    console.log(response)
-  } catch (error) {
-    console.error('Error fetching programs:', error)
-  }
-}
 
 const populationIEPData = computed(() => {
   const years = ['2023', '2024', '2025', '2026']
@@ -613,11 +447,6 @@ const studentPopulationData = computed(() => {
   return data
 })
 
-function onInstructorSelected(opt) {
-  if (!opt) return
-  program.value.teacher = `${opt.raw.first_name} ${opt.raw.last_name}`
-}
-
 function onProgramSelected(opt) {
   if (!opt) return
   let programObj = opt
@@ -630,43 +459,30 @@ function onProgramSelected(opt) {
     return
   }
   program.value = { ...program.value, ...programObj.raw.program_catalog }
-  fetchClassData(programObj.raw.id)
+  fetchTeachersByProgram(opt)
+  // fetchClassData(programObj.raw.id)
 }
 
-async function fetchClassData(programCatalogId) {
-  loadingClasses.value = true
+async function fetchTeachersByProgram(id = 11) {
   try {
-    const response = await api.get(
-      `/course-instances?programCatalogId=${programCatalogId}&schoolYearId=1`,
-    )
-    console.log('Program Catalog ID:', programCatalogId)
-    // Deduplicate instructors by id
-    const seen = new Set()
-    instructors.value = response.data
-      .map((inst) => {
-        if (!inst.instructor) return null
-        return {
-          label: `${inst.instructor.first_name} ${inst.instructor.last_name}`,
-          value: inst.instructor.id,
-          raw: inst.instructor,
-        }
-      })
-      .filter(Boolean)
-      .filter((instructor) => {
-        if (seen.has(instructor.value)) return false
-        seen.add(instructor.value)
-        return true
-      })
-    // Auto-select first instructor
-    if (instructors.value.length > 0) {
-      selectedInstructor.value = instructors.value[0].value
-      onInstructorSelected(instructors.value[0])
-    }
-  } catch (error) {
-    console.error('Error fetching class data:', error)
-  } finally {
-    loadingClasses.value = false
+    instructors.value = []
+    const response = await api.get(`/staff/${id}`)
+
+    instructors.value = (response.data || []).map((inst) => ({
+      label: `${inst.first_name} ${inst.last_name}`,
+      value: inst.id,
+      raw: inst,
+    }))
+  } catch (err) {
+    console.log('Error getting teachers: ', err)
+    instructors.value = []
   }
+}
+
+async function onInstructorSelected(instructorID) {
+  //going to have to change logic for id in backend
+  const response = await api.get(`http://localhost:3000/api/course-instances/${601}/stats`)
+  studentStats.value = response.data
 }
 </script>
 
