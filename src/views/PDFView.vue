@@ -1,68 +1,213 @@
 <template>
-  <input type="file" ref="pdfInput" accept="application/pdf" @change="loadPdf" />
-  <div class="pdf-container">
-    <canvas ref="canvasEl"></canvas>
-    <div class="square draggable"></div>
+  <div class="container">
+    <div class="inputs">
+      <!-- <v-btn @click="save">Save</v-btn> -->
+      <v-text-field
+        v-model="textFieldValue"
+        label="JR Year Final Grade"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="textFieldValue2"
+        label="SR Year Final Grade"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="studentFirstNameValue"
+        label="Student First Name"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="studentLastNameValue"
+        label="Student Last Name"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="schoolDistrictValue"
+        label="School District"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="studentIdValue"
+        label="Student ID"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="schoolYearsValue"
+        label="School Years"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="cteSchoolValue"
+        label="CTE School"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgJrSem1Value"
+        label="Jr Sem 1 Performance Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgJrSem2Value"
+        label="Jr Sem 2 Performance Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgSrSem1Value"
+        label="Sr Sem 1 Performance Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgSrSem2Value"
+        label="Sr Sem 2 Performance Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgJrSem1TechValue"
+        label="Jr Sem 1 Technical Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgJrSem2TechValue"
+        label="Jr Sem 2 Technical Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgSrSem1TechValue"
+        label="Sr Sem 1 Technical Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="avgSrSem2TechValue"
+        label="Sr Sem 2 Technical Avg"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-text-field
+        v-model="commentsValue"
+        label="Comments"
+        variant="outlined"
+        @update:focused="testing"
+      ></v-text-field>
+      <v-btn @click="togglePdf">{{ pdfVisible ? 'Hide PDF' : 'Show PDF' }}</v-btn>
+    </div>
+    <transition name="slide-fade">
+      <div v-if="pdfVisible" class="pdf-viewer">
+        <canvas ref="pdfCanvas"></canvas>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted, ref, nextTick, watch } from 'vue'
+import { PDFDocument } from 'pdf-lib'
 import * as pdfjsLib from 'pdfjs-dist'
-import pdfjsWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url'
-import interact from 'interactjs'
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url'
 
-// Set worker source to the imported URL
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
-const canvasEl = ref(null)
+const pdfCanvas = ref(null)
+const hasFocused = ref(false)
+const textFieldValue = ref('')
+const textFieldValue2 = ref('')
+const pdfVisible = ref(true)
+const lastPdfBytes = ref(null)
 
-// Define the drag move listener function
-function dragMoveListener(event) {
-  const target = event.target
-  // Keep the dragged position in the data-x/data-y attributes
-  const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
-  const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+const studentFirstNameValue = ref('Bailey')
+const studentLastNameValue = ref('Russo')
+const schoolDistrictValue = ref('Orleans/Niagra Boces')
+const studentIdValue = ref('032923')
+const schoolYearsValue = ref('2025-2026')
+const cteSchoolValue = ref('Niagra Boces')
+const avgJrSem1Value = ref('3')
+const avgJrSem2Value = ref('3')
+const avgSrSem1Value = ref('3')
+const avgSrSem2Value = ref('3')
+const avgJrSem1TechValue = ref('3')
+const avgJrSem2TechValue = ref('3')
+const avgSrSem1TechValue = ref('3')
+const avgSrSem2TechValue = ref('3')
+const commentsValue = ref('hflslfjdsfljdsfsdlkfjlj')
 
-  // Translate the element
-  target.style.transform = 'translate(' + x + 'px, ' + y + 'px)'
+watch(pdfVisible, (newVal) => {
+  if (newVal && lastPdfBytes.value) {
+    console.log('In HERE')
+    nextTick(async () => {
+      const existinPDF = '/Animal_Full.pdf'
+      const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
+      const pdfDoc = await PDFDocument.load(existingPdfBytes)
+      const pdfBytes = await pdfDoc.save()
+      lastPdfBytes.value = pdfBytes
+      await showPDF(pdfBytes)
+      save()
+    })
+  }
+})
 
-  // Update the position attributes
-  target.setAttribute('data-x', x)
-  target.setAttribute('data-y', y)
+function togglePdf() {
+  pdfVisible.value = !pdfVisible.value
 }
 
-async function loadPdf(event) {
-  console.log('loadPdf called', event.target.files[0])
-  const file = event.target.files[0]
-  if (!file) return
-  const arrayBuffer = await file.arrayBuffer()
-  console.log('File read as arrayBuffer')
-  const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
-  console.log('loadingTask created')
+function testing() {
+  hasFocused.value = !hasFocused.value
+  if (!hasFocused.value) {
+    save()
+  }
+}
+
+async function showPDF(pdfSource) {
+  let loadingTask
+  if (pdfSource instanceof ArrayBuffer) {
+    loadingTask = pdfjsLib.getDocument({ data: pdfSource })
+  } else {
+    loadingTask = pdfjsLib.getDocument(pdfSource)
+  }
+
   const pdf = await loadingTask.promise
-  console.log('PDF loaded, pages:', pdf.numPages)
   const page = await pdf.getPage(1)
-  console.log('Page loaded')
 
-  // Get original viewport dimensions at scale 1
-  const originalViewport = page.getViewport({ scale: 1 })
-  const originalWidth = originalViewport.width
-  const originalHeight = originalViewport.height
-  console.log('Original size:', originalWidth, originalHeight)
+  const annotations = await page.getAnnotations()
 
-  // Calculate scale to fit the PDF within the full screen (window dimensions)
-  const scale = Math.min(window.innerWidth / originalWidth, window.innerHeight / originalHeight)
-  console.log('Calculated scale:', scale)
+  // Filter form field annotations and get their top Y (rect[3] is top Y in pdfjsLib)
+  const fieldsWithPosition = annotations
+    .filter((ann) => ann.subtype === 'Widget' && ann.fieldName)
+    .map((ann) => ({
+      name: ann.fieldName,
+      topY: ann.rect[3], // Top Y coordinate
+    }))
 
-  // Get viewport with the calculated scale
-  const viewport = page.getViewport({ scale })
-  const canvas = canvasEl.value
+  // Sort from top to bottom (descending topY)
+  fieldsWithPosition.sort((a, b) => b.topY - a.topY)
+
+  // Log the sorted list
+  console.log(
+    'Fields from top to bottom:',
+    fieldsWithPosition.map((f) => f.name),
+  )
+
+  const viewport = page.getViewport({ scale: 1.0 }) // smaller scale for smaller right side
+  const canvas = pdfCanvas.value
+  if (!canvas) return
   const context = canvas.getContext('2d')
 
   canvas.height = viewport.height
   canvas.width = viewport.width
-  console.log('Canvas size set to:', canvas.width, canvas.height)
 
   const renderContext = {
     canvasContext: context,
@@ -70,85 +215,114 @@ async function loadPdf(event) {
   }
 
   await page.render(renderContext).promise
-  console.log('PDF rendered to canvas')
-
-  // Apply draggable functionality to the canvas after rendering
-  interact('.draggable')
-    .resizable({
-      // resize from all edges and corners
-      edges: { left: true, right: true, bottom: true, top: true },
-
-      listeners: {
-        move(event) {
-          console.log('resizable called')
-          var target = event.target
-          var x = parseFloat(target.getAttribute('data-x')) || 0
-          var y = parseFloat(target.getAttribute('data-y')) || 0
-
-          // update the element's style
-          target.style.width = event.rect.width + 'px'
-          target.style.height = event.rect.height + 'px'
-
-          // translate when resizing from top or left edges
-          x += event.deltaRect.left
-          y += event.deltaRect.top
-
-          target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
-
-          target.setAttribute('data-x', x)
-          target.setAttribute('data-y', y)
-          target.textContent =
-            Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
-        },
-      },
-      modifiers: [
-        // keep the edges inside the parent
-        interact.modifiers.restrictEdges({
-          outer: 'parent',
-        }),
-
-        // minimum size
-        interact.modifiers.restrictSize({
-          min: { width: 100, height: 25 },
-        }),
-      ],
-
-      inertia: true,
-    })
-    .draggable({
-      listeners: { move: dragMoveListener },
-      inertia: true,
-      modifiers: [
-        interact.modifiers.restrictRect({
-          restriction: 'parent',
-          endOnly: true,
-        }),
-      ],
-    })
 }
 
-onMounted(async () => {})
+onMounted(async () => {
+  const existinPDF = '/Animal_Full.pdf'
+  const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
+  const pdfDoc = await PDFDocument.load(existingPdfBytes)
+  const pdfBytes = await pdfDoc.save()
+  lastPdfBytes.value = pdfBytes
+  await showPDF(pdfBytes)
+})
+
+async function save() {
+  const existinPDF = '/Animal_Full.pdf'
+  const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
+  const pdfDoc = await PDFDocument.load(existingPdfBytes)
+  const field1 = pdfDoc.getForm().getTextField('GRADE AVERAGESchool Year 1 Junior')
+  const field2 = pdfDoc.getForm().getTextField('GRADE AVERAGESchool Year 2 Senior')
+  const total = pdfDoc.getForm().getTextField('GRADE AVERAGECumulative Grade')
+
+  const studentLastName = pdfDoc.getForm().getTextField('Student Last Name')
+  const studentFirstName = pdfDoc.getForm().getTextField('Student First Name')
+  const schoolDistrict = pdfDoc.getForm().getTextField('School_District')
+  const student_id = pdfDoc.getForm().getTextField('Student_ID')
+  const schoolYears = pdfDoc.getForm().getTextField('School_Years')
+  const cteSchool = pdfDoc.getForm().getTextField('CTE_School')
+  const avg_jr_sem1 = pdfDoc.getForm().getTextField('AVG_Jr._Sem_1_Performance_Skills_Avg')
+  const avg_jr_sem2 = pdfDoc.getForm().getTextField('AVG_Jr._Sem_2_Performance_Skills_Avg')
+  const avg_sr_sem1 = pdfDoc.getForm().getTextField('AVG_Sr._Sem_1_Performance_Skills_Avg')
+  const avg_sr_sem2 = pdfDoc.getForm().getTextField('AVG_Sr._Sem_2_Performance_Skills_Avg')
+
+  const avg_jr_sem1_tech = pdfDoc.getForm().getTextField('AVG_Jr._Sem_1_Technical_Skills_Avg')
+  const avg_jr_sem2_tech = pdfDoc.getForm().getTextField('AVG_Jr._Sem_2_Technical_Skills_Avg')
+  const avg_sr_sem1_tech = pdfDoc.getForm().getTextField('AVG_Sr._Sem_1_Technical_Skills_Avg')
+  const avg_sr_sem2_tech = pdfDoc.getForm().getTextField('AVG_Sr._Sem_2_Technical_Skills_Avg')
+  const comments = pdfDoc.getForm().getTextField('Comments')
+
+  studentFirstName.setText(studentFirstNameValue.value)
+  studentLastName.setText(studentLastNameValue.value)
+  schoolDistrict.setText(schoolDistrictValue.value)
+  student_id.setText(studentIdValue.value)
+  schoolYears.setText(schoolYearsValue.value)
+  cteSchool.setText(cteSchoolValue.value)
+
+  avg_jr_sem1.setText(avgJrSem1Value.value)
+  avg_jr_sem2.setText(avgJrSem2Value.value)
+  avg_sr_sem1.setText(avgSrSem1Value.value)
+  avg_sr_sem2.setText(avgSrSem2Value.value)
+
+  avg_jr_sem1_tech.setText(avgJrSem1TechValue.value)
+  avg_jr_sem2_tech.setText(avgJrSem2TechValue.value)
+  avg_sr_sem1_tech.setText(avgSrSem1TechValue.value)
+  avg_sr_sem2_tech.setText(avgSrSem2TechValue.value)
+
+  comments.setText(commentsValue.value)
+
+  // const buttons = fields.filter(field => field instanceof PDFButton);
+
+  let x = textFieldValue.value
+  let y = textFieldValue2.value
+
+  field1.setText(x.toString())
+  field2.setText(y.toString())
+  total.setText(Math.round((Number(x) + Number(y)) / 2).toString())
+
+  const pdfBytes = await pdfDoc.save()
+  lastPdfBytes.value = pdfBytes
+  await showPDF(pdfBytes)
+}
 </script>
 
 <style scoped>
-.pdf-container {
+.container {
+  display: flex;
+  flex-direction: row;
+  gap: 2rem;
+  height: 100vh;
+}
+.inputs {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 400px;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 1rem;
+}
+.pdf-viewer {
+  flex: 0.8;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #f3f3f3;
-  position: relative; /* Ensure parent restriction works */
-  width: 100vw;
+  background: #f4f4f4;
+  padding: 1rem;
+  min-width: 280px;
   height: 100vh;
 }
 canvas {
   border: 1px solid #ccc;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
-.square {
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  background-color: rgba(255, 0, 0, 0.5);
-  border: 2px solid red;
-  cursor: move;
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+  transition: all 0.3s ease;
+}
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  opacity: 0;
+  transform: translateX(50px);
 }
 </style>

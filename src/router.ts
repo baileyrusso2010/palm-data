@@ -16,7 +16,7 @@ const routes = [
   { path: '/', component: Login, name: 'login', meta: { title: 'Login', guestOnly: true } },
   {
     path: '/home',
-    component: Home,
+    component: PDFView,
     name: 'home',
     meta: { requiresAuth: true },
   },
