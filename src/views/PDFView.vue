@@ -153,7 +153,7 @@ watch(pdfVisible, async (newVal) => {
         await showPDF(lastPdfBytes.value)
       } else {
         // Otherwise, load the original PDF
-        const existinPDF = '/Animal_Full.pdf'
+        const existinPDF = '/animal.pdf'
         const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
         await showPDF(existingPdfBytes)
       }
@@ -223,7 +223,7 @@ async function showPDF(pdfSource) {
     console.error('Error loading PDF:', error)
     // Fallback: try loading the original PDF directly
     if (pdfSource instanceof ArrayBuffer) {
-      const originalPdfBytes = await fetch('/Animal_Full.pdf').then((res) => res.arrayBuffer())
+      const originalPdfBytes = await fetch('/animal.pdf').then((res) => res.arrayBuffer())
       const loadingTask = pdfjsLib.getDocument({ data: originalPdfBytes })
       const pdf = await loadingTask.promise
       const page = await pdf.getPage(1)
@@ -244,7 +244,7 @@ async function showPDF(pdfSource) {
 
 onMounted(async () => {
   try {
-    const existinPDF = '/Animal_Full.pdf'
+    const existinPDF = '/animal.pdf'
     const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
     // Load original PDF for display
     await showPDF(existingPdfBytes)
@@ -259,7 +259,7 @@ onMounted(async () => {
 
 async function save() {
   try {
-    const existinPDF = '/Animal_Full.pdf'
+    const existinPDF = '/animal.pdf'
     const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
     const pdfDoc = await PDFDocument.load(existingPdfBytes)
     const field1 = pdfDoc.getForm().getTextField('GRADE AVERAGESchool Year 1 Junior')
