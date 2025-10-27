@@ -118,10 +118,9 @@
 import { onMounted, ref, nextTick, watch } from 'vue'
 import { PDFDocument } from 'pdf-lib'
 import * as pdfjsLib from 'pdfjs-dist'
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url'
 import api from '@/api'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.js'
 
 const pdfCanvas = ref(null)
 const hasFocused = ref(false)
