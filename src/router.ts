@@ -10,6 +10,7 @@ import ClassView from './views/ClassView.vue'
 import StudentProfile from './views/StudentProfile.vue'
 import PDFView from './views/PDFView.vue'
 import ProgramData from './views/ProgramData.vue'
+import FormEditor from './views/FormEditor.vue'
 
 const routes = [
   // Public / guest routes
@@ -23,6 +24,11 @@ const routes = [
   {
     path: '/pdf_view',
     component: PDFView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/form',
+    component: FormEditor,
     meta: { requiresAuth: true },
   },
   {
