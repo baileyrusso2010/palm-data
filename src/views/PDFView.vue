@@ -119,6 +119,7 @@ import { onMounted, ref, nextTick, watch } from 'vue'
 import { PDFDocument } from 'pdf-lib'
 import * as pdfjsLib from 'pdfjs-dist'
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker?url'
+import api from '@/api'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker
 
@@ -128,6 +129,7 @@ const textFieldValue = ref('')
 const textFieldValue2 = ref('')
 const pdfVisible = ref(true)
 const lastPdfBytes = ref(null)
+const originalPdfBytes = ref(null)
 
 const studentFirstNameValue = ref('Bailey')
 const studentLastNameValue = ref('Russo')
@@ -147,20 +149,8 @@ const commentsValue = ref('hflslfjdsfljdsfsdlkfjlj')
 
 watch(pdfVisible, (newVal) => {
   if (newVal && lastPdfBytes.value) {
-    console.log('In HERE')
     nextTick(async () => {
-      try {
-        const existinPDF = '/Animal_Full.pdf'
-        const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
-        const pdfDoc = await PDFDocument.load(existingPdfBytes)
-        const pdfBytes = await pdfDoc.save()
-        lastPdfBytes.value = pdfBytes
-        await showPDF(pdfBytes)
-        save()
-      } catch (e) {
-        console.error('Error loading PDF:', e)
-        pdfVisible.value = false
-      }
+      await showPDF(lastPdfBytes.value)
     })
   }
 })
@@ -224,9 +214,9 @@ async function showPDF(pdfSource) {
 
 onMounted(async () => {
   try {
-    const existinPDF = '/Animal_Full.pdf'
-    const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
-    const pdfDoc = await PDFDocument.load(existingPdfBytes)
+    const response = await api.get('/file/individual/Animal_Full')
+    originalPdfBytes.value = response.data
+    const pdfDoc = await PDFDocument.load(originalPdfBytes.value)
     const pdfBytes = await pdfDoc.save()
     lastPdfBytes.value = pdfBytes
     await showPDF(pdfBytes)
@@ -238,61 +228,63 @@ onMounted(async () => {
 })
 
 async function save() {
-  const existinPDF = '/Animal_Full.pdf'
-  const existingPdfBytes = await fetch(existinPDF).then((res) => res.arrayBuffer())
-  const pdfDoc = await PDFDocument.load(existingPdfBytes)
-  const field1 = pdfDoc.getForm().getTextField('GRADE AVERAGESchool Year 1 Junior')
-  const field2 = pdfDoc.getForm().getTextField('GRADE AVERAGESchool Year 2 Senior')
-  const total = pdfDoc.getForm().getTextField('GRADE AVERAGECumulative Grade')
+  try {
+    const pdfDoc = await PDFDocument.load(originalPdfBytes.value)
+    const field1 = pdfDoc.getForm().getTextField('GRADE AVERAGESchool Year 1 Junior')
+    const field2 = pdfDoc.getForm().getTextField('GRADE AVERAGESchool Year 2 Senior')
+    const total = pdfDoc.getForm().getTextField('GRADE AVERAGECumulative Grade')
 
-  const studentLastName = pdfDoc.getForm().getTextField('Student Last Name')
-  const studentFirstName = pdfDoc.getForm().getTextField('Student First Name')
-  const schoolDistrict = pdfDoc.getForm().getTextField('School_District')
-  const student_id = pdfDoc.getForm().getTextField('Student_ID')
-  const schoolYears = pdfDoc.getForm().getTextField('School_Years')
-  const cteSchool = pdfDoc.getForm().getTextField('CTE_School')
-  const avg_jr_sem1 = pdfDoc.getForm().getTextField('AVG_Jr._Sem_1_Performance_Skills_Avg')
-  const avg_jr_sem2 = pdfDoc.getForm().getTextField('AVG_Jr._Sem_2_Performance_Skills_Avg')
-  const avg_sr_sem1 = pdfDoc.getForm().getTextField('AVG_Sr._Sem_1_Performance_Skills_Avg')
-  const avg_sr_sem2 = pdfDoc.getForm().getTextField('AVG_Sr._Sem_2_Performance_Skills_Avg')
+    const studentLastName = pdfDoc.getForm().getTextField('Student Last Name')
+    const studentFirstName = pdfDoc.getForm().getTextField('Student First Name')
+    const schoolDistrict = pdfDoc.getForm().getTextField('School_District')
+    const student_id = pdfDoc.getForm().getTextField('Student_ID')
+    const schoolYears = pdfDoc.getForm().getTextField('School_Years')
+    const cteSchool = pdfDoc.getForm().getTextField('CTE_School')
+    const avg_jr_sem1 = pdfDoc.getForm().getTextField('AVG_Jr._Sem_1_Performance_Skills_Avg')
+    const avg_jr_sem2 = pdfDoc.getForm().getTextField('AVG_Jr._Sem_2_Performance_Skills_Avg')
+    const avg_sr_sem1 = pdfDoc.getForm().getTextField('AVG_Sr._Sem_1_Performance_Skills_Avg')
+    const avg_sr_sem2 = pdfDoc.getForm().getTextField('AVG_Sr._Sem_2_Performance_Skills_Avg')
 
-  const avg_jr_sem1_tech = pdfDoc.getForm().getTextField('AVG_Jr._Sem_1_Technical_Skills_Avg')
-  const avg_jr_sem2_tech = pdfDoc.getForm().getTextField('AVG_Jr._Sem_2_Technical_Skills_Avg')
-  const avg_sr_sem1_tech = pdfDoc.getForm().getTextField('AVG_Sr._Sem_1_Technical_Skills_Avg')
-  const avg_sr_sem2_tech = pdfDoc.getForm().getTextField('AVG_Sr._Sem_2_Technical_Skills_Avg')
-  const comments = pdfDoc.getForm().getTextField('Comments')
+    const avg_jr_sem1_tech = pdfDoc.getForm().getTextField('AVG_Jr._Sem_1_Technical_Skills_Avg')
+    const avg_jr_sem2_tech = pdfDoc.getForm().getTextField('AVG_Jr._Sem_2_Technical_Skills_Avg')
+    const avg_sr_sem1_tech = pdfDoc.getForm().getTextField('AVG_Sr._Sem_1_Technical_Skills_Avg')
+    const avg_sr_sem2_tech = pdfDoc.getForm().getTextField('AVG_Sr._Sem_2_Technical_Skills_Avg')
+    const comments = pdfDoc.getForm().getTextField('Comments')
 
-  studentFirstName.setText(studentFirstNameValue.value)
-  studentLastName.setText(studentLastNameValue.value)
-  schoolDistrict.setText(schoolDistrictValue.value)
-  student_id.setText(studentIdValue.value)
-  schoolYears.setText(schoolYearsValue.value)
-  cteSchool.setText(cteSchoolValue.value)
+    studentFirstName.setText(studentFirstNameValue.value)
+    studentLastName.setText(studentLastNameValue.value)
+    schoolDistrict.setText(schoolDistrictValue.value)
+    student_id.setText(studentIdValue.value)
+    schoolYears.setText(schoolYearsValue.value)
+    cteSchool.setText(cteSchoolValue.value)
 
-  avg_jr_sem1.setText(avgJrSem1Value.value)
-  avg_jr_sem2.setText(avgJrSem2Value.value)
-  avg_sr_sem1.setText(avgSrSem1Value.value)
-  avg_sr_sem2.setText(avgSrSem2Value.value)
+    avg_jr_sem1.setText(avgJrSem1Value.value)
+    avg_jr_sem2.setText(avgJrSem2Value.value)
+    avg_sr_sem1.setText(avgSrSem1Value.value)
+    avg_sr_sem2.setText(avgSrSem2Value.value)
 
-  avg_jr_sem1_tech.setText(avgJrSem1TechValue.value)
-  avg_jr_sem2_tech.setText(avgJrSem2TechValue.value)
-  avg_sr_sem1_tech.setText(avgSrSem1TechValue.value)
-  avg_sr_sem2_tech.setText(avgSrSem2TechValue.value)
+    avg_jr_sem1_tech.setText(avgJrSem1TechValue.value)
+    avg_jr_sem2_tech.setText(avgJrSem2TechValue.value)
+    avg_sr_sem1_tech.setText(avgSrSem1TechValue.value)
+    avg_sr_sem2_tech.setText(avgSrSem2TechValue.value)
 
-  comments.setText(commentsValue.value)
+    comments.setText(commentsValue.value)
 
-  // const buttons = fields.filter(field => field instanceof PDFButton);
+    // const buttons = fields.filter(field => field instanceof PDFButton);
 
-  let x = textFieldValue.value
-  let y = textFieldValue2.value
+    let x = textFieldValue.value
+    let y = textFieldValue2.value
 
-  field1.setText(x.toString())
-  field2.setText(y.toString())
-  total.setText(Math.round((Number(x) + Number(y)) / 2).toString())
+    field1.setText(x.toString())
+    field2.setText(y.toString())
+    total.setText(Math.round((Number(x) + Number(y)) / 2).toString())
 
-  const pdfBytes = await pdfDoc.save()
-  lastPdfBytes.value = pdfBytes
-  await showPDF(pdfBytes)
+    const pdfBytes = await pdfDoc.save()
+    lastPdfBytes.value = pdfBytes
+    await showPDF(pdfBytes)
+  } catch (e) {
+    console.error('Error saving PDF:', e)
+  }
 }
 </script>
 
