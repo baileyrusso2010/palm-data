@@ -214,7 +214,7 @@ async function showPDF(pdfSource) {
 
 onMounted(async () => {
   try {
-    const response = await api.get('/file/individual/Animal_Full')
+    const response = await api.get('/file/individual/Animal_Full', { responseType: 'arraybuffer' })
     originalPdfBytes.value = response.data
     const pdfDoc = await PDFDocument.load(originalPdfBytes.value)
     const pdfBytes = await pdfDoc.save()
