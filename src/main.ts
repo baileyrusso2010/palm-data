@@ -12,9 +12,20 @@ import * as components from 'vuetify/components'
 import { VDateInput } from 'vuetify/labs/VDateInput'
 import * as directives from 'vuetify/directives'
 
+import Vueform from '@vueform/vueform'
+import vueformConfig from './../vueform.config'
+
 const vuetify = createVuetify({
   components: { ...components, VDateInput },
   directives,
 })
 
-createApp(App).use(router).use(vuetify).mount('#app')
+const app = createApp(App)
+
+// Casts prevent over-strict Plugin generic inference under some TS setups
+app.use(router)
+app.use(vuetify)
+app.use(Vueform, vueformConfig)
+app.mount('#app')
+
+// createApp(App).use(router).use(vuetify).mount('#app')
