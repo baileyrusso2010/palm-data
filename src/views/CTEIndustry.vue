@@ -28,6 +28,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { gridTheme } from '@/gridTheme'
+import api from '@/api'
 
 const isLoading = ref(false)
 
@@ -58,7 +59,27 @@ function suppressKeyboardEvent(params) {
 
 async function save() {
   try {
-    console.log(JSON.stringify(allRows))
+    const payload = []
+    rowData.value.forEach((item) => {
+      payload.push({
+        id: item.semester12.id, // null or existing
+        skill_id: item.id,
+        period: 'Semester 1',
+        score: item.semester12.score,
+        comment: item.comments, // or item.semester12.comment if you have per-semester comments
+      })
+      // Semester 3-4
+      payload.push({
+        id: item.semester34.id, // null or existing
+        skill_id: item.id,
+        period: 'Semester 3',
+        score: item.semester34.score,
+        comment: item.comments, // or item.semester34.comment
+      })
+    })
+
+    const response = await api.post('/skill/skillscore/bulk-upsert', payload)
+    console.log(response)
   } catch (err) {
     console.error('Error saving data: ', err)
   }
@@ -66,15 +87,31 @@ async function save() {
 
 async function fetchData() {
   isLoading.value = true
+
   try {
     //api
 
-    rowData.value.push({
-      title: 'Something',
-      description: 'Someohintg',
-      semester12: '',
-      semester34: '',
-      comments: '',
+    let response = await api.get('/skill/student/1')
+    console.log(response)
+
+    Object.values(response.data).forEach((item) => {
+      const semester1Score = item.SkillScores.find((s) => s.period === 'Semester 1') || {}
+      const semester3Score = item.SkillScores.find((s) => s.period === 'Semester 3') || {}
+
+      rowData.value.push({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        semester12: {
+          score: semester1Score.score || '',
+          id: semester1Score.id ?? null,
+        },
+        semester34: {
+          score: semester3Score.score || '',
+          id: semester3Score.id ?? null,
+        },
+        comments: semester1Score.comment, // or however you want to handle general comments
+      })
     })
   } catch (err) {
     console.error(err)
@@ -83,9 +120,7 @@ async function fetchData() {
   }
 }
 
-const rowData = ref([
-  { title: 'Something', description: 'Someohintg', semester12: '', semester34: '', comments: '' },
-])
+const rowData = ref([])
 
 const colDefs = ref([
   { field: 'title', headerName: 'Industry & Tech Skills', editable: false },
@@ -99,11 +134,31 @@ const colDefs = ref([
     field: 'semester12',
     header: 'Semester 1-2',
     editable: true,
+    valueGetter: (params) => params.data.semester12?.score ?? '',
+    valueSetter: (params) => {
+      params.data.semester12 = {
+        ...params.data.semester12,
+        score: params.newValue,
+      }
+      return true
+    },
   },
   {
     field: 'semester34',
     header: 'Semester 3-4',
     editable: true,
+
+    field: 'semester34',
+    headerName: 'Semester 3-4',
+    editable: true,
+    valueGetter: (params) => params.data.semester34?.score ?? '',
+    valueSetter: (params) => {
+      params.data.semester34 = {
+        ...params.data.semester34,
+        score: params.newValue,
+      }
+      return true
+    },
   },
   {
     field: 'comments',

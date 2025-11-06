@@ -4,7 +4,6 @@
   </header>
   <div class="center-table-container">
     <ag-grid-vue
-      ref="gridRef"
       :theme="gridTheme"
       :rowData="rowData"
       :columnDefs="colDefs"
@@ -14,7 +13,7 @@
         --ag-header-height: 48px;
         --ag-row-height: 42px;
         --ag-list-item-height: 24px;
-        min-width: 800px;
+        min-width: 900px;
       "
     />
     <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: center">
@@ -25,37 +24,40 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { gridTheme } from '@/gridTheme'
+import api from '@/api'
 
-const gridRef = ref(null)
+onMounted(async () => {
+  let response = await api.get('/skill/category/1')
+
+  Object.values(response.data).forEach((item) => {
+    rowData.value.push({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      active: item.active,
+      category_id: item.category_id,
+    })
+  })
+})
 
 function insert() {
-  if (gridRef.value) {
-    gridRef.value.api.applyTransaction({
-      add: [{ title: '', description: '', active: true }],
-    })
-  }
+  rowData.value.push({ title: '', description: '', active: true, category_id: 1 })
 }
 
 async function save() {
   try {
-    const allRows = []
-    if (gridRef.value) {
-      gridRef.value.api.forEachNode((node) => allRows.push(node.data))
-    }
+    console.log(rowData.value)
+    let response = await api.post('/skill/bulk', rowData.value)
 
-    console.log(JSON.stringify(allRows))
+    console.log(response)
   } catch (err) {
-    console.error('Error saving data: ', error)
+    console.error('Error saving data: ', err)
   }
 }
 
-const rowData = ref([
-  { title: 'Tesla', description: 'Model Y', active: true },
-  { title: 'Ford', description: 'F-Series', active: false },
-  { title: 'Toyota', description: 'Corolla', active: true },
-])
+const rowData = ref([])
 
 const colDefs = ref([
   { field: 'title', editable: true },
