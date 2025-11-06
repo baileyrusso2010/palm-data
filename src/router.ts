@@ -1,64 +1,29 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
-import FileUpload from './views/FileUpload.vue'
 import Home from './views/Home.vue'
 import Login from './views/Login.vue'
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
-import OnBoarding from './views/OnBoarding.vue'
-import ClassCreation from './views/ClassCreation.vue'
-import ClassView from './views/ClassView.vue'
-import StudentProfile from './views/StudentProfile.vue'
-import PDFView from './views/PDFView.vue'
-import ProgramData from './views/ProgramData.vue'
-import FormEditor from './views/FormEditor.vue'
+import Century from './views/Century.vue'
+import SkillAssessment from './views/SkillAssessment.vue'
+import CTEIndustry from './views/CTEIndustry.vue'
 
 const routes = [
   // Public / guest routes
   { path: '/', component: Login, name: 'login', meta: { title: 'Login', guestOnly: true } },
   {
     path: '/home',
-    component: FormEditor,
+    component: Century,
     name: 'home',
     meta: { requiresAuth: true },
   },
   {
-    path: '/pdf_view',
-    component: PDFView,
+    path: '/table',
+    component: SkillAssessment,
     meta: { requiresAuth: true },
   },
   {
-    path: '/form',
-    component: FormEditor,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/program_data',
-    component: ProgramData,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/class_view',
-    component: ClassView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/profile',
-    component: StudentProfile,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/class_creation',
-    component: ClassCreation,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/onboard',
-    component: OnBoarding,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/upload',
-    component: FileUpload,
+    path: '/skill',
+    component: CTEIndustry,
     meta: { requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

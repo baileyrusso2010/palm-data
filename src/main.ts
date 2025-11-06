@@ -15,6 +15,11 @@ import * as directives from 'vuetify/directives'
 import Vueform from '@vueform/vueform'
 import vueformConfig from './../vueform.config'
 
+import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community'
+import { AgGridVue } from 'ag-grid-vue3'
+
+ModuleRegistry.registerModules([AllCommunityModule])
+
 const vuetify = createVuetify({
   components: { ...components, VDateInput },
   directives,
@@ -26,6 +31,7 @@ const app = createApp(App)
 app.use(router)
 app.use(vuetify)
 app.use(Vueform, vueformConfig)
+app.component('AgGridVue', AgGridVue)
 app.mount('#app')
 
 // createApp(App).use(router).use(vuetify).mount('#app')
