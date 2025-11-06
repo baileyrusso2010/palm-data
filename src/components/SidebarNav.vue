@@ -102,10 +102,22 @@ const route = useRoute()
 const items = computed<NavItem[]>(() => [
   {
     to: '/home',
-    title: 'Home',
+    title: 'Skills',
     iconComp: PhHouseLine, // Using PhExam per request
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
+  {
+    to: '/nys',
+    title: 'NYS Assessment',
+    iconComp: PhHouseLine, // Using PhExam per request
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+  // {
+  //   to: '/century',
+  //   title: '21 Century',
+  //   iconComp: PhHouseLine, // Using PhExam per request
+  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  // },
   // { to: '/form', title: 'Form', iconComp: PhGear },
   // { to: '/profile', title: 'Add Class', iconComp: PhGear },
 ])

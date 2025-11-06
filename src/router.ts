@@ -12,18 +12,18 @@ const routes = [
   { path: '/', component: Login, name: 'login', meta: { title: 'Login', guestOnly: true } },
   {
     path: '/home',
-    component: Century,
+    component: CTEIndustry,
     name: 'home',
     meta: { requiresAuth: true },
   },
   {
-    path: '/table',
-    component: SkillAssessment,
+    path: '/nys',
+    component: Century,
     meta: { requiresAuth: true },
   },
   {
-    path: '/skill',
-    component: CTEIndustry,
+    path: '/century',
+    component: SkillAssessment,
     meta: { requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
