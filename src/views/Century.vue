@@ -8,6 +8,9 @@
       :rowData="rowData"
       :columnDefs="colDefs"
       :defaultColDef="defaultColDef"
+      :suppressKeyboardEvent="suppressKeyboardEvent"
+      :stopEditingWhenCellsLoseFocus="false"
+      @cell-focused="onCellFocused"
       style="
         height: 500px;
         --ag-header-height: 48px;
@@ -41,6 +44,27 @@ onMounted(async () => {
     })
   })
 })
+function onCellFocused(e) {
+  if (!e?.column) return
+  const colId = e.column.getColId ? e.column.getColId() : e.column.colId
+  if (colId === 'description' && (e.source === 'keyboard' || !('source' in e))) {
+    // defer so focus settles before starting edit
+    setTimeout(() => {
+      e.api.startEditingCell({ rowIndex: e.rowIndex, colKey: 'description' })
+    }, 0)
+  }
+}
+function suppressKeyboardEvent(params) {
+  const e = params.event
+  if (e.key === 'Tab' && params.colDef?.field === 'description') {
+    e.preventDefault()
+    if (!params.editing) {
+      params.api.startEditingCell({ rowIndex: params.node.rowIndex, colKey: 'description' })
+    }
+    return true // tell AG Grid we handled it
+  }
+  return false
+}
 
 function insert() {
   rowData.value.push({ title: '', description: '', active: true, category_id: 1 })

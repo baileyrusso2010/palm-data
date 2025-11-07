@@ -6,6 +6,8 @@ import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
 import Century from './views/Century.vue'
 import SkillAssessment from './views/SkillAssessment.vue'
 import CTEIndustry from './views/CTEIndustry.vue'
+import FormView from './views/FormView.vue'
+import StudentForm from './views/StudentForm.vue'
 
 const routes = [
   // Public / guest routes
@@ -24,6 +26,16 @@ const routes = [
   {
     path: '/century',
     component: SkillAssessment,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/form',
+    component: FormView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/student-form',
+    component: StudentForm,
     meta: { requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

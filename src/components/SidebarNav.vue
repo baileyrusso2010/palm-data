@@ -112,6 +112,12 @@ const items = computed<NavItem[]>(() => [
     iconComp: PhHouseLine, // Using PhExam per request
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
+  {
+    to: '/student-form',
+    title: 'Student Form Assign',
+    iconComp: PhHouseLine, // Using PhExam per request
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
   // {
   //   to: '/century',
   //   title: '21 Century',
