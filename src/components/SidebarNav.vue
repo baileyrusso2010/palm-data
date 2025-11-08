@@ -32,9 +32,30 @@
     <v-divider class="mb-1" />
 
     <v-list density="comfortable" nav>
-      <v-list-subheader v-if="!rail">Main</v-list-subheader>
+      <v-list-subheader v-if="!rail">Explore</v-list-subheader>
       <v-list-item
-        v-for="item in items"
+        v-for="item in mainItems"
+        :key="item.to"
+        :to="item.to"
+        :title="item.title"
+        :active="isActive(item.to)"
+        rounded="lg"
+      >
+        <template #prepend>
+          <v-icon size="22" v-if="item.icon">{{ item.icon }}</v-icon>
+          <span v-else-if="item.iconComp" class="ph-icon-wrapper">
+            <component :is="item.iconComp" v-bind="item.iconCompProps" />
+          </span>
+        </template>
+      </v-list-item>
+    </v-list>
+
+    <v-divider class="my-2" />
+
+    <v-list density="comfortable" nav>
+      <v-list-subheader v-if="!rail">Forms</v-list-subheader>
+      <v-list-item
+        v-for="item in formItems"
         :key="item.to"
         :to="item.to"
         :title="item.title"
@@ -67,7 +88,15 @@
 <script setup lang="ts">
 import { ref, watch, computed, type Component } from 'vue'
 import { useRoute } from 'vue-router'
-import { PhHouseLine, PhChalkboardSimple, PhExam, PhGear } from '@phosphor-icons/vue'
+import {
+  PhHouseLine,
+  PhChalkboardSimple,
+  PhExam,
+  PhGear,
+  PhStudent,
+  PhTable,
+  PhUserList,
+} from '@phosphor-icons/vue'
 
 interface NavItem {
   to: string
@@ -99,33 +128,41 @@ function toggleRail() {
 }
 
 const route = useRoute()
-const items = computed<NavItem[]>(() => [
+
+const mainItems = computed<NavItem[]>(() => [
   {
     to: '/home',
-    title: 'Skills',
-    iconComp: PhHouseLine, // Using PhExam per request
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
-  {
-    to: '/nys',
-    title: 'NYS Assessment',
-    iconComp: PhHouseLine, // Using PhExam per request
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
-  {
-    to: '/student-form',
-    title: 'Student Form Assign',
-    iconComp: PhHouseLine, // Using PhExam per request
+    title: 'Home',
+    iconComp: PhHouseLine,
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
   // {
-  //   to: '/century',
-  //   title: '21 Century',
-  //   iconComp: PhHouseLine, // Using PhExam per request
+  //   to: '/grading',
+  //   title: 'Grading',
+  //   iconComp: PhHouseLine,
   //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
   // },
-  // { to: '/form', title: 'Form', iconComp: PhGear },
-  // { to: '/profile', title: 'Add Class', iconComp: PhGear },
+  {
+    to: '/students',
+    title: 'Search Students',
+    iconComp: PhStudent,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+])
+
+const formItems = computed<NavItem[]>(() => [
+  {
+    to: '/student-form',
+    title: 'Assign Forms',
+    iconComp: PhUserList,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+  {
+    to: '/skills',
+    title: 'Create Form Skills',
+    iconComp: PhTable,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
 ])
 
 function isActive(to: string) {

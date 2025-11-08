@@ -3,6 +3,19 @@
     <h1>CTE Industry and Technical Skills</h1>
   </header>
   <div class="center-table-container">
+    <div style="width: 320px; margin: 0 auto 12px auto">
+      <v-select
+        v-model="selectedCategoryId"
+        :items="categories"
+        item-title="name"
+        item-value="id"
+        label="Category"
+        variant="outlined"
+        density="comfortable"
+        :disabled="isLoading"
+        @update:modelValue="onCategoryChange"
+      />
+    </div>
     <ag-grid-vue
       :theme="gridTheme"
       :rowData="rowData"
@@ -20,21 +33,68 @@
       "
     />
     <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: center">
-      <v-btn @click="save">Save</v-btn>
+      <v-btn color="primary" @click="save">Save</v-btn>
+      <v-btn
+        color="secondary"
+        variant="tonal"
+        @click="printPdf"
+        :disabled="!selectedCategoryId || printing"
+        :loading="printing"
+      >
+        Print PDF
+      </v-btn>
     </div>
+    <v-snackbar
+      v-model="snackbar.open"
+      :timeout="2500"
+      :color="snackbar.color"
+      location="bottom"
+      elevation="2"
+    >
+      {{ snackbar.message }}
+      <template #actions>
+        <v-btn variant="text" size="small" @click="snackbar.open = false">Close</v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref } from 'vue'
 import { gridTheme } from '@/gridTheme'
+import { useRoute } from 'vue-router'
 import api from '@/api'
 
 const isLoading = ref(false)
+const categories = ref([])
+const selectedCategoryId = ref(null)
 
-onMounted(() => {
-  fetchData()
+const route = useRoute()
+const studentId = ref(route.params.studentId)
+
+onMounted(async () => {
+  await loadCategories()
+  if (selectedCategoryId.value) {
+    await fetchData(selectedCategoryId.value)
+  }
 })
+
+async function onCategoryChange(val) {
+  if (val == null) return
+  await fetchData(val)
+}
+
+async function loadCategories() {
+  try {
+    const { data } = await api.get('/skill/category')
+    categories.value = Array.isArray(data) ? data : []
+    selectedCategoryId.value = categories.value[0]?.id ?? null
+  } catch (e) {
+    console.error('Error loading categories', e)
+    categories.value = []
+  }
+}
+
 function onCellFocused(e) {
   if (!e?.column) return
   const colId = e.column.getColId ? e.column.getColId() : e.column.colId
@@ -77,22 +137,33 @@ async function save() {
         comment: item.comments, // or item.semester34.comment
       })
     })
+    await api.post(`/skill/skillscore/bulk-upsert/${studentId.value}`, payload)
 
-    const response = await api.post('/skill/skillscore/bulk-upsert', payload)
-    console.log(response)
+    rowData.value = []
+    await fetchData(selectedCategoryId.value)
+    snackbar.value = {
+      open: true,
+      message: `Saved ${payload.length} entries successfully`,
+      color: 'success',
+    }
   } catch (err) {
     console.error('Error saving data: ', err)
+    snackbar.value = {
+      open: true,
+      message: 'Save failed. Please retry.',
+      color: 'error',
+    }
   }
 }
 
-async function fetchData() {
+async function fetchData(categoryId) {
   isLoading.value = true
+  rowData.value = []
 
   try {
     //api
-
-    let response = await api.get('/skill/student/1')
-    console.log(response)
+    let response = await api.get(`/skill/student/${categoryId}/${studentId.value}`)
+    console.dir(response.data)
 
     Object.values(response.data).forEach((item) => {
       const semester1Score = item.SkillScores.find((s) => s.period === 'Semester 1') || {}
@@ -176,6 +247,48 @@ const colDefs = ref([
 
 const defaultColDef = {
   editable: true,
+}
+
+// Snackbar state
+const snackbar = ref({ open: false, message: '', color: 'success' })
+
+// TEMP: Print PDF via API that returns a PDF blob
+const printing = ref(false)
+async function printPdf() {
+  if (!selectedCategoryId.value) return
+  const categoryId = 1
+  printing.value = true
+  try {
+    const res = await api.get(`/pdf/student/${studentId.value}/category/${categoryId}`, {
+      responseType: 'blob',
+    })
+    const contentType = res.headers?.['content-type'] || 'application/pdf'
+    const blob = new Blob([res.data], { type: contentType })
+    const url = window.URL.createObjectURL(blob)
+    const cd = res.headers?.['content-disposition'] || ''
+    const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/)
+    const filename = decodeURIComponent(
+      match?.[1] || match?.[2] || `student-${studentId.value}-category-${categoryId}.pdf`,
+    )
+
+    const win = window.open(url, '_blank')
+    if (!win) {
+      // Fallback to download if popup blocked
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+    }
+    // Revoke after a short delay
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
+  } catch (err) {
+    console.error('PDF fetch failed:', err)
+    snackbar.value = { open: true, message: 'Failed to generate PDF.', color: 'error' }
+  } finally {
+    printing.value = false
+  }
 }
 </script>
 

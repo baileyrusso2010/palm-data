@@ -7,87 +7,30 @@
       <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">New Form</v-btn>
     </v-app-bar>
 
-    <!-- Search and Filters -->
+    <!-- Forms List -->
     <v-container class="py-4">
-      <v-row align="center" class="mb-4">
-        <v-col cols="12" md="6">
-          <v-text-field
-            v-model="search"
-            prepend-inner-icon="mdi-magnify"
-            label="Search forms"
-            variant="outlined"
-            density="comfortable"
-            clearable
-          />
-        </v-col>
-        <v-col cols="12" md="3" class="d-flex justify-end">
-          <v-btn-toggle v-model="viewMode" mandatory>
-            <v-btn value="grid" icon><v-icon>mdi-view-grid</v-icon></v-btn>
-            <v-btn value="list" icon><v-icon>mdi-view-list</v-icon></v-btn>
-          </v-btn-toggle>
-        </v-col>
-      </v-row>
-
-      <!-- Forms List/Grid -->
-      <v-row v-if="filteredForms.length" dense>
-        <!-- Grid View -->
-        <v-col
-          v-if="viewMode === 'grid'"
-          v-for="form in filteredForms"
-          :key="form.id"
-          cols="12"
-          sm="6"
-          md="4"
-          lg="3"
-        >
-          <v-card elevation="0" class="form-card pa-6" rounded="lg" @click="editForm(form)">
-            <div class="d-flex flex-column align-center text-center mb-4">
-              <v-icon size="48" color="primary" class="mb-3">mdi-clipboard-text-outline</v-icon>
-              <div class="text-h6 font-weight-medium mb-2">{{ form.title }}</div>
-              <div class="text-body-2 text-medium-emphasis two-line-clamp">
-                {{ form.description }}
+      <v-progress-linear v-if="isLoading" indeterminate class="mb-4" />
+      <v-card v-if="forms.length" elevation="1" rounded="lg">
+        <v-list lines="one">
+          <template v-for="(form, idx) in forms" :key="form.id">
+            <v-list-item @click="editForm(form)" class="list-row">
+              <div class="row-line">
+                <div class="row-left">
+                  <span class="title text-truncate">{{ form.name }}</span>
+                  <span v-if="form.description" class="sep">•</span>
+                  <span v-if="form.description" class="desc text-truncate">{{
+                    form.description
+                  }}</span>
+                </div>
+                <div class="row-right text-caption text-medium-emphasis">
+                  {{ formatCreated(form) }}
+                </div>
               </div>
-            </div>
-            <v-divider class="my-4" />
-            <div class="d-flex align-center justify-space-between mb-3">
-              <v-chip :color="statusColor(form.status)" size="small" label variant="flat">
-                {{ form.status }}
-              </v-chip>
-              <v-chip size="small" variant="outlined" color="primary">
-                {{ form.category }}
-              </v-chip>
-            </div>
-            <div class="text-caption text-medium-emphasis mb-4 text-center">
-              {{ formatDate(form.updatedAt) }}
-            </div>
-          </v-card>
-        </v-col>
-
-        <!-- List View -->
-        <v-col v-else cols="12">
-          <v-card elevation="2">
-            <v-list>
-              <v-list-item
-                v-for="form in filteredForms"
-                :key="form.id"
-                :title="form.title"
-                :subtitle="form.description"
-                @click="editForm(form)"
-              >
-                <template #append>
-                  <v-chip :color="statusColor(form.status)" size="small" label class="mr-2">{{
-                    form.status
-                  }}</v-chip>
-                  <v-chip size="small" variant="outlined" color="primary" class="mr-2">{{
-                    form.category
-                  }}</v-chip>
-                  <div class="text-caption mr-4">{{ formatDate(form.updatedAt) }}</div>
-                </template>
-              </v-list-item>
-            </v-list>
-          </v-card>
-        </v-col>
-      </v-row>
+            </v-list-item>
+            <v-divider v-if="idx < forms.length - 1" />
+          </template>
+        </v-list>
+      </v-card>
 
       <!-- Empty State -->
       <div v-else class="text-center py-8">
@@ -105,12 +48,13 @@
       <v-card>
         <v-card-title>{{ editMode ? 'Edit Form' : 'New Form' }}</v-card-title>
         <v-card-text>
-          <v-form ref="createFormRef" @submit.prevent="createForm">
+          <v-form ref="createFormRef" @submit.prevent="saveForm">
             <v-text-field
-              v-model="draft.title"
-              label="Title"
+              v-model="draft.name"
+              label="Name"
               variant="outlined"
               :rules="[rules.required]"
+              autofocus
               class="mb-3"
             />
             <v-textarea
@@ -120,30 +64,12 @@
               rows="3"
               class="mb-3"
             />
-            <v-row>
-              <v-col cols="6">
-                <v-select
-                  v-model="draft.category"
-                  :items="categories"
-                  label="Category"
-                  variant="outlined"
-                />
-              </v-col>
-              <v-col cols="6">
-                <v-select
-                  v-model="draft.status"
-                  :items="statuses"
-                  label="Status"
-                  variant="outlined"
-                />
-              </v-col>
-            </v-row>
           </v-form>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
           <v-btn @click="closeCreate">Cancel</v-btn>
-          <v-btn color="primary" @click="createForm">{{ editMode ? 'Save' : 'Add' }}</v-btn>
+          <v-btn color="primary" @click="saveForm">{{ editMode ? 'Save' : 'Add' }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -151,94 +77,87 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
+import api from '@/api'
 
-const search = ref('')
-const viewMode = ref('grid')
-const categoryFilter = ref('All')
 const createOpen = ref(false)
 const createFormRef = ref(null)
 const editMode = ref(false)
 const editingForm = ref(null)
+const isLoading = ref(false)
 
-const forms = ref([
-  {
-    id: 1,
-    title: 'CTE Program Survey',
-    description: 'Collect feedback on CTE program experience and outcomes.',
-    category: 'Form',
-    status: 'Published',
-    updatedAt: '2025-10-05T12:00:00Z',
-  },
-])
-
-const categories = computed(() => Array.from(new Set(forms.value.map((f) => f.category))).sort())
-const statuses = ['Draft', 'Published', 'Archived']
+const forms = ref([])
 
 const draft = ref({
-  title: '',
+  name: '',
   description: '',
-  category: categories.value[0] || '',
-  status: 'Draft',
 })
 const rules = { required: (v) => !!v || 'Required' }
 
-const filteredForms = computed(() => {
-  const q = search.value.toLowerCase()
-  return forms.value.filter(
-    (f) =>
-      (categoryFilter.value === 'All' || f.category === categoryFilter.value) &&
-      (f.title.toLowerCase().includes(q) || f.description.toLowerCase().includes(q)),
-  )
+onMounted(async () => {
+  await fetchForms()
 })
 
-function statusColor(status) {
-  return status === 'Published' ? 'success' : status === 'Draft' ? 'grey' : 'error'
-}
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleDateString()
+async function fetchForms() {
+  isLoading.value = true
+  try {
+    const response = await api.get('/forms')
+    console.log('in here')
+    forms.value = response.data
+  } catch (err) {
+    console.error('Error fetching forms:', err)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 function editForm(form) {
   editMode.value = true
   editingForm.value = form
-  draft.value = { ...form }
+  draft.value = { name: form.name, description: form.description }
   createOpen.value = true
 }
 
 function openCreate() {
   editMode.value = false
   editingForm.value = null
-  draft.value = {
-    title: '',
-    description: '',
-    category: categories.value[0] || '',
-    status: 'Draft',
-  }
+  draft.value = { name: '', description: '' }
   createOpen.value = true
 }
+
 function closeCreate() {
   createOpen.value = false
 }
-async function createForm() {
+
+async function saveForm() {
   const form = createFormRef.value
   if (form && !(await form.validate()).valid) return
-  if (editMode.value) {
-    // Edit existing form
-    const index = forms.value.findIndex((f) => f.id === editingForm.value.id)
-    if (index !== -1) {
-      forms.value[index] = {
-        ...editingForm.value,
-        ...draft.value,
-        updatedAt: new Date().toISOString(),
-      }
+
+  try {
+    if (editMode.value) {
+      await api.put(`/forms/${editingForm.value.id}`, {
+        name: draft.value.name,
+        description: draft.value.description,
+      })
+    } else {
+      await api.post('/forms', { name: draft.value.name, description: draft.value.description })
     }
-  } else {
-    // Create new form
-    forms.value.push({ ...draft.value, id: Date.now(), updatedAt: new Date().toISOString() })
+    await fetchForms()
+    closeCreate()
+  } catch (err) {
+    console.error('Error saving form:', err)
   }
-  closeCreate()
+}
+
+// Show created date at right; falls back to updated or empty
+function formatCreated(item) {
+  const d = item.createdAt || item.created_at || item.created || item.updatedAt || item.updated_at
+  if (!d) return ''
+  try {
+    return new Date(d).toLocaleDateString()
+  } catch {
+    return ''
+  }
 }
 </script>
 
@@ -270,5 +189,37 @@ async function createForm() {
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
+}
+
+/* Row list layout */
+.list-row {
+  cursor: pointer;
+}
+.row-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.row-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0; /* enable truncation */
+  flex: 1 1 auto;
+}
+.row-right {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.title {
+  font-weight: 600;
+  max-width: 40%;
+}
+.desc {
+  color: rgba(0, 0, 0, 0.6);
+  max-width: 50%;
+}
+.sep {
+  color: rgba(0, 0, 0, 0.28);
 }
 </style>

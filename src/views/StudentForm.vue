@@ -24,7 +24,7 @@
       <v-row>
         <!-- Forms panel -->
         <v-col cols="12" lg="7">
-          <v-card elevation="1" rounded="lg">
+          <v-card elevation="1" rounded="lg" class="fixed-height-card">
             <v-card-title class="d-flex align-center justify-space-between">
               <span>Forms</span>
               <v-checkbox
@@ -37,32 +37,35 @@
               />
             </v-card-title>
             <v-divider />
-            <v-card-text class="pt-0">
-              <v-list lines="two">
-                <v-list-item
-                  v-for="form in forms"
-                  :key="form.id"
-                  :title="form.title"
-                  :subtitle="form.description"
-                  :class="{ 'row-selected': isFormSelected(form.id) }"
-                  @click="toggleForm(form.id, !isFormSelected(form.id))"
-                >
-                  <template #prepend>
-                    <v-checkbox
-                      :model-value="isFormSelected(form.id)"
-                      density="compact"
-                      hide-details
-                      @click.stop
-                      @update:modelValue="(val) => toggleForm(form.id, val)"
-                    />
+            <v-card-text class="pt-0 flex-column flex-grow-1 d-flex">
+              <div class="panel-scroll">
+                <v-virtual-scroll :items="forms" height="500" item-height="48">
+                  <template #default="{ item }">
+                    <v-list-item
+                      :key="item.id"
+                      :title="item.title"
+                      :subtitle="item.description"
+                      :class="{ 'row-selected': isFormSelected(item.id) }"
+                      @click="toggleForm(item.id, !isFormSelected(item.id))"
+                    >
+                      <template #prepend>
+                        <v-checkbox
+                          :model-value="isFormSelected(item.id)"
+                          density="compact"
+                          hide-details
+                          @click.stop
+                          @update:modelValue="(val) => toggleForm(item.id, val)"
+                        />
+                      </template>
+                      <template #append>
+                        <div class="text-caption text-medium-emphasis">
+                          Updated {{ formatDate(item.updatedAt) }}
+                        </div>
+                      </template>
+                    </v-list-item>
                   </template>
-                  <template #append>
-                    <div class="text-caption text-medium-emphasis">
-                      Updated {{ formatDate(form.updatedAt) }}
-                    </div>
-                  </template>
-                </v-list-item>
-              </v-list>
+                </v-virtual-scroll>
+              </div>
 
               <div class="d-flex align-center justify-space-between mt-2">
                 <div class="text-caption text-medium-emphasis">
@@ -85,7 +88,7 @@
 
         <!-- Students panel -->
         <v-col cols="12" lg="5">
-          <v-card elevation="1" rounded="lg">
+          <v-card elevation="1" rounded="lg" class="fixed-height-card">
             <v-card-title class="d-flex align-center justify-space-between">
               <span>Students</span>
               <v-checkbox
@@ -102,44 +105,46 @@
               />
             </v-card-title>
             <v-divider />
-            <v-card-text>
-              <v-list>
-                <v-list-item
-                  v-for="stu in students"
-                  :key="stu.id"
-                  :title="stu.fullName"
-                  :class="studentRowClass(stu.id)"
-                  @click="toggleStudent(stu.id, !isStudentSelected(stu.id))"
-                >
-                  <template #prepend>
-                    <v-checkbox
-                      :model-value="isStudentSelected(stu.id)"
-                      density="compact"
-                      hide-details
-                      @click.stop
-                      @update:modelValue="(val) => toggleStudent(stu.id, val)"
-                    />
-                  </template>
-                  <template #append>
-                    <v-tooltip
-                      v-if="selectedFormIds.length && studentHasAnySelected(stu.id) > 0"
-                      location="top"
-                    >
-                      <template #activator="{ props }">
-                        <v-chip v-bind="props" size="x-small" label variant="tonal" color="grey">
-                          Has {{ studentHasAnySelected(stu.id) }}/{{ selectedFormIds.length }}
-                        </v-chip>
-                      </template>
-                      <div class="text-caption">
-                        Already has:
-                        <ul class="ma-0 pa-0">
-                          <li v-for="t in studentHasSelectedTitles(stu.id)" :key="t">{{ t }}</li>
-                        </ul>
-                      </div>
-                    </v-tooltip>
-                  </template>
-                </v-list-item>
-              </v-list>
+            <v-card-text class="pt-0 flex-column flex-grow-1 d-flex">
+              <div class="panel-scroll">
+                <v-list class="py-0">
+                  <v-list-item
+                    v-for="stu in students"
+                    :key="stu.id"
+                    :title="stu.fullName"
+                    :class="studentRowClass(stu.id)"
+                    @click="toggleStudent(stu.id, !isStudentSelected(stu.id))"
+                  >
+                    <template #prepend>
+                      <v-checkbox
+                        :model-value="isStudentSelected(stu.id)"
+                        density="compact"
+                        hide-details
+                        @click.stop
+                        @update:modelValue="(val) => toggleStudent(stu.id, val)"
+                      />
+                    </template>
+                    <template #append>
+                      <v-tooltip
+                        v-if="selectedFormIds.length && studentHasAnySelected(stu.id) > 0"
+                        location="top"
+                      >
+                        <template #activator="{ props }">
+                          <v-chip v-bind="props" size="x-small" label variant="tonal" color="grey">
+                            Has {{ studentHasAnySelected(stu.id) }}/{{ selectedFormIds.length }}
+                          </v-chip>
+                        </template>
+                        <div class="text-caption">
+                          Already has:
+                          <ul class="ma-0 pa-0">
+                            <li v-for="t in studentHasSelectedTitles(stu.id)" :key="t">{{ t }}</li>
+                          </ul>
+                        </div>
+                      </v-tooltip>
+                    </template>
+                  </v-list-item>
+                </v-list>
+              </div>
 
               <div class="d-flex align-center justify-space-between mt-2">
                 <div class="text-caption text-medium-emphasis">
@@ -168,54 +173,42 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import api from '@/api'
+import { ref, computed, onMounted } from 'vue'
+
+onMounted(async () => {
+  const list_students = await api.get('/students')
+
+  Object.values(list_students.data).forEach((item) => {
+    students.value.push({
+      id: item.id,
+      firstName: item.first_name,
+      lastName: item.last_name,
+      grade: item.grade,
+    })
+  })
+
+  students.value = students.value.map((s) => ({
+    ...s,
+    fullName: `${s.firstName} ${s.lastName} (Gr ${s.grade})`,
+  }))
+  const form_list = await api.get('/forms')
+
+  Object.values(form_list.data).forEach((item) => {
+    forms.value.push({
+      id: item.id,
+      title: item.name,
+      description: item.description,
+      updatedAt: item.updated_at,
+    })
+  })
+})
 
 // Fake data: forms
-const forms = ref([
-  {
-    id: 101,
-    title: 'Enrollment Form',
-    description: 'Basic student enrollment details.',
-    category: 'Form',
-    status: 'Published',
-    updatedAt: '2025-10-03T10:00:00Z',
-  },
-  {
-    id: 102,
-    title: 'Emergency Contact',
-    description: 'Parent/guardian contact information.',
-    category: 'Form',
-    status: 'Draft',
-    updatedAt: '2025-09-25T13:20:00Z',
-  },
-  {
-    id: 103,
-    title: 'Medical Consent',
-    description: 'Permission for school medical treatment.',
-    category: 'Form',
-    status: 'Published',
-    updatedAt: '2025-10-20T09:10:00Z',
-  },
-  {
-    id: 104,
-    title: 'Media Release',
-    description: 'Consent to use student photos or videos.',
-    category: 'Form',
-    status: 'Published',
-    updatedAt: '2025-08-18T15:45:00Z',
-  },
-])
+const forms = ref([])
 
 // Fake data: students
-const students = ref(
-  [
-    { id: 1, firstName: 'Ava', lastName: 'Nguyen', grade: 10 },
-    { id: 2, firstName: 'Liam', lastName: 'Patel', grade: 11 },
-    { id: 3, firstName: 'Mia', lastName: 'Gonzalez', grade: 12 },
-    { id: 4, firstName: 'Noah', lastName: 'Kim', grade: 10 },
-    { id: 5, firstName: 'Emma', lastName: 'Brown', grade: 9 },
-  ].map((s) => ({ ...s, fullName: `${s.firstName} ${s.lastName} (Gr ${s.grade})` })),
-)
+const students = ref([])
 
 // Fake existing assignments (studentId -> formId)
 const existingAssignments = ref([
@@ -257,9 +250,6 @@ function formatDate(iso) {
   } catch {
     return ''
   }
-}
-function statusColor(status) {
-  return status === 'Published' ? 'success' : status === 'Draft' ? 'grey' : 'primary'
 }
 
 // Selection actions
@@ -321,7 +311,7 @@ function studentRowClass(id) {
 
 // Assign action (fake)
 const snackbar = ref({ open: false, message: '' })
-function assignForms() {
+async function assignForms() {
   const payload = []
   for (const studentId of selectedStudentIds.value) {
     for (const formId of selectedFormIds.value) {
@@ -329,7 +319,8 @@ function assignForms() {
     }
   }
   // Simulate API
-  console.log('Assign forms payload:', payload)
+  const response = await api.post('/forms/assign', payload)
+  console.log(response)
   snackbar.value = {
     open: true,
     message: `Assigned ${selectedFormIds.value.length} form(s) to ${selectedStudentIds.value.length} student(s).`,
@@ -343,6 +334,29 @@ function assignForms() {
 .assign-page {
   background: #fafafa;
   min-height: 100vh;
+}
+.fixed-height-card {
+  display: flex;
+  flex-direction: column;
+  height: 70vh; /* consistent panel height */
+}
+.panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0; /* IMPORTANT so flex container can shrink and scroll works */
+  overflow-y: hidden;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+.panel-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.panel-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.panel-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
 }
 .max-w-320 {
   max-width: 320px;

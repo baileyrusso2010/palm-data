@@ -1,31 +1,38 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
-import Home from './views/Home.vue'
+import HomeWelcome from './views/HomeWelcome.vue'
 import Login from './views/Login.vue'
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
-import Century from './views/Century.vue'
-import SkillAssessment from './views/SkillAssessment.vue'
-import CTEIndustry from './views/CTEIndustry.vue'
 import FormView from './views/FormView.vue'
 import StudentForm from './views/StudentForm.vue'
+import SkillView from './views/SkillView.vue'
+import StudentProfile from './views/StudentProfile.vue'
+import StudentSearch from './views/StudentSearch.vue'
+import StudentGrading from './views/StudentGrading.vue'
 
 const routes = [
   // Public / guest routes
   { path: '/', component: Login, name: 'login', meta: { title: 'Login', guestOnly: true } },
   {
     path: '/home',
-    component: CTEIndustry,
+    component: HomeWelcome,
     name: 'home',
     meta: { requiresAuth: true },
   },
   {
-    path: '/nys',
-    component: Century,
+    path: '/grading/:studentId',
+    component: StudentGrading,
+    name: 'grading',
     meta: { requiresAuth: true },
   },
   {
-    path: '/century',
-    component: SkillAssessment,
+    path: '/form-view',
+    component: FormView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/skills',
+    component: SkillView,
     meta: { requiresAuth: true },
   },
   {
@@ -36,6 +43,18 @@ const routes = [
   {
     path: '/student-form',
     component: StudentForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/student/:id',
+    component: StudentProfile,
+    name: 'student-profile',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/students',
+    component: StudentSearch,
+    name: 'student-search',
     meta: { requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
