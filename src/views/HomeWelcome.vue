@@ -24,7 +24,12 @@
                 md="4"
                 lg="3"
               >
-                <v-card elevation="3" rounded="xl" class="class-card">
+                <v-card
+                  elevation="3"
+                  rounded="xl"
+                  class="class-card"
+                  @click="goToClass(classItem.id)"
+                >
                   <v-card-title class="class-title">{{ classItem.name }}</v-card-title>
                   <v-card-subtitle class="class-teacher"
                     >Teacher: {{ classItem.teacher }}</v-card-subtitle
@@ -45,31 +50,47 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '@/api'
 
-const schools = ref([
-  {
-    id: 'erie',
-    name: 'Erie BOCES',
-    classes: [
-      { id: 'e1', name: 'Math 101', teacher: 'Ms. Smith', students: 24 },
-      { id: 'e2', name: 'English Literature', teacher: 'Mr. Johnson', students: 18 },
-      { id: 'e3', name: 'Biology', teacher: 'Dr. Lee', students: 20 },
-      { id: 'e4', name: 'History', teacher: 'Mrs. Brown', students: 22 },
-    ],
-  },
-  {
-    id: 'monroe',
-    name: 'Monroe BOCES',
-    classes: [
-      { id: 'm1', name: 'Chemistry', teacher: 'Ms. White', students: 19 },
-      { id: 'm2', name: 'Physics', teacher: 'Mr. Green', students: 17 },
-      { id: 'm3', name: 'Art', teacher: 'Ms. Black', students: 15 },
-      { id: 'm4', name: 'Computer Science', teacher: 'Mr. Blue', students: 21 },
-      { id: 'm4', name: 'Computer Science', teacher: 'Mr. Blue', students: 21 },
-    ],
-  },
-])
+const router = useRouter()
+
+const isLoading = ref(false)
+const schools = ref([])
+
+function goToClass(classId) {
+  router.push({ name: 'class', params: { id: classId } })
+}
+
+onMounted(async () => {
+  isLoading.value = true
+  try {
+    let response = await api.get('/course-instances/')
+
+    Object.keys(response.data).forEach((schoolKey) => {
+      const schoolArray = response.data[schoolKey]
+      let classes = []
+      schoolArray.forEach((item) => {
+        classes.push({
+          id: item.id,
+          name: item.alias,
+          teacher: item.instructor?.last_name,
+          students: item.enrollmentCount,
+        })
+      })
+      schools.value.push({
+        id: schoolKey,
+        name: schoolKey,
+        classes: classes,
+      })
+    })
+  } catch (e) {
+    console.error(e)
+  } finally {
+    isLoading.value = false
+  }
+})
 </script>
 
 <style scoped>

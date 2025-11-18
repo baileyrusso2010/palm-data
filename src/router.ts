@@ -47,7 +47,8 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/class',
+    path: '/class/:id',
+    name: 'class',
     component: ClassView,
     meta: { requiresAuth: true },
   },

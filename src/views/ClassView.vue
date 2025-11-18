@@ -49,34 +49,20 @@
       <v-row dense class="main-grid">
         <v-col cols="12">
           <v-card class="glass-card mb-6" rounded="xl">
-            <v-card-title class="card-title">Students</v-card-title>
+            <v-card-title class="card-title card-title-row">
+              <span>Students</span>
+              <span class="highlight-text"> {{ students.length }} students </span>
+            </v-card-title>
             <v-divider></v-divider>
             <v-card-text>
-              <v-row class="mb-4" align="center">
-                <v-col cols="12" md="6">
-                  <div class="highlight-text">
-                    {{ filteredStudents.length }} of {{ classProfile.students.length }} students
-                    showing
-                  </div>
-                </v-col>
-                <v-col cols="12" md="6" class="text-md-right">
-                  <v-text-field
-                    v-model="searchTerm"
-                    prepend-inner-icon="mdi-magnify"
-                    density="comfortable"
-                    variant="outlined"
-                    hide-details
-                    rounded
-                    placeholder="Search students by name or ID"
-                  />
-                </v-col>
-              </v-row>
-
               <v-data-table
                 :headers="studentHeaders"
                 :items="filteredStudents"
-                class="custom-table"
+                :items-per-page="-1"
+                class="custom-table scrollable-table"
                 density="comfortable"
+                fixed-header
+                height="420"
                 hide-default-footer
               >
                 <template #item.name="{ item }">
@@ -118,10 +104,12 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import api from '@/api'
 
+const isLoading = ref(false)
 const classProfile = ref({
-  name: 'Mathematics • Algebra II',
+  name: '',
   track: 'STEM Academy Core',
   term: 'Fall 2025',
   period: 'Block 2',
@@ -138,72 +126,46 @@ const classProfile = ref({
     phone: '(585) 555-1034',
     support: 'Academic Director: Jordan Patel',
   },
-  students: [
-    {
-      id: 'S1001',
-      name: 'Alice Johnson',
-      email: 'alice.johnson@palm.edu',
-      grade: '10',
-      status: 'Active',
-      gradePulse: { score: 94 },
-    },
-    {
-      id: 'S1002',
-      name: 'Bob Lee',
-      email: 'bob.lee@palm.edu',
-      grade: '11',
-      status: 'Active',
-      gradePulse: { score: 88 },
-    },
-    {
-      id: 'S1003',
-      name: 'Charlie Kim',
-      email: 'charlie.kim@palm.edu',
-      grade: '10',
-      status: 'Active',
-      gradePulse: { score: 87 },
-    },
-    {
-      id: 'S1004',
-      name: 'Dana White',
-      email: 'dana.white@palm.edu',
-      grade: '9',
-      status: 'Active',
-      gradePulse: { score: 90 },
-    },
-    {
-      id: 'S1005',
-      name: 'Evan Brown',
-      email: 'evan.brown@palm.edu',
-      grade: '12',
-      status: 'Monitored',
-      gradePulse: { score: 78 },
-    },
-    {
-      id: 'S1006',
-      name: 'Fiona Garcia',
-      email: 'fiona.garcia@palm.edu',
-      grade: '11',
-      status: 'Active',
-      gradePulse: { score: 91 },
-    },
-    {
-      id: 'S1007',
-      name: 'George Martin',
-      email: 'george.martin@palm.edu',
-      grade: '12',
-      status: 'Active',
-      gradePulse: { score: 83 },
-    },
-    {
-      id: 'S1008',
-      name: 'Harper Singh',
-      email: 'harper.singh@palm.edu',
-      grade: '10',
-      status: 'Inactive',
-      gradePulse: { score: 69 },
-    },
-  ],
+})
+
+const students = ref([])
+onMounted(async () => {
+  isLoading.value = true
+
+  try {
+    const response = await api.get('/course-instances/21')
+
+    let data = response.data
+
+    classProfile.value = {
+      ...classProfile.value,
+      name: data?.alias ?? classProfile.value.name,
+      cipCode: data?.course_catalog?.course_code ?? classProfile.value.cipCode,
+      scedCode: data?.program_catalog?.state_program_code ?? classProfile.value.scedCode,
+      location: data?.cte_school?.name ?? classProfile.value.location,
+    }
+
+    let enrollments = response.data.enrollments
+
+    enrollments.forEach((element) => {
+      students.value.push({
+        id: element.student.id,
+        name: `${element.student.first_name} ${element.student.last_name}`,
+        email: `${element.student.first_name[0]}${element.student.last_name}@school.com`,
+        grade: element.student.grade,
+        status: 'active',
+        gradePulse: { score: 94 },
+      })
+    })
+
+    if (Array.isArray(data?.students) && data.students.length) {
+      students.value = data.students
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    isLoading.value = false
+  }
 })
 
 const classMetrics = ref([
@@ -267,7 +229,7 @@ const studentHeaders = [
 ]
 
 const studentsWithInitials = computed(() =>
-  classProfile.value.students.map((student) => ({
+  students.value.map((student) => ({
     ...student,
     initials: student.name
       .split(' ')
@@ -517,6 +479,14 @@ const trendClass = (direction) => {
   font-size: 1.15rem;
 }
 
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .grading-pulse {
   display: flex;
   flex-direction: column;
@@ -652,6 +622,11 @@ const trendClass = (direction) => {
 
 .custom-table :deep(tbody tr:hover) {
   background: rgba(34, 139, 230, 0.04);
+}
+
+.scrollable-table :deep(.v-table__wrapper) {
+  max-height: 420px;
+  overflow-y: auto;
 }
 
 .student-pill {
