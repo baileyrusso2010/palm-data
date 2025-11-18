@@ -9,6 +9,7 @@ import SkillView from './views/SkillView.vue'
 import StudentProfile from './views/StudentProfile.vue'
 import StudentSearch from './views/StudentSearch.vue'
 import StudentGrading from './views/StudentGrading.vue'
+import ClassView from './views/ClassView.vue'
 
 const routes = [
   // Public / guest routes
@@ -43,6 +44,11 @@ const routes = [
   {
     path: '/student-form',
     component: StudentForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/class',
+    component: ClassView,
     meta: { requiresAuth: true },
   },
   {
