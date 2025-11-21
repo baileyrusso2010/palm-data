@@ -101,13 +101,222 @@
       </v-row>
     </v-container>
   </div>
+
+  <div class="text-center pa-8">
+    <v-btn color="primary" size="large" @click="openCategoryDialog">
+      Set Up Grading Categories
+    </v-btn>
+
+    <v-dialog v-model="dialog" max-width="560" persistent>
+      <v-card class="pa-4">
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center">
+          <v-icon left color="primary">mdi-tune</v-icon>
+          Set Up Grading Categories & Weights
+        </v-card-title>
+
+        <v-card-text class="pt-6">
+          <p class="text-body-1 text-medium-emphasis mb-6">
+            Most teachers use this setup — just adjust if needed:
+          </p>
+
+          <!-- Category Inputs (Set #1 pre-filled) -->
+          <div v-for="(cat, index) in categories" :key="index" class="category-row mb-5">
+            <div class="category-name flex-grow-1">
+              <div v-if="editingIndex === index">
+                <v-text-field
+                  v-model="cat.name"
+                  label="Category Name"
+                  variant="outlined"
+                  density="comfortable"
+                  hide-details
+                  autofocus
+                  @blur="stopEditingCategory"
+                  @keyup.enter.prevent="stopEditingCategory"
+                  @keydown.esc.prevent="stopEditingCategory"
+                ></v-text-field>
+              </div>
+              <div
+                v-else
+                class="category-name-display"
+                role="button"
+                tabindex="0"
+                @click="startEditingCategory(index)"
+                @keyup.enter.prevent="startEditingCategory(index)"
+                @keyup.space.prevent="startEditingCategory(index)"
+              >
+                <span class="category-name-text">{{ cat.name }}</span>
+                <v-btn
+                  icon
+                  variant="text"
+                  size="small"
+                  color="primary"
+                  @click.stop="startEditingCategory(index)"
+                >
+                  <v-icon size="18">mdi-pencil</v-icon>
+                </v-btn>
+              </div>
+            </div>
+
+            <div class="category-weight">
+              <v-text-field
+                v-model.number="cat.weight"
+                label="Weight"
+                type="number"
+                suffix="%"
+                min="0"
+                max="100"
+                step="1"
+                variant="outlined"
+                density="comfortable"
+                hide-details
+                class="category-weight-input"
+              ></v-text-field>
+
+              <v-btn
+                v-if="categories.length > 1"
+                icon="mdi-delete"
+                color="error"
+                variant="text"
+                @click="removeCategory(index)"
+              ></v-btn>
+            </div>
+          </div>
+
+          <!-- Add New Category
+          <v-btn variant="text" color="primary" prepend-icon="mdi-plus" @click="addCategory">
+            Add Category
+          </v-btn> -->
+
+          <v-divider class="my-6"></v-divider>
+
+          <!-- Total Weight Display -->
+          <div class="d-flex justify-space-between align-center">
+            <span class="text-h6">Total Weight</span>
+            <span
+              class="text-h5 font-weight-bold"
+              :class="totalWeight === 100 ? 'text-success' : 'text-error'"
+            >
+              {{ totalWeight }}%
+            </span>
+          </div>
+
+          <v-alert
+            v-if="totalWeight !== 100"
+            type="warning"
+            variant="tonal"
+            class="mt-4"
+            text="Weights must add up to exactly 100% to save."
+          ></v-alert>
+        </v-card-text>
+
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            size="large"
+            :disabled="totalWeight !== 100"
+            @click="saveCategories"
+          >
+            Save & Continue
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import api from '@/api'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const dialog = ref(false)
+const editingIndex = ref(null)
+const needsSetup = ref(false)
 
 const isLoading = ref(false)
+const categories = ref([])
+const totalWeight = computed(() => {
+  return categories.value.reduce((sum, cat) => sum + (cat.weight || 0), 0)
+})
+
+const openCategoryDialog = () => {
+  dialog.value = true
+  editingIndex.value = null
+}
+
+const closeDialog = () => {
+  if (editingIndex.value !== null) {
+    stopEditingCategory()
+  }
+  dialog.value = false
+}
+
+const startEditingCategory = (index) => {
+  if (editingIndex.value !== null && editingIndex.value !== index) {
+    stopEditingCategory()
+  }
+
+  editingIndex.value = index
+}
+
+const stopEditingCategory = () => {
+  if (editingIndex.value === null) return
+
+  const activeCategory = categories.value[editingIndex.value]
+  if (activeCategory && typeof activeCategory.name === 'string' && !activeCategory.name.trim()) {
+    activeCategory.name = 'New Category'
+  }
+
+  editingIndex.value = null
+}
+
+const addCategory = () => {
+  categories.value.push({ name: 'New Category', weight: 0 })
+  editingIndex.value = categories.value.length - 1
+}
+
+const removeCategory = (index) => {
+  categories.value.splice(index, 1)
+  if (editingIndex.value === index) {
+    editingIndex.value = null
+  } else if (editingIndex.value !== null && editingIndex.value > index) {
+    editingIndex.value -= 1
+  }
+}
+
+const saveCategories = async () => {
+  try {
+    if (totalWeight.value === 100) {
+      const payload = {
+        course_id: route.params.id,
+        categories: categories.value,
+      }
+      let response = null
+      if (needsSetup.value == true) {
+        response = await api.post('/gradebook', payload)
+        needsSetup.value = false
+        let cat = response.data.data
+
+        categories.value = []
+        cat.forEach((item) => {
+          categories.value.push({
+            id: item.id,
+            name: item.name,
+            weight: Math.round(item.weight), // Cast decimal to integer
+          })
+        })
+      } else response = await api.patch('/gradebook', payload)
+    }
+    closeDialog()
+  } catch (err) {
+    //put snackbar
+    console.error(err)
+  }
+}
+
 const classProfile = ref({
   name: '',
   track: 'STEM Academy Core',
@@ -133,7 +342,8 @@ onMounted(async () => {
   isLoading.value = true
 
   try {
-    const response = await api.get('/course-instances/21')
+    const course_id = route.params.id
+    const response = await api.get(`/course-instances/${course_id}`)
 
     let data = response.data
 
@@ -160,6 +370,32 @@ onMounted(async () => {
 
     if (Array.isArray(data?.students) && data.students.length) {
       students.value = data.students
+    }
+
+    //put in promise all
+
+    let gradebook_data = await api.get(`/gradebook/${course_id}`)
+
+    //no grades in gradebook
+    needsSetup.value = gradebook_data.data.needsSetup
+
+    let g_book = gradebook_data.data.data
+
+    if (needsSetup.value == false) {
+      g_book.forEach((item) => {
+        categories.value.push({
+          id: item.id,
+          name: item.name,
+          weight: Math.round(item.weight), // Cast decimal to integer
+        })
+      })
+    } else {
+      categories.value.push(
+        { name: 'Homework / Classwork', weight: 20 },
+        { name: 'Quizzes', weight: 20 },
+        { name: 'Tests / Exams', weight: 40 },
+        { name: 'Final Exam', weight: 20 },
+      )
     }
   } catch (e) {
     console.error(e)
@@ -334,326 +570,4 @@ const trendClass = (direction) => {
 }
 </script>
 
-<style scoped>
-:global(body) {
-  font-family:
-    'Inter',
-    'Segoe UI',
-    'Montserrat',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
-}
-
-.class-view {
-  background: #f6f8fb;
-  min-height: 100vh;
-  color: #0f1b33;
-}
-
-.hero {
-  padding-top: 48px;
-  background: linear-gradient(180deg, #ffffff 0%, #eef4ff 100%);
-}
-
-.hero-card {
-  background: #ffffff;
-  border: 1px solid rgba(15, 27, 51, 0.08);
-  border-radius: 32px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(15, 27, 51, 0.12);
-}
-
-.hero-main {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.hero-title-area {
-  display: flex;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 24px;
-}
-
-.eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.24em;
-  font-size: 0.75rem;
-  color: rgba(15, 27, 51, 0.55);
-  margin-bottom: 12px;
-}
-
-.hero h1 {
-  font-size: clamp(2rem, 4vw, 3rem);
-  margin: 0;
-  color: #0f1b33;
-}
-
-.subtitle {
-  color: rgba(15, 27, 51, 0.65);
-  margin-top: 8px;
-}
-
-.hero-actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.hero-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.hero-chip {
-  font-weight: 600;
-  color: #0f1b33;
-}
-
-.hero-metrics {
-  margin-top: 32px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-}
-
-.metric-card {
-  background: rgba(15, 27, 51, 0.04);
-  border-radius: 20px;
-  padding: 16px 20px;
-  border: 1px solid rgba(15, 27, 51, 0.05);
-}
-
-.metric-label {
-  font-size: 0.85rem;
-  color: rgba(15, 27, 51, 0.55);
-  margin: 0 0 8px;
-}
-
-.metric-value {
-  font-size: 1.6rem;
-  margin: 0;
-  color: #0f1b33;
-}
-
-.metric-trend {
-  font-size: 0.85rem;
-  display: flex;
-  align-items: center;
-  margin-top: 6px;
-}
-
-.metric-trend.positive {
-  color: #178754;
-}
-.metric-trend.warning {
-  color: #b57400;
-}
-.metric-trend.neutral {
-  color: rgba(15, 27, 51, 0.55);
-}
-
-.content {
-  margin-top: 16px;
-}
-
-.main-grid {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(15, 27, 51, 0.08);
-  box-shadow: 0 25px 60px rgba(8, 16, 31, 0.1);
-  color: #0f1b33;
-}
-
-.card-title {
-  font-weight: 700;
-  font-size: 1.15rem;
-}
-
-.card-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.grading-pulse {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.pulse-core {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.pulse-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #0f1b33;
-}
-
-.pulse-label {
-  display: block;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(15, 27, 51, 0.5);
-}
-
-.pulse-chip {
-  font-weight: 600;
-  letter-spacing: 0.03em;
-}
-
-.pulse-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: 8px;
-}
-
-.pulse-stat {
-  padding: 6px 8px;
-  border-radius: 10px;
-  background: rgba(15, 27, 51, 0.03);
-  border: 1px solid rgba(15, 27, 51, 0.05);
-}
-
-.pulse-stat-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(15, 27, 51, 0.55);
-  margin-bottom: 4px;
-}
-
-.pulse-stat-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.pulse-stat-value.trend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.positive {
-  color: #178754;
-}
-
-.negative {
-  color: #c0392b;
-}
-
-.neutral {
-  color: rgba(15, 27, 51, 0.65);
-}
-
-.description {
-  font-size: 1rem;
-  color: #2f3f5c;
-  margin-bottom: 8px;
-}
-
-.hero-details {
-  margin-top: 24px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-}
-
-.detail-item {
-  padding: 16px 18px;
-  border: 1px solid rgba(15, 27, 51, 0.08);
-  border-radius: 18px;
-  background: rgba(15, 27, 51, 0.02);
-}
-
-.detail-label {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(15, 27, 51, 0.6);
-  margin-bottom: 6px;
-}
-
-.detail-value {
-  margin: 0;
-  font-weight: 600;
-  color: #0f1b33;
-}
-
-.detail-subvalue {
-  margin: 4px 0 0;
-  color: #526480;
-  font-size: 0.9rem;
-}
-
-.highlight-text {
-  font-weight: 600;
-  color: #1f2c4d;
-}
-
-.custom-table :deep(thead th) {
-  color: #5a6c88;
-  font-weight: 600;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-}
-
-.custom-table :deep(tbody tr) {
-  transition: background 0.15s ease;
-}
-
-.custom-table :deep(tbody tr:hover) {
-  background: rgba(34, 139, 230, 0.04);
-}
-
-.scrollable-table :deep(.v-table__wrapper) {
-  max-height: 420px;
-  overflow-y: auto;
-}
-
-.student-pill {
-  display: flex;
-  align-items: center;
-}
-
-.student-pill span {
-  font-weight: 700;
-}
-
-.student-name {
-  font-weight: 600;
-  color: #11182a;
-}
-
-.student-meta {
-  font-size: 0.85rem;
-  color: #5a6c88;
-}
-
-@media (max-width: 960px) {
-  .hero-card {
-    padding: 24px;
-  }
-  .hero-actions {
-    width: 100%;
-  }
-}
-</style>
+<style src="@/styles/ClassView.css"></style>
