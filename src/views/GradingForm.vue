@@ -14,6 +14,7 @@
     />
 
     <!-- AG Grid -->
+    <h1>Employability Skills</h1>
     <ag-grid-vue
       class="ag-theme-alpine"
       :rowData="rowData"
@@ -23,7 +24,17 @@
       style="width: 100%; height: 500px"
     />
 
+    <h1>21st Century Exam</h1>
+    <ag-grid-vue
+      class="ag-theme-alpine"
+      :rowData="centuryRowData"
+      :columnDefs="centuryColumnDefs"
+      :defaultColDef="defaultColDef"
+      style="width: 100%; height: 120px"
+    />
+
     <v-btn color="primary" class="mt-4" @click="saveGrades"> Save Grades </v-btn>
+    <v-btn color="primary" class="mt-4" @click="save21Century"> Save 21 Grades </v-btn>
   </v-container>
 </template>
 
@@ -69,40 +80,115 @@ onMounted(async () => {
   await loadRubricRows()
   buildColumns()
   await loadExistingGrades()
+  await load21Century()
 })
+
+const centuryColumnDefs = ref([])
+const centuryRowData = ref([])
+const centuryRowMeta = ref({ rowId: null })
+
+async function load21Century() {
+  try {
+    const { data } = await api.get('/rubric/section/7/columns')
+    // Build columns from API
+    centuryColumnDefs.value = (Array.isArray(data) ? data : []).map((col) => ({
+      headerName: col.label,
+      field: String(col.id),
+      editable: true,
+    }))
+
+    // Get the actual row data
+    const { data: rows } = await api.get(`/rubric/section/7/rows`)
+    let row = {}
+    const firstRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null
+    centuryRowMeta.value.rowId = firstRow?.id ?? null
+    const storedValues = firstRow?.row_data || firstRow?.rowData || {}
+
+    centuryColumnDefs.value.forEach((col) => {
+      row[col.field] = storedValues[col.field] ?? ''
+    })
+
+    centuryRowData.value = [row]
+
+    await load21CenturyGrades()
+  } catch (err) {
+    console.error('Error loading grades/comments', err)
+  }
+}
+
+async function load21CenturyGrades() {
+  if (!selectedStudentId.value || !centuryRowMeta.value.rowId) return
+  try {
+    const { data } = await api.get(
+      `/rubric/grades/student/${selectedStudentId.value}/form/${form.id}`,
+    )
+
+    const targetRowId = centuryRowMeta.value.rowId
+    const currentRow = centuryRowData.value[0]
+    if (!currentRow) return
+
+    data
+      .filter((grade) => grade.rubric_row_id === targetRowId)
+      .forEach((grade) => {
+        const colKey = String(grade.rubric_column_id)
+        currentRow[colKey] = grade.grade
+      })
+
+    // Force reactivity for AG Grid
+    centuryRowData.value = [{ ...currentRow }]
+  } catch (err) {
+    console.error('Error loading 21st Century grades', err)
+  }
+}
+
+async function save21Century() {
+  try {
+    const gradesPayload = []
+    const row = centuryRowData.value[0] || {}
+    const rowId = centuryRowMeta.value.rowId
+
+    if (!rowId) {
+      alert('No row_id found for 21st Century Exam')
+      return
+    }
+
+    centuryColumnDefs.value.forEach((col) => {
+      const gradeValue = row[col.field]
+      if (gradeValue !== '' && gradeValue != null) {
+        gradesPayload.push({
+          row_id: rowId,
+          column_id: Number(col.field),
+          grade: gradeValue,
+        })
+      }
+    })
+
+    await api.post(`/rubric/grades/student/${selectedStudentId.value}`, {
+      grades: gradesPayload,
+    })
+
+    console.log(gradesPayload)
+  } catch (err) {
+    console.error('Error saving 21st Century grades', err)
+    alert('Failed to save 21st Century grades')
+  }
+}
 
 // ----- Load rows from API -----
 async function loadRubricRows() {
   try {
-    const { data } = await api.get(`/rubric/sections/form/${form.id}`)
-    console.log(data)
+    const { data: rowsResponse } = await api.get(`/rubric/section/5/rows`)
+    const rowsArray = Array.isArray(rowsResponse) ? rowsResponse : Object.values(rowsResponse ?? {})
 
-    const sections = Array.isArray(data) ? data : []
-    const rowsPerSection = await Promise.all(
-      sections.map(async (section) => {
-        try {
-          const { data: rowsResponse } = await api.get(`/rubric/section/${section.id}/rows`)
-          const rowsArray = Array.isArray(rowsResponse)
-            ? rowsResponse
-            : Object.values(rowsResponse ?? {})
-
-          return rowsArray.map((row) => ({
-            rowId: row.id,
-            label: row.label ?? row.name ?? '',
-            description: row.description ?? '',
-            sectionId: section.id,
-            sectionName: section.name,
-            grades: {},
-            comment: '',
-          }))
-        } catch (sectionErr) {
-          console.error(`Error loading rows for section ${section.id}`, sectionErr)
-          return []
-        }
-      }),
-    )
-
-    rowData.value = rowsPerSection.flat()
+    rowData.value = rowsArray.map((row) => ({
+      rowId: row.id,
+      label: row.label ?? row.name ?? '',
+      description: row.description ?? '',
+      sectionId: 2,
+      sectionName: 'Section 2',
+      grades: {},
+      comment: '',
+    }))
   } catch (err) {
     console.error('Error loading rubric rows', err)
   }
@@ -126,9 +212,6 @@ async function buildColumns() {
       label: item.label,
     })
   })
-
-  //   {id: 8, rubric_section_id: 5, label: "Junior"}
-
   rubricColumns.forEach((col) => {
     periods.forEach((period) => {
       columnDefs.value.push({
@@ -165,6 +248,7 @@ async function loadExistingGrades() {
     const { data } = await api.get(
       `/rubric/grades/student/${selectedStudentId.value}/form/${form.id}`,
     )
+    console.log(data)
     data.forEach((g) => {
       const row = rowData.value.find((r) => r.rowId === g.rubric_row_id)
       if (row) {

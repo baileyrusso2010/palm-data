@@ -89,7 +89,7 @@ async function loadCategories() {
   try {
     const { data } = await api.get('/rubric/sections/form/13')
     console.log(data)
-    categories.value = Array.isArray(data) ? data : []
+    categories.value = Array.isArray(data) ? data.filter((cat) => !cat.locked) : []
     selectedCategoryId.value = categories.value[0]?.id ?? null
   } catch (e) {
     console.error('Error loading categories', e)

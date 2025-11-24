@@ -13,6 +13,7 @@ import ClassView from './views/ClassView.vue'
 import GradeBook from './views/GradeBook.vue'
 import FormConfig from './views/FormConfig.vue'
 import GradingForm from './views/GradingForm.vue'
+import FormList from './views/FormList.vue'
 
 const routes = [
   // Public / guest routes
@@ -80,6 +81,11 @@ const routes = [
   {
     path: '/grading-form',
     component: GradingForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/form-list',
+    component: FormList,
     meta: { requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
