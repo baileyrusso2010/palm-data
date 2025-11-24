@@ -59,7 +59,7 @@ const selectedCategoryId = ref(null)
 const rowData = ref([])
 
 const colDefs = ref([
-  { field: 'title', editable: true },
+  { field: 'label', editable: true },
   {
     field: 'description',
     editable: true,
@@ -87,7 +87,8 @@ onMounted(async () => {
 
 async function loadCategories() {
   try {
-    const { data } = await api.get('/skill/category')
+    const { data } = await api.get('/rubric/sections/form/13')
+    console.log(data)
     categories.value = Array.isArray(data) ? data : []
     selectedCategoryId.value = categories.value[0]?.id ?? null
   } catch (e) {
@@ -100,14 +101,16 @@ async function loadCategoryRows(categoryId) {
   isLoading.value = true
   rowData.value = []
   try {
-    const response = await api.get(`/skill/category/${categoryId}`)
+    console.log(categoryId)
+    const response = await api.get(`/rubric/section/${categoryId}/rows`)
+    console.log(response)
     Object.values(response.data).forEach((item) => {
       rowData.value.push({
         id: item.id,
-        title: item.title,
+        label: item.label,
         description: item.description,
         active: item.active,
-        category_id: item.category_id,
+        // category_id: item.category_id,
       })
     })
   } catch (err) {
@@ -146,7 +149,7 @@ function suppressKeyboardEvent(params) {
 
 function insert() {
   rowData.value.push({
-    title: '',
+    label: '',
     description: '',
     active: true,
     category_id: selectedCategoryId.value ?? null,
@@ -155,7 +158,15 @@ function insert() {
 
 async function save() {
   try {
-    await api.post('/skill/bulk', rowData.value)
+    // Save each row: PUT if id exists, POST if not
+    for (const row of rowData.value) {
+      const payload = { ...row, rubric_section_id: selectedCategoryId.value }
+      if (row.id) {
+        await api.put(`/rubric/rows/${row.id}`, payload)
+      } else {
+        await api.post('/rubric/rows', payload)
+      }
+    }
     await loadCategoryRows(selectedCategoryId.value)
     snackbar.value = {
       open: true,

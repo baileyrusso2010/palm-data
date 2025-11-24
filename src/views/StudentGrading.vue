@@ -3,46 +3,43 @@
     <h1>CTE Industry and Technical Skills</h1>
   </header>
   <div class="center-table-container">
-    <div style="width: 320px; margin: 0 auto 12px auto">
-      <v-select
-        v-model="selectedCategoryId"
-        :items="categories"
-        item-title="name"
-        item-value="id"
-        label="Category"
-        variant="outlined"
-        density="comfortable"
-        :disabled="isLoading"
-        @update:modelValue="onCategoryChange"
-      />
+    <div v-if="isLoading" class="text-center pa-4">Loading...</div>
+    <div v-else style="width: 100%; max-width: 1200px">
+      <div v-for="category in categories" :key="category.id" class="mb-8">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <h2>{{ category.name }}</h2>
+          <v-btn
+            color="secondary"
+            variant="tonal"
+            size="small"
+            @click="printPdf(category.id)"
+            :disabled="!!printing && printing !== category.id"
+            :loading="printing === category.id"
+          >
+            Print PDF
+          </v-btn>
+        </div>
+        <ag-grid-vue
+          :theme="gridTheme"
+          :rowData="categoryRowData[category.id] || []"
+          :columnDefs="colDefs"
+          :defaultColDef="defaultColDef"
+          :suppressKeyboardEvent="suppressKeyboardEvent"
+          :stopEditingWhenCellsLoseFocus="false"
+          @cell-focused="onCellFocused"
+          :domLayout="'autoHeight'"
+          style="
+            --ag-header-height: 48px;
+            --ag-row-height: 42px;
+            --ag-list-item-height: 24px;
+            width: 100%;
+          "
+        />
+      </div>
     </div>
-    <ag-grid-vue
-      :theme="gridTheme"
-      :rowData="rowData"
-      :columnDefs="colDefs"
-      :defaultColDef="defaultColDef"
-      :suppressKeyboardEvent="suppressKeyboardEvent"
-      :stopEditingWhenCellsLoseFocus="false"
-      @cell-focused="onCellFocused"
-      style="
-        height: 500px;
-        --ag-header-height: 48px;
-        --ag-row-height: 42px;
-        --ag-list-item-height: 24px;
-        min-width: 1200px;
-      "
-    />
+
     <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: center">
-      <v-btn color="primary" @click="save">Save</v-btn>
-      <v-btn
-        color="secondary"
-        variant="tonal"
-        @click="printPdf"
-        :disabled="!selectedCategoryId || printing"
-        :loading="printing"
-      >
-        Print PDF
-      </v-btn>
+      <v-btn color="primary" @click="save">Save All</v-btn>
     </div>
     <v-snackbar
       v-model="snackbar.open"
@@ -67,31 +64,26 @@ import api from '@/api'
 
 const isLoading = ref(false)
 const categories = ref([])
-const selectedCategoryId = ref(null)
+const categoryRowData = ref({})
 
 const route = useRoute()
 const studentId = ref(route.params.studentId)
 
 onMounted(async () => {
   await loadCategories()
-  if (selectedCategoryId.value) {
-    await fetchData(selectedCategoryId.value)
-  }
 })
 
-async function onCategoryChange(val) {
-  if (val == null) return
-  await fetchData(val)
-}
-
 async function loadCategories() {
+  isLoading.value = true
   try {
     const { data } = await api.get('/skill/category')
     categories.value = Array.isArray(data) ? data : []
-    selectedCategoryId.value = categories.value[0]?.id ?? null
+    await Promise.all(categories.value.map((c) => fetchData(c.id)))
   } catch (e) {
     console.error('Error loading categories', e)
     categories.value = []
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -120,30 +112,31 @@ function suppressKeyboardEvent(params) {
 async function save() {
   try {
     const payload = []
-    rowData.value.forEach((item) => {
-      payload.push({
-        id: item.semester12.id, // null or existing
-        skill_id: item.id,
-        period: 'Semester 1',
-        score: item.semester12.score,
-        comment: item.comments, // or item.semester12.comment if you have per-semester comments
+    Object.values(categoryRowData.value)
+      .flat()
+      .forEach((item) => {
+        payload.push({
+          id: item.semester12.id, // null or existing
+          skill_id: item.id,
+          period: 'Semester 1',
+          score: item.semester12.score,
+          comment: item.comments, // or item.semester12.comment if you have per-semester comments
+        })
+        // Semester 3-4
+        payload.push({
+          id: item.semester34.id, // null or existing
+          skill_id: item.id,
+          period: 'Semester 3',
+          score: item.semester34.score,
+          comment: item.comments, // or item.semester34.comment
+        })
       })
-      // Semester 3-4
-      payload.push({
-        id: item.semester34.id, // null or existing
-        skill_id: item.id,
-        period: 'Semester 3',
-        score: item.semester34.score,
-        comment: item.comments, // or item.semester34.comment
-      })
-    })
     await api.post(`/skill/skillscore/bulk-upsert/${studentId.value}`, payload)
 
-    rowData.value = []
-    await fetchData(selectedCategoryId.value)
+    await Promise.all(categories.value.map((c) => fetchData(c.id)))
     snackbar.value = {
       open: true,
-      message: `Saved ${payload.length} entries successfully`,
+      message: `Saved successfully`,
       color: 'success',
     }
   } catch (err) {
@@ -157,19 +150,17 @@ async function save() {
 }
 
 async function fetchData(categoryId) {
-  isLoading.value = true
-  rowData.value = []
-
   try {
     //api
     let response = await api.get(`/skill/student/${categoryId}/${studentId.value}`)
     console.dir(response.data)
 
+    const rows = []
     Object.values(response.data).forEach((item) => {
       const semester1Score = item.SkillScores.find((s) => s.period === 'Semester 1') || {}
       const semester3Score = item.SkillScores.find((s) => s.period === 'Semester 3') || {}
 
-      rowData.value.push({
+      rows.push({
         id: item.id,
         title: item.title,
         description: item.description,
@@ -184,14 +175,11 @@ async function fetchData(categoryId) {
         comments: semester1Score.comment, // or however you want to handle general comments
       })
     })
+    categoryRowData.value[categoryId] = rows
   } catch (err) {
     console.error(err)
-  } finally {
-    isLoading.value = false
   }
 }
-
-const rowData = ref([])
 
 const colDefs = ref([
   { field: 'title', headerName: 'Industry & Tech Skills', editable: false },
@@ -253,11 +241,10 @@ const defaultColDef = {
 const snackbar = ref({ open: false, message: '', color: 'success' })
 
 // TEMP: Print PDF via API that returns a PDF blob
-const printing = ref(false)
-async function printPdf() {
-  if (!selectedCategoryId.value) return
-  const categoryId = 1
-  printing.value = true
+const printing = ref(null)
+async function printPdf(categoryId) {
+  if (!categoryId) return
+  printing.value = categoryId
   try {
     const res = await api.get(`/pdf/student/${studentId.value}/category/${categoryId}`, {
       responseType: 'blob',
@@ -287,7 +274,7 @@ async function printPdf() {
     console.error('PDF fetch failed:', err)
     snackbar.value = { open: true, message: 'Failed to generate PDF.', color: 'error' }
   } finally {
-    printing.value = false
+    printing.value = null
   }
 }
 </script>

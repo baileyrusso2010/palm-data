@@ -10,6 +10,9 @@ import StudentProfile from './views/StudentProfile.vue'
 import StudentSearch from './views/StudentSearch.vue'
 import StudentGrading from './views/StudentGrading.vue'
 import ClassView from './views/ClassView.vue'
+import GradeBook from './views/GradeBook.vue'
+import FormConfig from './views/FormConfig.vue'
+import GradingForm from './views/GradingForm.vue'
 
 const routes = [
   // Public / guest routes
@@ -53,6 +56,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/gradebook',
+    component: GradeBook,
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/student/:id',
     component: StudentProfile,
     name: 'student-profile',
@@ -62,6 +70,16 @@ const routes = [
     path: '/students',
     component: StudentSearch,
     name: 'student-search',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/form-config',
+    component: FormConfig,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/grading-form',
+    component: GradingForm,
     meta: { requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
