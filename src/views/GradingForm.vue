@@ -33,8 +33,20 @@
       style="width: 100%; height: 120px"
     />
 
+    <h1>Technical Assessment</h1>
+    <ag-grid-vue
+      class="ag-theme-alpine"
+      :rowData="technicalRowData"
+      :columnDefs="technicalColumnDefs"
+      :defaultColDef="defaultColDef"
+      style="width: 100%; height: 120px"
+    />
+
     <v-btn color="primary" class="mt-4" @click="saveGrades"> Save Grades </v-btn>
     <v-btn color="primary" class="mt-4" @click="save21Century"> Save 21 Grades </v-btn>
+    <v-btn color="primary" class="mt-4" @click="saveTechnicalAssessment">
+      Save Technical Assessment
+    </v-btn>
   </v-container>
 </template>
 
@@ -45,17 +57,17 @@ import api from '@/api' // Axios instance
 
 // ----- Example form -----
 const form = reactive({
-  id: 13,
+  id: 1,
   name: 'Employability Skills',
   grading_period_type: 'semester', // quarter / semester / year
 })
 
 // ----- Example students -----
 const students = ref([
-  { id: 112, name: 'Alice' },
-  { id: 113, name: 'Bob' },
+  { id: 798, name: 'Alice' },
+  { id: 799, name: 'Bob' },
 ])
-const selectedStudentId = ref(112)
+const selectedStudentId = ref(798)
 
 // ----- Periods based on grading type -----
 const periodMap = {
@@ -81,15 +93,105 @@ onMounted(async () => {
   buildColumns()
   await loadExistingGrades()
   await load21Century()
+  await loadTechnicalAssessment()
 })
 
 const centuryColumnDefs = ref([])
 const centuryRowData = ref([])
 const centuryRowMeta = ref({ rowId: null })
 
+const technicalColumnDefs = ref([])
+const technicalRowData = ref([])
+const technicalRowMeta = ref({ rowId: null })
+
+async function loadTechnicalAssessment() {
+  try {
+    const { data } = await api.get('/rubric/section/3/columns')
+    // Build columns from API, including a label column first
+    technicalColumnDefs.value = [
+      { headerName: 'Skill', field: 'label', editable: false },
+      ...(Array.isArray(data) ? data : []).map((col) => ({
+        headerName: col.label,
+        field: String(col.id),
+        editable: true,
+      })),
+    ]
+
+    // Get the actual row data
+    const { data: rows } = await api.get(`/rubric/section/3/rows`)
+
+    technicalRowData.value = (Array.isArray(rows) ? rows : []).map((rowObj) => {
+      const storedValues = rowObj.row_data || rowObj.rowData || {}
+      const row = {}
+
+      // label/title for the row
+      row.label = rowObj.label || rowObj.name || ''
+
+      // fill each dynamic column
+      technicalColumnDefs.value.forEach((col) => {
+        if (col.field === 'label') return
+        row[col.field] = storedValues[col.field] ?? ''
+      })
+
+      // keep id if needed later
+      row.rowId = rowObj.id
+      return row
+    })
+
+    if (selectedStudentId.value) {
+      const { data: grades } = await api.get(
+        `/rubric/grades/student/${selectedStudentId.value}/form/${form.id}`,
+      )
+
+      technicalRowData.value.forEach((row) => {
+        grades
+          .filter((g) => g.rubric_row_id === row.rowId)
+          .forEach((g) => {
+            row[String(g.rubric_column_id)] = g.grade
+          })
+      })
+
+      // Trigger reactivity
+      technicalRowData.value = [...technicalRowData.value]
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+async function saveTechnicalAssessment() {
+  try {
+    const gradesPayload = []
+
+    technicalRowData.value.forEach((row) => {
+      if (!row.rowId) return
+
+      technicalColumnDefs.value.forEach((col) => {
+        if (col.field === 'label') return
+
+        const gradeValue = row[col.field]
+        if (gradeValue !== '' && gradeValue != null) {
+          gradesPayload.push({
+            row_id: row.rowId,
+            column_id: Number(col.field),
+            grade: gradeValue,
+          })
+        }
+      })
+    })
+
+    await api.post(`/rubric/grades/student/${selectedStudentId.value}`, {
+      grades: gradesPayload,
+    })
+
+    alert('Technical Assessment grades saved!')
+  } catch (err) {
+    console.error('Error saving Technical Assessment grades', err)
+    alert('Failed to save Technical Assessment grades')
+  }
+}
 async function load21Century() {
   try {
-    const { data } = await api.get('/rubric/section/7/columns')
+    const { data } = await api.get('/rubric/section/2/columns')
     // Build columns from API
     centuryColumnDefs.value = (Array.isArray(data) ? data : []).map((col) => ({
       headerName: col.label,
@@ -98,7 +200,7 @@ async function load21Century() {
     }))
 
     // Get the actual row data
-    const { data: rows } = await api.get(`/rubric/section/7/rows`)
+    const { data: rows } = await api.get(`/rubric/section/2/rows`)
     let row = {}
     const firstRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null
     centuryRowMeta.value.rowId = firstRow?.id ?? null
@@ -166,8 +268,6 @@ async function save21Century() {
     await api.post(`/rubric/grades/student/${selectedStudentId.value}`, {
       grades: gradesPayload,
     })
-
-    console.log(gradesPayload)
   } catch (err) {
     console.error('Error saving 21st Century grades', err)
     alert('Failed to save 21st Century grades')
@@ -177,7 +277,7 @@ async function save21Century() {
 // ----- Load rows from API -----
 async function loadRubricRows() {
   try {
-    const { data: rowsResponse } = await api.get(`/rubric/section/5/rows`)
+    const { data: rowsResponse } = await api.get(`/rubric/section/1/rows`)
     const rowsArray = Array.isArray(rowsResponse) ? rowsResponse : Object.values(rowsResponse ?? {})
 
     rowData.value = rowsArray.map((row) => ({
@@ -204,7 +304,7 @@ async function buildColumns() {
   // Example columns: Junior / Senior
   const rubricColumns = []
 
-  let dt = await api.get('/rubric/section/5/columns')
+  let dt = await api.get('/rubric/section/1/columns')
 
   dt.data.forEach((item) => {
     rubricColumns.push({
@@ -248,7 +348,6 @@ async function loadExistingGrades() {
     const { data } = await api.get(
       `/rubric/grades/student/${selectedStudentId.value}/form/${form.id}`,
     )
-    console.log(data)
     data.forEach((g) => {
       const row = rowData.value.find((r) => r.rowId === g.rubric_row_id)
       if (row) {
