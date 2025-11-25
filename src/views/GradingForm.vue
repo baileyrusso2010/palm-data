@@ -1,52 +1,47 @@
 <template>
   <v-container>
-    <h2>{{ form.name }} - Grading</h2>
+    <h2 v-if="form">{{ form.name }} - Grading</h2>
+    <h2 v-else>Loading Form...</h2>
 
-    <!-- Student Select -->
     <v-select
       v-model="selectedStudentId"
       :items="students"
       item-title="name"
       item-value="id"
       label="Select Student"
-      class="mb-4"
+      class="mb-6"
       @change="loadExistingGrades"
     />
 
-    <!-- AG Grid -->
-    <h1>Employability Skills</h1>
-    <ag-grid-vue
-      class="ag-theme-alpine"
-      :rowData="rowData"
-      :columnDefs="columnDefs"
-      :defaultColDef="defaultColDef"
-      :stopEditingWhenCellsLoseFocus="true"
-      style="width: 100%; height: 500px"
-    />
+    <div v-for="section in sections" :key="section.id" class="mb-10">
+      <div class="d-flex align-center mb-3">
+        <h3 class="text-h5 mb-0">{{ section.name }}</h3>
+        <v-chip v-if="section.locked" class="ml-3" size="small" color="grey" variant="flat">
+          Locked
+        </v-chip>
+      </div>
 
-    <h1>21st Century Exam</h1>
-    <ag-grid-vue
-      class="ag-theme-alpine"
-      :rowData="centuryRowData"
-      :columnDefs="centuryColumnDefs"
-      :defaultColDef="defaultColDef"
-      style="width: 100%; height: 120px"
-    />
+      <v-alert
+        v-if="section.rows.length === 0"
+        type="info"
+        variant="tonal"
+        class="mb-4"
+        text="No rows defined for this section yet."
+      />
 
-    <h1>Technical Assessment</h1>
-    <ag-grid-vue
-      class="ag-theme-alpine"
-      :rowData="technicalRowData"
-      :columnDefs="technicalColumnDefs"
-      :defaultColDef="defaultColDef"
-      style="width: 100%; height: 120px"
-    />
+      <ag-grid-vue
+        v-else
+        class="ag-theme-alpine"
+        :rowData="section.rows"
+        :columnDefs="section.columns"
+        :defaultColDef="section.defaultColDef"
+        :stopEditingWhenCellsLoseFocus="true"
+        style="width: 100%; height: 420px"
+      />
+      <v-divider class="mt-8" />
+    </div>
 
-    <v-btn color="primary" class="mt-4" @click="saveGrades"> Save Grades </v-btn>
-    <v-btn color="primary" class="mt-4" @click="save21Century"> Save 21 Grades </v-btn>
-    <v-btn color="primary" class="mt-4" @click="saveTechnicalAssessment">
-      Save Technical Assessment
-    </v-btn>
+    <v-btn color="primary" class="mt-6" @click="saveGrades">Save Grades</v-btn>
   </v-container>
 </template>
 
