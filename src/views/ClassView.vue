@@ -106,6 +106,9 @@
     <v-btn color="primary" size="large" @click="openCategoryDialog">
       Set Up Grading Categories
     </v-btn>
+    <v-btn color="secondary" size="large" class="ml-4" @click="openFormDialog">
+      Assign Form to Class
+    </v-btn>
 
     <v-dialog v-model="dialog" max-width="560" persistent>
       <v-card class="pa-4">
@@ -223,6 +226,48 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <v-dialog v-model="formDialog" max-width="560" persistent>
+      <v-card class="pa-4">
+        <v-card-title class="text-h6 font-weight-bold d-flex align-center">
+          <v-icon left color="secondary">mdi-form-select</v-icon>
+          Assign Form to Class
+        </v-card-title>
+
+        <v-card-text class="pt-6">
+          <p class="text-body-1 text-medium-emphasis mb-6">
+            Select a form to assign to this class:
+          </p>
+
+          <v-select
+            v-model="selectedForm"
+            :items="availableForms"
+            item-title="name"
+            item-value="id"
+            label="Choose a Form"
+            variant="outlined"
+            density="comfortable"
+            hide-details
+          ></v-select>
+
+          <div v-if="selectedForm" class="mt-4">
+            <v-alert type="info" variant="tonal">
+              <strong>{{ getFormById(selectedForm).name }}</strong
+              ><br />
+              {{ getFormById(selectedForm).description }}
+            </v-alert>
+          </div>
+        </v-card-text>
+
+        <v-card-actions class="pa-4">
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="closeFormDialog">Cancel</v-btn>
+          <v-btn color="secondary" size="large" :disabled="!selectedForm" @click="assignForm">
+            Assign Form
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -235,9 +280,38 @@ const route = useRoute()
 const dialog = ref(false)
 const editingIndex = ref(null)
 const needsSetup = ref(false)
+const formDialog = ref(false)
+const selectedForm = ref(null)
 
 const isLoading = ref(false)
 const categories = ref([])
+const availableForms = ref([
+  {
+    id: 1,
+    name: 'Student Feedback Form',
+    description: 'Collect feedback from students on course content.',
+  },
+  {
+    id: 2,
+    name: 'Attendance Tracker',
+    description: 'Daily attendance form for the class.',
+  },
+  {
+    id: 3,
+    name: 'Quiz Submission',
+    description: 'Form for submitting weekly quizzes.',
+  },
+  {
+    id: 4,
+    name: 'Project Proposal',
+    description: 'Submit ideas for group projects.',
+  },
+  {
+    id: 5,
+    name: 'Event Registration',
+    description: 'Register for upcoming class events.',
+  },
+])
 const totalWeight = computed(() => {
   return categories.value.reduce((sum, cat) => sum + (cat.weight || 0), 0)
 })
@@ -315,6 +389,27 @@ const saveCategories = async () => {
     //put snackbar
     console.error(err)
   }
+}
+
+const openFormDialog = () => {
+  formDialog.value = true
+  selectedForm.value = null
+}
+
+const closeFormDialog = () => {
+  formDialog.value = false
+  selectedForm.value = null
+}
+
+const assignForm = () => {
+  // For now, just log the assignment. In a real app, this would save to the backend.
+  console.log(`Assigned form ${selectedForm.value} to class ${route.params.id}`)
+  closeFormDialog()
+  // You could add a snackbar or notification here
+}
+
+const getFormById = (id) => {
+  return availableForms.value.find((form) => form.id === id) || {}
 }
 
 const classProfile = ref({

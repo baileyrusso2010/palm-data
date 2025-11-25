@@ -1,269 +1,677 @@
 <template>
   <div class="profile-page">
-    <!-- Header -->
-    <header class="dashboard-header">
-      <h1>Student Profile</h1>
-    </header>
+    <section class="profile-hero card">
+      <div class="hero-grid">
+        <div class="identity">
+          <div class="avatar" aria-hidden="true">
+            {{ initials }}
+          </div>
+          <div>
+            <p class="eyebrow">Student Profile</p>
+            <h1>{{ student.name }}</h1>
+            <p class="meta">
+              {{ student.program }} · {{ student.gradeLevel }} · {{ student.location }}
+            </p>
+          </div>
+        </div>
+        <div class="signal">
+          <p class="eyebrow">Instructor</p>
+          <h3>{{ student.advisor }}</h3>
+          <p class="meta">ID {{ student.id }}</p>
+        </div>
+        <div class="signal">
+          <p class="eyebrow">Focus Track</p>
+          <h3>{{ student.focusTrack }}</h3>
+          <p class="meta">{{ student.scheduleFocus }}</p>
+        </div>
+      </div>
+      <div class="stat-row">
+        <div v-for="stat in stats" :key="stat.label" class="stat">
+          <p class="eyebrow">{{ stat.label }}</p>
+          <div class="stat-value">
+            <span>{{ stat.value }}</span>
+            <small :class="stat.trend">{{ stat.delta }}</small>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <v-container class="py-6" fluid>
-      <template v-if="loading">
-        <v-row justify="center" class="mb-6">
-          <v-col cols="12" md="10" lg="8">
-            <v-skeleton-loader type="card" class="rounded-xl" />
-          </v-col>
-        </v-row>
-        <v-row justify="center" class="mb-10">
-          <v-col cols="12" md="10" lg="8">
-            <v-skeleton-loader type="card" class="rounded-xl" />
-          </v-col>
-        </v-row>
-      </template>
-
-      <template v-else-if="student">
-        <v-row justify="center" class="mb-6">
-          <v-col cols="12" md="10" lg="8">
-            <v-card elevation="2" rounded="xl">
-              <v-card-text class="pa-6 d-flex align-center gap-16 flex-wrap">
-                <v-avatar size="96" class="elevation-2">
-                  <img :src="student.avatarUrl" :alt="student.fullName" />
-                </v-avatar>
-
-                <div class="flex-grow-1">
-                  <div class="text-h5 font-weight-bold">{{ student.fullName }}</div>
-                  <div class="text-subtitle-2 text-medium-emphasis mt-1">
-                    ID #{{ student.id }} • Grade {{ student.grade }}
-                  </div>
-                  <div class="d-flex align-center flex-wrap gap-3 mt-4">
-                    <v-chip color="primary" variant="flat" size="small"
-                      >Homeroom {{ student.homeroom }}</v-chip
-                    >
-                    <v-chip color="grey" variant="tonal" size="small"
-                      >Cohort {{ student.cohort }}</v-chip
-                    >
-                  </div>
+    <section class="profile-body">
+      <div class="column column-primary">
+        <div class="card wbl-card">
+          <header>
+            <div>
+              <p class="eyebrow">Work-Based Learning</p>
+              <h3>Real-World Hours</h3>
+              <p class="meta">Live experiences across internship, co-op, and field</p>
+            </div>
+            <div class="wbl-header-stats">
+              <p class="hours-stat">{{ wblTotalHours }}h / {{ wblTargetHours }}h</p>
+              <p class="meta">{{ wblCompletion }}% complete</p>
+            </div>
+          </header>
+          <div class="wbl-list">
+            <div v-for="experience in workBasedLearning" :key="experience.label" class="wbl-item">
+              <div class="wbl-row-header">
+                <div>
+                  <p class="wbl-label">{{ experience.label }}</p>
+                  <p class="meta">{{ experience.context }}</p>
                 </div>
+                <span class="wbl-hours-text">{{ experience.hours }}h</span>
+              </div>
+              <div class="mini-meter">
+                <span :style="{ width: getWblPercent(experience) + '%' }"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-                <!-- Simple attendance widget -->
-                <div class="attendance-box">
-                  <div class="text-subtitle-1 font-weight-600 mb-2">Attendance (Today)</div>
-                  <div class="d-flex align-center gap-2">
-                    <v-btn
-                      :color="attendance.status === 'present' ? 'success' : 'grey'"
-                      variant="flat"
-                      size="small"
-                      @click="markAttendance('present')"
-                      >Present</v-btn
-                    >
-                    <v-btn
-                      :color="attendance.status === 'absent' ? 'error' : 'grey'"
-                      variant="flat"
-                      size="small"
-                      @click="markAttendance('absent')"
-                      >Absent</v-btn
-                    >
-                  </div>
-                  <div class="text-caption text-medium-emphasis mt-2">
-                    {{ todayLabel }} • Present this month: {{ attendance.monthPresent }}/{{
-                      attendance.monthDays
-                    }}
-                  </div>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <v-row justify="center" class="mb-10">
-          <v-col cols="12" md="10" lg="8">
-            <v-card elevation="2" rounded="xl">
-              <v-card-title class="d-flex align-center justify-space-between">
-                <span class="text-subtitle-1 font-weight-600"
-                  >Forms for {{ student.firstName }}</span
-                >
+      <div class="column column-secondary">
+        <div class="card">
+          <header>
+            <div>
+              <p class="eyebrow">Assignments</p>
+              <h3>Active Forms</h3>
+            </div>
+          </header>
+          <ul class="form-list">
+            <li v-for="form in studentForms" :key="form.id">
+              <div class="form-info clickable" @click="goToForm(form.id)">
+                <p class="form-title">{{ form.title }}</p>
+                <p class="meta">{{ form.date }}</p>
+              </div>
+              <div class="form-actions">
+                <span :class="['status-badge', form.status.toLowerCase()]">{{ form.status }}</span>
                 <v-btn
-                  size="small"
+                  icon="mdi-download"
                   variant="text"
-                  prepend-icon="mdi-folder-search"
-                  @click="goAssignForms"
-                >
-                  Manage Assignments
-                </v-btn>
-              </v-card-title>
-              <v-divider />
-              <v-card-text class="pt-0">
-                <v-list lines="two">
-                  <v-list-item
-                    v-for="f in forms"
-                    :key="f.id"
-                    :title="f.title"
-                    :subtitle="f.description"
-                    @click="openForm(f)"
-                  >
-                    <template #prepend>
-                      <v-avatar size="32" color="primary" variant="tonal">
-                        <v-icon color="primary">{{ f.icon }}</v-icon>
-                      </v-avatar>
-                    </template>
-                    <template #append>
-                      <v-chip
-                        :color="f.status === 'Completed' ? 'success' : 'grey'"
-                        size="x-small"
-                        variant="tonal"
-                      >
-                        {{ f.status }}
-                      </v-chip>
-                    </template>
-                  </v-list-item>
-                </v-list>
-                <div class="text-caption text-medium-emphasis mt-2">
-                  {{ forms.length }} form{{ forms.length === 1 ? '' : 's' }}
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-      </template>
-    </v-container>
+                  size="small"
+                  color="primary"
+                  class="ml-2"
+                  @click.stop="downloadForm(form.id)"
+                ></v-btn>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
   </div>
 </template>
 
-<script setup>
-import { computed, reactive, ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+<script setup lang="ts">
+import { onMounted, computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import api from '@/api'
 
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 
 onMounted(async () => {
-  const idParam = Number(route.params.id ?? 1)
+  await getStudentDetails()
+  await getStudentWBL()
+  await getStudentForms()
+})
 
-  // Fetch student data
-  const studentRes = await api.get(`/students/${idParam}`)
-  const item = studentRes.data
-  student.value = {
-    id: item.id,
-    firstName: item.first_name ?? item.firstName ?? '',
-    lastName: item.last_name ?? item.lastName ?? '',
-    get fullName() {
-      return `${this.firstName} ${this.lastName}`
-    },
-    grade: item.grade ?? item.class_grade ?? '',
-    homeroom: item.homeroom ?? 'Unknown',
-    cohort: item.cohort ?? 'Unknown',
-    avatarUrl: `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent((item.first_name ?? item.firstName ?? '') + ' ' + (item.last_name ?? item.lastName ?? ''))}&backgroundType=gradientLinear&fontFamily=Helvetica`,
+async function getStudentForms() {
+  try {
+    const { data } = await api.get(`/forms/student/${route.params.id}`)
+    studentForms.value = data.map((f: any) => ({
+      id: f.StudentForm.id,
+      title: f.name,
+      status: f.StudentForm.complete ? 'Completed' : 'Pending',
+      date: f.StudentForm.complete
+        ? `Submitted ${new Date(f.StudentForm.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        : `Assigned ${new Date(f.StudentForm.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+    }))
+  } catch (e) {
+    console.error('Error getting data', e)
   }
+}
 
-  // Fetch forms for this student
-  const form_list = await api.get(`/forms/student/${student.value.id}`)
-  Object.values(form_list.data).forEach((item) => {
-    forms.value.push({
-      id: item.id,
-      title: item.name,
-      description: item.description,
-      route: { path: `/grading/${student.value.id}` }, // Adjust based on form type if needed
-      icon: 'mdi-file-document-outline',
-      status: 'Pending', // Could be fetched from assignments API
+async function getStudentDetails() {
+  try {
+    const { data } = await api.get(`/students/detail/${route.params.id}`)
+    const instructor = data.enrollments?.[0]?.course_instance?.instructor
+    const instructorName = instructor ? `${instructor.first_name} ${instructor.last_name}` : 'N/A'
+
+    student.value = {
+      name: `${data.first_name} ${data.last_name}`,
+      gradeLevel: `Grade ${data.grade}`,
+      program: data.enrollments?.[0]?.course_instance?.alias || '',
+      location: data.home_school?.name || '',
+      advisor: instructorName,
+      id: data.student_id,
+      focusTrack: data.cte_school?.name || '',
+      scheduleFocus: '',
+    }
+  } catch (err) {
+    console.error('Error getting data', err)
+  }
+}
+
+async function getStudentWBL() {
+  try {
+    const { data } = await api.get(`/wbl-students/${route.params.id}`)
+    workBasedLearning.value = data.map((category: any) => {
+      const totalHours = category.wbl_hours.reduce(
+        (sum: number, record: any) => sum + record.hours,
+        0,
+      )
+      return {
+        label: category.name,
+        context: 'Logged Hours',
+        hours: totalHours,
+      }
     })
-  })
-
-  loading.value = false
-})
-
-const loading = ref(true)
-const student = ref(null)
-
-const today = new Date()
-const ymKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-const storageKey = computed(() => `att:${student.value?.id ?? 0}:${ymKey}`)
-
-function readAttendance() {
-  try {
-    const raw = localStorage.getItem(storageKey)
-    if (!raw) return { days: {}, status: null }
-    return JSON.parse(raw)
-  } catch {
-    return { days: {}, status: null }
+  } catch (e) {
+    console.error('Error getting data')
   }
 }
 
-const attendance = reactive({
-  status: readAttendance().status ?? null,
-  days: readAttendance().days ?? {},
-  get monthPresent() {
-    return Object.values(this.days).filter((s) => s === 'present').length
-  },
-  get monthDays() {
-    return (
-      Object.keys(this.days).length ||
-      new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
-    )
-  },
+type Trend = 'up' | 'down' | 'neutral'
+
+interface Stat {
+  label: string
+  value: string
+  delta: string
+  trend: Trend
+}
+
+interface Skill {
+  label: string
+  pulse: string
+  level: number
+}
+
+interface WorkLearningExperience {
+  label: string
+  context: string
+  hours: number
+}
+
+interface StudentForm {
+  id: number
+  title: string
+  status: 'Completed' | 'Pending' | 'Overdue'
+  date: string
+}
+
+const student = ref({
+  name: '',
+  gradeLevel: '',
+  program: '',
+  location: '',
+  advisor: '',
+  id: '',
+  focusTrack: '',
+  scheduleFocus: '',
 })
 
-const todayKey = computed(
-  () =>
-    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+const stats: Stat[] = [
+  { label: 'GPA', value: '3.92', delta: '+0.08 vs last term', trend: 'up' },
+  { label: 'Attendance', value: '98%', delta: '+1.5%', trend: 'up' },
+  { label: 'Total Hours', value: '27h', delta: 'Target 24h', trend: 'neutral' },
+  { label: 'Wellness Signal', value: 'Stable', delta: '-1% variance', trend: 'neutral' },
+]
+
+const workBasedLearning = ref<WorkLearningExperience[]>([])
+
+const studentForms = ref<StudentForm[]>([])
+
+const wblTargetHours = 54
+
+const initials = computed(() =>
+  student.value.name
+    .split(' ')
+    .map((part) => part[0])
+    .slice(0, 2)
+    .join(''),
 )
-const todayLabel = computed(() => new Date().toLocaleDateString())
 
-function persistAttendance() {
-  try {
-    localStorage.setItem(
-      storageKey.value,
-      JSON.stringify({ status: attendance.status, days: attendance.days }),
-    )
-  } catch {}
+const wblTotalHours = computed(() =>
+  workBasedLearning.value.reduce((sum, experience) => sum + experience.hours, 0),
+)
+
+const wblCompletion = computed(() => {
+  if (!wblTargetHours) return 0
+  return Math.min(100, Math.round((wblTotalHours.value / wblTargetHours) * 100))
+})
+
+const getWblPercent = (experience: WorkLearningExperience) => {
+  if (!wblTargetHours) return 0
+  return Math.min(100, Math.round((experience.hours / wblTargetHours) * 100))
 }
 
-function markAttendance(status) {
-  attendance.status = status
-  attendance.days[todayKey.value] = status
-  persistAttendance()
+const goToForm = (id: number) => {
+  router.push({ path: '/student-form', query: { id: id.toString() } })
 }
 
-// Forms ref to be filled via API
-const forms = ref([])
-
-function openForm(f) {
-  router.push(f.route)
-}
-
-function goAssignForms() {
-  router.push({ path: '/student-form' })
+const downloadForm = (id: number) => {
+  console.log(`Downloading PDF for form ${id}`)
+  // Mock download logic
+  // In a real implementation, this would fetch a blob or trigger a download URL
 }
 </script>
 
 <style scoped>
-.profile-page {
-  background: #fafafa;
-  min-height: 100vh;
+:global(body) {
+  background-color: #ffffff;
 }
-.dashboard-header {
-  width: 100%;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e0e3e7;
-  padding: 32px 0 24px 0;
-  margin-bottom: 24px;
+
+.profile-page {
+  min-height: 100vh;
+  padding: 2.5rem clamp(1.5rem, 4vw, 5rem) 3rem;
+  background:
+    radial-gradient(circle at top, rgba(0, 123, 255, 0.03), transparent 45%),
+    radial-gradient(circle at 20% 20%, rgba(0, 0, 0, 0.02), transparent 35%), #f8f9fa;
+  color: #1a1a1a;
+  font-family:
+    'Inter',
+    'SF Pro Display',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.profile-page h1,
+.profile-page h3 {
+  margin: 0;
+  font-weight: 500;
+}
+
+.profile-page h1 {
+  font-size: clamp(2.25rem, 3.5vw, 3rem);
+}
+
+.profile-page h3 {
+  font-size: 1.25rem;
+}
+
+.card {
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(26, 26, 26, 0.6);
+  margin-bottom: 0.35rem;
+}
+
+.meta {
+  color: rgba(26, 26, 26, 0.6);
+  font-size: 0.85rem;
+}
+
+.profile-hero {
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(0, 123, 255, 0.08), rgba(0, 188, 212, 0.04));
+  pointer-events: none;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.identity {
+  display: flex;
+  gap: 1.25rem;
+  align-items: center;
+}
+
+.avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+}
+
+.signal {
+  padding-left: 1rem;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.stat {
+  padding: 1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.stat-value {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.stat-value small {
+  font-size: 0.8rem;
+}
+
+.stat-value small.up {
+  color: #28a745;
+}
+
+.stat-value small.down {
+  color: #dc3545;
+}
+
+.profile-body {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.info-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.info-block ul,
+.insights ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.info-block li,
+.insights li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.info-block li:last-child,
+.insights li:last-child {
+  border-bottom: none;
+}
+
+.focus header,
+.timeline header,
+.insights header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.focus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.wbl-card header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
 }
-.dashboard-header h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #222b45;
+
+.wbl-header-stats {
+  text-align: right;
+}
+
+.hours-stat {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.wbl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.wbl-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.wbl-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.wbl-label {
+  font-weight: 600;
   margin: 0;
-  font-family: 'Segoe UI', 'Montserrat', Arial, sans-serif;
+  font-size: 0.95rem;
+  color: #1a1a1a;
 }
-.gap-16 {
-  gap: 16px;
+
+.wbl-hours-text {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1a1a1a;
 }
-.attendance-box {
-  min-width: 260px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 12px;
-  padding: 12px 14px;
-  background: #fff;
+
+.mini-meter {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.mini-meter span {
+  display: block;
+  height: 100%;
+  background: #007bff;
+  border-radius: 999px;
+}
+
+.focus-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+}
+
+.meter {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #28a745);
+}
+
+.meter-value {
+  justify-self: end;
+  font-size: 0.85rem;
+  color: rgba(26, 26, 26, 0.75);
+}
+
+.timeline ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.timeline li:last-child {
+  border-bottom: none;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  position: relative;
+}
+
+.dot.complete {
+  background: #28a745;
+}
+
+.dot.active {
+  background: #007bff;
+  box-shadow: 0 0 12px rgba(0, 123, 255, 0.4);
+}
+
+.dot.upcoming {
+  background: rgba(26, 26, 26, 0.4);
+}
+
+.timeline-title {
+  font-weight: 500;
+}
+
+.insights ul {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@media (max-width: 960px) {
+  .profile-body {
+    grid-template-columns: 1fr;
+  }
+
+  .identity {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .signal {
+    border-left: none;
+    padding-left: 0;
+  }
+}
+
+.form-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.form-info.clickable {
+  cursor: pointer;
+  flex: 1;
+}
+
+.form-info.clickable:hover .form-title {
+  color: #007bff;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.form-title {
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-badge.completed {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.status-badge.pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #b58900;
+}
+
+.status-badge.overdue {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
 }
 </style>

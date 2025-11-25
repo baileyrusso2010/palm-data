@@ -17,7 +17,7 @@
           density="compact"
           hide-details
           class="student-select"
-          @update:model-value="processFormData"
+          @update:model-value="onStudentChange"
         />
         <v-btn variant="flat" color="primary" size="default" class="save-btn" @click="saveAll">
           <v-icon left>mdi-content-save</v-icon>
@@ -103,8 +103,9 @@ import api from '@/api'
 const isLoading = ref(false)
 const formName = ref('')
 const rawFormData = ref(null) // Store the full API response
-const selectedStudentId = ref(112)
+const selectedStudentId = ref(792)
 const sections = ref([])
+const staticSections = ref([])
 
 // Snackbar state
 const snackbar = ref({
@@ -117,7 +118,7 @@ const snackbar = ref({
 
 // Mock Students
 const students = ref([
-  { id: 112, name: 'Alice' },
+  { id: 792, name: 'Alice' },
   { id: 799, name: 'Bob' },
 ])
 
@@ -144,9 +145,30 @@ async function loadFullForm() {
     rawFormData.value = data
     formName.value = data.name
 
+    await loadStaticFields()
+
     processFormData()
   } catch (err) {
     console.error('Error loading full form:', err)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function loadStaticFields() {
+  try {
+    const { data } = await api.get(`/static-fields/form/1?studentId=${selectedStudentId.value}`)
+    staticSections.value = data
+  } catch (err) {
+    console.error('Error loading static fields:', err)
+  }
+}
+
+async function onStudentChange() {
+  isLoading.value = true
+  try {
+    await loadStaticFields()
+    processFormData()
   } finally {
     isLoading.value = false
   }
@@ -158,8 +180,20 @@ function processFormData() {
   const data = rawFormData.value
   const periods = periodMap[data.grading_period] || []
 
+  // Create a map of static fields by section id
+  const staticFieldsMap = {}
+  if (staticSections.value) {
+    staticSections.value.forEach((section) => {
+      staticFieldsMap[section.id] = section
+    })
+  }
+
   sections.value = data.rubric_sections.map((section) => {
-    return createGridConfig(section, periods)
+    const staticData = staticFieldsMap[section.id]
+    // Merge static data (including static_fields) into the section
+    // We preserve rubric_rows/columns from the original section
+    const mergedSection = staticData ? { ...section, ...staticData } : section
+    return createGridConfig(mergedSection, periods)
   })
 }
 
@@ -339,8 +373,22 @@ async function onCellValueChanged(params, section) {
 
 async function saveAll() {
   const grades = []
+  const staticFieldValues = []
 
   sections.value.forEach((section) => {
+    // Collect static fields
+    if (section.staticFields) {
+      section.staticFields.forEach((field) => {
+        // We send the value even if empty, to allow clearing
+        if (field.value !== undefined && field.value !== null) {
+          staticFieldValues.push({
+            field_id: field.id,
+            value: String(field.value),
+          })
+        }
+      })
+    }
+
     section.rowData.forEach((row) => {
       // Iterate over all keys in the row to find grade fields
       Object.keys(row).forEach((key) => {
@@ -381,11 +429,27 @@ async function saveAll() {
   })
 
   const payload = { grades }
+  const staticPayload = { values: staticFieldValues }
+
   console.log('Saving All Grades Payload:', payload)
+  console.log('Saving Static Fields Payload:', staticPayload)
 
   try {
-    await api.post('/rubric/grades/student/112', payload)
-    console.log('All grades saved successfully')
+    const promises = []
+
+    // Save grades
+    if (grades.length > 0) {
+      promises.push(api.post(`/rubric/grades/student/${selectedStudentId.value}`, payload))
+    }
+
+    // Save static fields
+    if (staticFieldValues.length > 0) {
+      promises.push(api.post(`/static-fields/student/${selectedStudentId.value}`, staticPayload))
+    }
+
+    await Promise.all(promises)
+
+    console.log('All data saved successfully')
 
     // Show success snackbar
     snackbar.value = {
@@ -396,7 +460,7 @@ async function saveAll() {
       timeout: 4000,
     }
   } catch (err) {
-    console.error('Failed to save all grades:', err)
+    console.error('Failed to save data:', err)
 
     // Show error snackbar
     snackbar.value = {
