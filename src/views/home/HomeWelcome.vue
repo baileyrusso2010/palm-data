@@ -146,20 +146,22 @@ onMounted(async () => {
 
     Object.keys(response.data).forEach((schoolKey) => {
       const schoolArray = response.data[schoolKey]
-      let classes = []
-      schoolArray.forEach((item) => {
-        classes.push({
-          id: item.id,
-          name: item.alias,
-          teacher: item.instructor?.last_name,
-          students: item.enrollmentCount,
+      if (Array.isArray(schoolArray)) {
+        let classes = []
+        schoolArray.forEach((item) => {
+          classes.push({
+            id: item.id,
+            name: item.alias,
+            teacher: item.instructor?.last_name,
+            students: item.enrollmentCount,
+          })
         })
-      })
-      schools.value.push({
-        id: schoolKey,
-        name: schoolKey,
-        classes: classes,
-      })
+        schools.value.push({
+          id: schoolKey,
+          name: schoolKey,
+          classes: classes,
+        })
+      }
     })
   } catch (e) {
     console.error(e)
