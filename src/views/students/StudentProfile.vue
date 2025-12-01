@@ -77,7 +77,7 @@
           </header>
           <ul class="form-list">
             <li v-for="form in studentForms" :key="form.id">
-              <div class="form-info clickable" @click="goToForm(form.id)">
+              <div class="form-info clickable" @click="goToForm()">
                 <p class="form-title">{{ form.title }}</p>
                 <p class="meta">{{ form.date }}</p>
               </div>
@@ -118,13 +118,14 @@ onMounted(async () => {
 async function getStudentForms() {
   try {
     const { data } = await api.get(`/forms/student/${route.params.id}`)
+    console.log(data)
     studentForms.value = data.map((f: any) => ({
-      id: f.StudentForm.id,
-      title: f.name,
-      status: f.StudentForm.complete ? 'Completed' : 'Pending',
-      date: f.StudentForm.complete
-        ? `Submitted ${new Date(f.StudentForm.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-        : `Assigned ${new Date(f.StudentForm.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+      id: f.form.id,
+      title: f.form.name,
+      status: f.complete ? 'Completed' : 'Pending',
+      date: f.complete
+        ? `Submitted ${new Date(f.form.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        : `Assigned ${new Date(f.form.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
     }))
   } catch (e) {
     console.error('Error getting data', e)
@@ -245,8 +246,9 @@ const getWblPercent = (experience: WorkLearningExperience) => {
   return Math.min(100, Math.round((experience.hours / wblTargetHours) * 100))
 }
 
-const goToForm = (id: number) => {
-  router.push({ path: '/student-form', query: { id: id.toString() } })
+const goToForm = () => {
+  router.push({ path: `/form-test/${route.params.id}` })
+  // router.push({ path: '/student-form', query: { id: id.toString() } })
 }
 
 const downloadForm = (id: number) => {

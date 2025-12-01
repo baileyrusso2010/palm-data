@@ -7,21 +7,13 @@
       </v-app-bar-title>
       <v-spacer />
       <div class="d-flex align-center gap-4">
-        <v-select
-          v-model="selectedStudentId"
-          :items="students"
-          item-title="name"
-          item-value="id"
-          label="Student"
-          variant="solo"
-          density="compact"
-          hide-details
-          class="student-select"
-          @update:model-value="onStudentChange"
-        />
         <v-btn variant="flat" color="primary" size="default" class="save-btn" @click="saveAll">
           <v-icon left>mdi-content-save</v-icon>
           Save Changes
+        </v-btn>
+        <v-btn variant="flat" color="secondary" size="default" class="save-btn" @click="printForm">
+          <v-icon left>mdi-content-save</v-icon>
+          Print
         </v-btn>
       </div>
     </v-app-bar>
@@ -99,11 +91,15 @@ import { AgGridVue } from 'ag-grid-vue3'
 import { gridTheme } from '@/gridTheme'
 import api from '@/api'
 
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+
 // State
 const isLoading = ref(false)
 const formName = ref('')
 const rawFormData = ref(null) // Store the full API response
-const selectedStudentId = ref(792)
+const selectedStudentId = ref(Number(route.params.id))
 const sections = ref([])
 const staticSections = ref([])
 
@@ -116,21 +112,8 @@ const snackbar = ref({
   timeout: 4000,
 })
 
-// Mock Students
-const students = ref([
-  { id: 792, name: 'Alice' },
-  { id: 799, name: 'Bob' },
-])
-
 // Grid Configurations
 const defaultColDef = { editable: true, resizable: true, sortable: false }
-
-// Period Mapping
-const periodMap = {
-  quarter: ['Q1', 'Q2', 'Q3', 'Q4'],
-  semester: ['S1', 'S2'],
-  year: ['Y'],
-}
 
 onMounted(async () => {
   await loadFullForm()
@@ -164,21 +147,10 @@ async function loadStaticFields() {
   }
 }
 
-async function onStudentChange() {
-  isLoading.value = true
-  try {
-    await loadStaticFields()
-    processFormData()
-  } finally {
-    isLoading.value = false
-  }
-}
-
 function processFormData() {
   if (!rawFormData.value) return
 
   const data = rawFormData.value
-  const periods = periodMap[data.grading_period] || []
 
   // Create a map of static fields by section id
   const staticFieldsMap = {}
@@ -193,11 +165,11 @@ function processFormData() {
     // Merge static data (including static_fields) into the section
     // We preserve rubric_rows/columns from the original section
     const mergedSection = staticData ? { ...section, ...staticData } : section
-    return createGridConfig(mergedSection, periods)
+    return createGridConfig(mergedSection)
   })
 }
 
-function createGridConfig(section, periods) {
+function createGridConfig(section) {
   const columnDefs = []
 
   const shouldDisplayTitle = section.rubric_rows.length > 0 && section.rubric_rows[0].display_title
@@ -216,31 +188,10 @@ function createGridConfig(section, periods) {
   }
 
   // Determine dynamic columns
-  const hasPeriods = section.period_applies
   const hasRubricCols = section.rubric_columns && section.rubric_columns.length > 0
 
-  if (hasPeriods && hasRubricCols) {
-    // Case 1: Periods + Rubric Columns (e.g. Junior S1, Junior S2)
-    section.rubric_columns.forEach((col) => {
-      periods.forEach((period) => {
-        columnDefs.push({
-          headerName: `${col.label} ${period}`,
-          field: `col_${col.id}_${period}`,
-          width: 100,
-        })
-      })
-    })
-  } else if (hasPeriods && !hasRubricCols) {
-    // Case 2: Periods only (e.g. S1, S2)
-    periods.forEach((period) => {
-      columnDefs.push({
-        headerName: period,
-        field: `period_${period}`,
-        width: 100,
-      })
-    })
-  } else if (!hasPeriods && hasRubricCols) {
-    // Case 3: Rubric Columns only (e.g. Exam 1, Exam 2)
+  if (hasRubricCols) {
+    // Rubric Columns only (e.g. Exam 1, Exam 2)
     section.rubric_columns.forEach((col) => {
       columnDefs.push({
         headerName: col.label,
@@ -249,7 +200,7 @@ function createGridConfig(section, periods) {
       })
     })
   }
-  // Case 4: No periods, no rubric columns -> just rows (Label/Desc)
+  // No rubric columns -> just rows (Label/Desc)
 
   // Add Comment column
   if (section.show_comments) {
@@ -280,12 +231,8 @@ function createGridConfig(section, periods) {
       // IMPORTANT: Ensure types match when comparing IDs (API might return strings or numbers)
       // Also handle the case where rubric_column_id might be null in the grade object
 
-      if (g.rubric_column_id && g.period) {
-        key = `col_${g.rubric_column_id}_${g.period}`
-      } else if (g.rubric_column_id) {
+      if (g.rubric_column_id) {
         key = `col_${g.rubric_column_id}`
-      } else if (g.period) {
-        key = `period_${g.period}`
       }
 
       if (key) {
@@ -319,9 +266,8 @@ async function onCellValueChanged(params, section) {
   const field = colDef.field
 
   // 2. Parse the field key to get metadata
-  // Patterns: 'col_{id}_{period}', 'period_{period}', 'col_{id}'
+  // Patterns: 'col_{id}'
   let rubricColumnId = null
-  let period = null
 
   if (field === 'comment') {
     // Comment changed.
@@ -332,17 +278,9 @@ async function onCellValueChanged(params, section) {
     return
   }
 
-  if (field.startsWith('col_') && field.includes('_', 4)) {
-    // Case: col_18_S1
-    const parts = field.split('_')
-    rubricColumnId = parseInt(parts[1])
-    period = parts[2]
-  } else if (field.startsWith('col_')) {
+  if (field.startsWith('col_')) {
     // Case: col_18
     rubricColumnId = parseInt(field.split('_')[1])
-  } else if (field.startsWith('period_')) {
-    // Case: period_S1
-    period = field.split('_')[1]
   }
 
   // 3. Construct Payload
@@ -354,7 +292,6 @@ async function onCellValueChanged(params, section) {
   }
 
   if (rubricColumnId) gradeItem.column_id = rubricColumnId
-  if (period) gradeItem.period = period
 
   const payload = {
     grades: [gradeItem],
@@ -390,22 +327,14 @@ async function saveAll() {
     }
 
     section.rowData.forEach((row) => {
-      // Iterate over all keys in the row to find grade fields
+      console.log(row)
+
       Object.keys(row).forEach((key) => {
         let rubricColumnId = null
-        let period = null
         let isGradeField = false
 
-        if (key.startsWith('col_') && key.includes('_', 4)) {
-          const parts = key.split('_')
-          rubricColumnId = parseInt(parts[1])
-          period = parts[2]
-          isGradeField = true
-        } else if (key.startsWith('col_')) {
+        if (key.startsWith('col_')) {
           rubricColumnId = parseInt(key.split('_')[1])
-          isGradeField = true
-        } else if (key.startsWith('period_')) {
-          period = key.split('_')[1]
           isGradeField = true
         }
 
@@ -420,7 +349,6 @@ async function saveAll() {
               student_id: selectedStudentId.value,
             }
             if (rubricColumnId) item.column_id = rubricColumnId
-            if (period) item.period = period
             grades.push(item)
           }
         }
@@ -466,6 +394,35 @@ async function saveAll() {
     snackbar.value = {
       show: true,
       message: 'Failed to save changes. Please try again.',
+      color: 'error',
+      icon: 'mdi-alert-circle',
+      timeout: 6000,
+    }
+  }
+}
+
+async function printForm() {
+  try {
+    await saveAll()
+    const response = await api.get(`/pdf/student/${selectedStudentId.value}/category/1`, {
+      responseType: 'blob', // Assuming api supports this; adjust if using fetch
+    })
+    // Create a download link for the PDF blob
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `form_${selectedStudentId.value}.pdf`)
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error('Failed to save data:', err)
+
+    // Show error snackbar
+    snackbar.value = {
+      show: true,
+      message: 'Failed to download PDF. Please try again.',
       color: 'error',
       icon: 'mdi-alert-circle',
       timeout: 6000,

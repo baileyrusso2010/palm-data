@@ -192,16 +192,17 @@ onMounted(async () => {
     ...s,
     fullName: `${s.firstName} ${s.lastName} (Gr ${s.grade})`,
   }))
-  const form_list = await api.get('/forms')
 
-  Object.values(form_list.data).forEach((item) => {
-    forms.value.push({
-      id: item.id,
-      title: item.name,
-      description: item.description,
-      updatedAt: item.updated_at,
-    })
-  })
+  const getData = await api.get('/student/:studentId')
+
+  // Object.values(form_list.data).forEach((item) => {
+  //   forms.value.push({
+  //     id: item.id,
+  //     title: item.name,
+  //     description: item.description,
+  //     updatedAt: item.updated_at,
+  //   })
+  // })
 })
 
 // Fake data: forms

@@ -62,11 +62,12 @@
                   role="button"
                 >
                   <v-card-text class="pa-5 d-flex align-center gap-4">
-                    <v-avatar size="64" class="elevation-1">
-                      <img :src="stu.avatarUrl" :alt="stu.fullName" />
+                    <v-avatar size="64" color="primary" class="elevation-1">
+                      <span>{{ stu.initials }}</span>
                     </v-avatar>
                     <div class="flex-grow-1">
-                      <div class="text-subtitle-1 font-weight-600">{{ stu.fullName }}</div>
+                      <div class="text-subtitle-1 font-weight-600">{{ stu.firstName }}</div>
+                      <div class="text-caption text-medium-emphasis">{{ stu.lastName }}</div>
                       <div class="text-caption text-medium-emphasis">ID #{{ stu.id }}</div>
                       <div class="mt-2">
                         <v-chip color="primary" variant="tonal" size="x-small"
@@ -119,8 +120,8 @@ onMounted(async () => {
       const lastName = item.last_name ?? item.lastName ?? ''
       const grade = item.grade ?? item.class_grade ?? ''
       const fullName = `${firstName} ${lastName}`.trim()
-      const avatarUrl = `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(firstName + ' ' + lastName)}&backgroundType=gradientLinear&fontFamily=Helvetica`
-      return { id: item.id, firstName, lastName, fullName, grade, avatarUrl }
+      const initials = `${firstName[0]}${lastName[0]}`.toUpperCase()
+      return { id: item.id, firstName, lastName, fullName, grade, initials }
     })
   } finally {
     loading.value = false

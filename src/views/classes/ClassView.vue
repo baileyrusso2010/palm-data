@@ -64,6 +64,7 @@
                 fixed-header
                 height="420"
                 hide-default-footer
+                @click:row="goToStudentProfile"
               >
                 <template #item.name="{ item }">
                   <div class="student-pill">
@@ -95,6 +96,36 @@
                   </v-btn>
                 </template>
               </v-data-table>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
+        <v-col cols="12">
+          <v-card class="glass-card mb-6" rounded="xl">
+            <v-card-title class="card-title card-title-row">
+              <span>Assigned Forms</span>
+              <span class="highlight-text"> {{ assignedForms.length }} forms </span>
+            </v-card-title>
+            <v-divider></v-divider>
+            <v-card-text>
+              <v-list v-if="assignedForms.length" lines="two">
+                <v-list-item v-for="form in assignedForms" :key="form.id">
+                  <template #title>
+                    {{ form.name }}
+                  </template>
+                  <template #subtitle>
+                    Due:
+                    {{ form.dueDate ? new Date(form.dueDate).toLocaleDateString() : 'No due date' }}
+                  </template>
+                  <template #append>
+                    <v-chip size="small" color="secondary" variant="tonal"> Assigned </v-chip>
+                  </template>
+                </v-list-item>
+              </v-list>
+              <div v-else class="text-center py-6">
+                <v-icon size="48" color="grey">mdi-form-select</v-icon>
+                <p class="text-body-1 text-medium-emphasis mt-2">No forms assigned yet</p>
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -236,85 +267,198 @@
 
         <v-card-text class="pt-6">
           <p class="text-body-1 text-medium-emphasis mb-6">
-            Select a form to assign to this class:
+            Browse shared forms, preview the details, and optionally set a due date before
+            assigning.
           </p>
 
-          <v-select
-            v-model="selectedForm"
-            :items="availableForms"
-            item-title="name"
-            item-value="id"
-            label="Choose a Form"
-            variant="outlined"
-            density="comfortable"
-            hide-details
-          ></v-select>
+          <div class="form-assignment-grid">
+            <section class="form-list-panel">
+              <div class="d-flex align-center justify-space-between mb-3">
+                <span class="text-subtitle-2 text-medium-emphasis">Available Forms</span>
+                <v-btn
+                  size="small"
+                  variant="text"
+                  prepend-icon="mdi-refresh"
+                  :disabled="formsLoading"
+                  @click="fetchForms"
+                >
+                  Refresh
+                </v-btn>
+              </div>
 
-          <div v-if="selectedForm" class="mt-4">
-            <v-alert type="info" variant="tonal">
-              <strong>{{ getFormById(selectedForm).name }}</strong
-              ><br />
-              {{ getFormById(selectedForm).description }}
-            </v-alert>
+              <v-text-field
+                v-model="formSearch"
+                density="comfortable"
+                variant="outlined"
+                prepend-inner-icon="mdi-magnify"
+                label="Search forms"
+                hide-details
+                class="mb-3"
+              ></v-text-field>
+
+              <div class="form-list-scroll" role="list">
+                <v-skeleton-loader
+                  v-if="formsLoading"
+                  type="list-item-two-line@3"
+                  class="pa-2"
+                ></v-skeleton-loader>
+
+                <v-alert v-else-if="formsError" type="error" variant="tonal" class="mb-0">
+                  <div class="d-flex align-center justify-space-between">
+                    <span>{{ formsError }}</span>
+                    <v-btn size="small" variant="text" @click="fetchForms">Retry</v-btn>
+                  </div>
+                </v-alert>
+
+                <template v-else>
+                  <v-list v-if="filteredForms.length" class="py-0" lines="two">
+                    <v-list-item
+                      v-for="form in filteredForms"
+                      :key="form.id"
+                      :class="['form-list-item', { 'is-selected': form.id === selectedForm }]"
+                      @click="selectedForm = form.id"
+                    >
+                      <template #title>
+                        <div class="d-flex align-center justify-space-between w-100">
+                          <div>
+                            <div class="text-body-1 font-weight-medium">{{ form.name }}</div>
+                            <div class="text-caption text-medium-emphasis">
+                              {{ form.description || 'No description' }}
+                            </div>
+                          </div>
+                          <v-chip size="x-small" color="primary" variant="tonal">
+                            v{{ form.version || 1 }}
+                          </v-chip>
+                        </div>
+                      </template>
+                      <template #append>
+                        <v-icon :color="selectedForm === form.id ? 'secondary' : 'grey'">
+                          {{
+                            selectedForm === form.id ? 'mdi-radiobox-marked' : 'mdi-radiobox-blank'
+                          }}
+                        </v-icon>
+                      </template>
+                    </v-list-item>
+                  </v-list>
+                  <div v-else class="text-medium-emphasis text-center py-6">
+                    <v-icon class="mb-2">mdi-file-search</v-icon>
+                    <div>No forms match “{{ formSearch }}”.</div>
+                  </div>
+                </template>
+              </div>
+            </section>
+
+            <section class="form-details-panel">
+              <div v-if="selectedFormDetails.id" class="d-flex flex-column" style="gap: 16px">
+                <div>
+                  <div class="text-h6 mb-1">{{ selectedFormDetails.name }}</div>
+                  <p class="text-body-2 text-medium-emphasis mb-0">
+                    {{ selectedFormDetails.description || 'No description provided.' }}
+                  </p>
+                </div>
+
+                <div class="d-flex flex-column gap-3">
+                  <v-text-field
+                    v-model="dueDate"
+                    type="date"
+                    label="Optional due date"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                  ></v-text-field>
+
+                  <v-textarea
+                    v-model="assignmentNotes"
+                    label="Notes for assignees (optional)"
+                    density="comfortable"
+                    variant="outlined"
+                    auto-grow
+                    rows="3"
+                    hide-details
+                  ></v-textarea>
+                </div>
+
+                <v-alert type="info" variant="tonal" border="start" density="comfortable">
+                  Assigned to
+                  <strong class="ml-1">{{ classProfile.name || 'this class' }}</strong>
+                  on
+                  {{ new Date().toLocaleDateString() }}
+                </v-alert>
+              </div>
+              <div v-else class="form-details-placeholder">
+                <v-icon size="64" color="secondary" class="mb-3">mdi-form-select</v-icon>
+                <p class="text-h6 mb-2">Choose a form to preview</p>
+                <p class="text-body-2 text-medium-emphasis">
+                  Form details, due dates, and notes will appear here.
+                </p>
+              </div>
+            </section>
           </div>
         </v-card-text>
 
         <v-card-actions class="pa-4">
           <v-spacer></v-spacer>
           <v-btn variant="text" @click="closeFormDialog">Cancel</v-btn>
-          <v-btn color="secondary" size="large" :disabled="!selectedForm" @click="assignForm">
+          <v-btn
+            color="secondary"
+            size="large"
+            :loading="assigningForm"
+            :disabled="!selectedForm || assigningForm"
+            @click="assignForm"
+          >
             Assign Form
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
   </div>
+
+  <v-snackbar v-model="assignmentSnackbar.open" :color="assignmentSnackbar.color" timeout="3000">
+    {{ assignmentSnackbar.message }}
+  </v-snackbar>
 </template>
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import api from '@/api'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 const dialog = ref(false)
 const editingIndex = ref(null)
 const needsSetup = ref(false)
 const formDialog = ref(false)
 const selectedForm = ref(null)
+const dueDate = ref('')
+const assignmentNotes = ref('')
+const assigningForm = ref(false)
+const assignmentSnackbar = ref({ open: false, color: 'success', message: '' })
+const formSearch = ref('')
+const formsLoading = ref(false)
+const formsError = ref('')
 
 const isLoading = ref(false)
 const categories = ref([])
-const availableForms = ref([
-  {
-    id: 1,
-    name: 'Student Feedback Form',
-    description: 'Collect feedback from students on course content.',
-  },
-  {
-    id: 2,
-    name: 'Attendance Tracker',
-    description: 'Daily attendance form for the class.',
-  },
-  {
-    id: 3,
-    name: 'Quiz Submission',
-    description: 'Form for submitting weekly quizzes.',
-  },
-  {
-    id: 4,
-    name: 'Project Proposal',
-    description: 'Submit ideas for group projects.',
-  },
-  {
-    id: 5,
-    name: 'Event Registration',
-    description: 'Register for upcoming class events.',
-  },
-])
+const availableForms = ref([])
+const assignedForms = ref([])
 const totalWeight = computed(() => {
   return categories.value.reduce((sum, cat) => sum + (cat.weight || 0), 0)
 })
+
+const filteredForms = computed(() => {
+  const query = formSearch.value.trim().toLowerCase()
+  if (!query) return availableForms.value
+  return availableForms.value.filter((form) => {
+    return (
+      form.name?.toLowerCase().includes(query) ||
+      form.description?.toLowerCase().includes(query) ||
+      String(form.id).includes(query)
+    )
+  })
+})
+
+const selectedFormDetails = computed(() => getFormById(selectedForm.value))
 
 const openCategoryDialog = () => {
   dialog.value = true
@@ -394,22 +538,115 @@ const saveCategories = async () => {
 const openFormDialog = () => {
   formDialog.value = true
   selectedForm.value = null
+  dueDate.value = ''
+  assignmentNotes.value = ''
+
+  if (!availableForms.value.length && !formsLoading.value) {
+    fetchForms()
+  }
 }
 
 const closeFormDialog = () => {
   formDialog.value = false
   selectedForm.value = null
+  dueDate.value = ''
+  assignmentNotes.value = ''
 }
 
-const assignForm = () => {
-  // For now, just log the assignment. In a real app, this would save to the backend.
-  console.log(`Assigned form ${selectedForm.value} to class ${route.params.id}`)
-  closeFormDialog()
-  // You could add a snackbar or notification here
+const assignForm = async () => {
+  if (!selectedForm.value || assigningForm.value) return
+
+  assigningForm.value = true
+  const formName = selectedFormDetails.value?.name || 'Form'
+
+  try {
+    await api.post('/forms/assign/course', {
+      courseId: route.params.id,
+      formId: selectedForm.value,
+      dueDate: dueDate.value || null,
+      notes: assignmentNotes.value?.trim() || undefined,
+    })
+
+    assignmentSnackbar.value = {
+      open: true,
+      color: 'success',
+      message: `${formName} assigned to this class.`,
+    }
+    await fetchAssignedForms()
+    closeFormDialog()
+  } catch (err) {
+    console.error(err)
+    assignmentSnackbar.value = {
+      open: true,
+      color: 'error',
+      message: err?.response?.data?.error || 'Failed to assign the form. Please try again.',
+    }
+  } finally {
+    assigningForm.value = false
+  }
+}
+
+const fetchForms = async () => {
+  formsLoading.value = true
+  formsError.value = ''
+
+  const endpoints = ['/forms', '/api/forms']
+  let lastError
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await api.get(endpoint)
+      const payload = Array.isArray(response.data)
+        ? response.data
+        : Object.values(response.data || {})
+
+      availableForms.value = payload.map((form) => ({
+        id: form.id,
+        name: form.name || form.title || 'Untitled Form',
+        description: form.description || '',
+        version: form.version || form.latest_version || null,
+        updatedAt: form.updated_at || form.updatedAt || null,
+      }))
+      lastError = null
+      break
+    } catch (err) {
+      lastError = err
+      console.error(err)
+    }
+  }
+
+  if (lastError) {
+    formsError.value = lastError?.response?.data?.error || 'Unable to load forms. Please try again.'
+  }
+
+  formsLoading.value = false
 }
 
 const getFormById = (id) => {
   return availableForms.value.find((form) => form.id === id) || {}
+}
+
+const fetchAssignedForms = async () => {
+  try {
+    const course_id = route.params.id
+    const response = await api.get(`/forms/course/${course_id}`)
+    console.log(response)
+    const forms = response.data
+    assignedForms.value = forms
+      .filter((form) => form.class_form_assignments && form.class_form_assignments.length > 0)
+      .map((form) => ({
+        id: form.id,
+        name: form.name,
+        dueDate: form.class_form_assignments[0]?.due_date || null,
+      }))
+  } catch (err) {
+    console.error('Failed to fetch assigned forms:', err)
+    assignedForms.value = []
+  }
+}
+
+const goToStudentProfile = (event, { item }) => {
+  router.push(`/student/${item.id}`)
 }
 
 const classProfile = ref({
@@ -492,10 +729,17 @@ onMounted(async () => {
         { name: 'Final Exam', weight: 20 },
       )
     }
+
+    // Fetch assigned forms
+    await fetchAssignedForms()
   } catch (e) {
     console.error(e)
   } finally {
     isLoading.value = false
+  }
+
+  if (!availableForms.value.length) {
+    await fetchForms()
   }
 })
 

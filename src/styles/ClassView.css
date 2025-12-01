@@ -356,6 +356,71 @@
   width: 140px;
 }
 
+.form-assignment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.form-list-panel,
+.form-details-panel {
+  border: 1px solid rgba(15, 27, 51, 0.08);
+  border-radius: 18px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  min-height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-details-panel {
+  background: linear-gradient(135deg, rgba(237, 241, 255, 0.85), rgba(254, 254, 255, 0.95));
+}
+
+.form-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.form-list-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.form-list-scroll::-webkit-scrollbar-thumb {
+  background: rgba(15, 27, 51, 0.15);
+  border-radius: 4px;
+}
+
+.form-list-item {
+  border-radius: 12px;
+  margin-bottom: 8px;
+  border: 1px solid transparent;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.form-list-item:hover {
+  background: rgba(15, 27, 51, 0.04);
+}
+
+.form-list-item.is-selected {
+  border-color: rgba(42, 84, 225, 0.45);
+  background: rgba(42, 84, 225, 0.08);
+}
+
+.form-details-placeholder {
+  margin: auto;
+  text-align: center;
+  max-width: 280px;
+}
+
+.form-details-panel .v-alert {
+  border-radius: 14px;
+}
+
 @media (max-width: 600px) {
   .category-row {
     flex-direction: column;

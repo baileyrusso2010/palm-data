@@ -85,8 +85,8 @@
 
 <script>
 import { signIn, confirmSignIn, fetchAuthSession } from 'aws-amplify/auth'
-import router from '../router'
-import { authFetch } from '../authFetch'
+import router from '../../router'
+import { authFetch } from '../../authFetch'
 
 export default {
   name: 'LoginView',

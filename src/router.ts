@@ -1,20 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
-import HomeWelcome from './views/HomeWelcome.vue'
-import Login from './views/Login.vue'
+import HomeWelcome from './views/home/HomeWelcome.vue'
+import Login from './views/auth/Login.vue'
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
-import FormView from './views/FormView.vue'
-import StudentForm from './views/StudentForm.vue'
-import SkillView from './views/SkillView.vue'
-import StudentProfile from './views/StudentProfile.vue'
-import StudentSearch from './views/StudentSearch.vue'
-import StudentGrading from './views/StudentGrading.vue'
-import ClassView from './views/ClassView.vue'
-import GradeBook from './views/GradeBook.vue'
-import FormConfig from './views/FormConfig.vue'
-import GradingForm from './views/GradingForm.vue'
-import FormList from './views/FormList.vue'
-import FormTest from './views/FormTest.vue'
+import FormView from './views/forms/FormView.vue'
+import StudentForm from './views/students/StudentForm.vue'
+import SkillView from './views/classes/SkillView.vue'
+import StudentProfile from './views/students/StudentProfile.vue'
+import StudentSearch from './views/students/StudentSearch.vue'
+import StudentGrading from './views/grading/StudentGrading.vue'
+import ClassView from './views/classes/ClassView.vue'
+import GradeBook from './views/grading/GradeBook.vue'
+import FormConfig from './views/forms/FormConfig.vue'
+import GradingForm from './views/grading/GradingForm.vue'
+import FormList from './views/forms/FormList.vue'
+import FormTest from './views/forms/FormTest.vue'
 
 const routes = [
   // Public / guest routes
@@ -41,16 +41,16 @@ const routes = [
     component: SkillView,
     meta: { requiresAuth: true },
   },
-  {
-    path: '/form',
-    component: FormView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/student-form',
-    component: StudentForm,
-    meta: { requiresAuth: true },
-  },
+  // {
+  //   path: '/form',
+  //   component: FormView,
+  //   meta: { requiresAuth: true },
+  // },
+  // {
+  //   path: '/student-form',
+  //   component: StudentForm,
+  //   meta: { requiresAuth: true },
+  // },
   {
     path: '/class/:id',
     name: 'class',
@@ -75,17 +75,7 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/form-config',
-    component: FormConfig,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/grading-form',
-    component: GradingForm,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/form-test',
+    path: '/form-test/:id',
     component: FormTest,
     meta: { requiresAuth: true },
   },
