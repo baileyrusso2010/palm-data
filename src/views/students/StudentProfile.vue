@@ -212,10 +212,10 @@ const student = ref({
 })
 
 const stats: Stat[] = [
-  { label: 'GPA', value: '3.92', delta: '+0.08 vs last term', trend: 'up' },
-  { label: 'Attendance', value: '98%', delta: '+1.5%', trend: 'up' },
-  { label: 'Total Hours', value: '27h', delta: 'Target 24h', trend: 'neutral' },
-  { label: 'Wellness Signal', value: 'Stable', delta: '-1% variance', trend: 'neutral' },
+  // { label: 'GPA', value: '3.92', delta: '+0.08 vs last term', trend: 'up' },
+  // { label: 'Attendance', value: '98%', delta: '+1.5%', trend: 'up' },
+  // { label: 'Total Hours', value: '27h', delta: 'Target 24h', trend: 'neutral' },
+  // { label: 'Wellness Signal', value: 'Stable', delta: '-1% variance', trend: 'neutral' },
 ]
 
 const workBasedLearning = ref<WorkLearningExperience[]>([])
