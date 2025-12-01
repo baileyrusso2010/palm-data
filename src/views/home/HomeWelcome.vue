@@ -147,26 +147,51 @@ onMounted(async () => {
     console.log('Response type:', typeof response.data)
     console.log('Is array?', Array.isArray(response.data))
 
-    Object.keys(response.data).forEach((schoolKey) => {
-      const schoolArray = response.data[schoolKey]
-      console.log(`Key: ${schoolKey}, Value:`, schoolArray, 'Is array?', Array.isArray(schoolArray))
-      if (Array.isArray(schoolArray)) {
-        let classes = []
-        schoolArray.forEach((item) => {
-          classes.push({
-            id: item.id,
-            name: item.alias,
-            teacher: item.instructor?.last_name,
-            students: item.enrollmentCount,
+    if (Array.isArray(response.data)) {
+      // Flat array of course instances
+      const schoolsMap = {}
+      response.data.forEach((item) => {
+        const schoolId = item.cte_school_id
+        const schoolName = item.school_name || `School ${schoolId}` // Adjust if school_name exists
+        if (!schoolsMap[schoolId]) {
+          schoolsMap[schoolId] = { id: schoolId, name: schoolName, classes: [] }
+        }
+        schoolsMap[schoolId].classes.push({
+          id: item.id,
+          name: item.alias,
+          teacher: item.instructor?.last_name,
+          students: item.enrollmentCount,
+        })
+      })
+      schools.value = Object.values(schoolsMap)
+    } else {
+      // Original object logic
+      Object.keys(response.data).forEach((schoolKey) => {
+        const schoolArray = response.data[schoolKey]
+        console.log(
+          `Key: ${schoolKey}, Value:`,
+          schoolArray,
+          'Is array?',
+          Array.isArray(schoolArray),
+        )
+        if (Array.isArray(schoolArray)) {
+          let classes = []
+          schoolArray.forEach((item) => {
+            classes.push({
+              id: item.id,
+              name: item.alias,
+              teacher: item.instructor?.last_name,
+              students: item.enrollmentCount,
+            })
           })
-        })
-        schools.value.push({
-          id: schoolKey,
-          name: schoolKey,
-          classes: classes,
-        })
-      }
-    })
+          schools.value.push({
+            id: schoolKey,
+            name: schoolKey,
+            classes: classes,
+          })
+        }
+      })
+    }
     console.log('Processed schools:', schools.value)
   } catch (e) {
     console.error(e)
