@@ -590,12 +590,11 @@ const fetchForms = async () => {
   formsLoading.value = true
   formsError.value = ''
 
-  const endpoints = ['/forms', '/api/forms']
   let lastError
 
   for (const endpoint of endpoints) {
     try {
-      const response = await api.get(endpoint)
+      const response = await api.get('/forms')
       const payload = Array.isArray(response.data)
         ? response.data
         : Object.values(response.data || {})
