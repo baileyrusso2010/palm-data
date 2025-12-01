@@ -592,26 +592,22 @@ const fetchForms = async () => {
 
   let lastError
 
-  for (const endpoint of endpoints) {
-    try {
-      const response = await api.get('/forms')
-      const payload = Array.isArray(response.data)
-        ? response.data
-        : Object.values(response.data || {})
+  try {
+    const response = await api.get('/forms')
+    const payload = Array.isArray(response.data)
+      ? response.data
+      : Object.values(response.data || {})
 
-      availableForms.value = payload.map((form) => ({
-        id: form.id,
-        name: form.name || form.title || 'Untitled Form',
-        description: form.description || '',
-        version: form.version || form.latest_version || null,
-        updatedAt: form.updated_at || form.updatedAt || null,
-      }))
-      lastError = null
-      break
-    } catch (err) {
-      lastError = err
-      console.error(err)
-    }
+    availableForms.value = payload.map((form) => ({
+      id: form.id,
+      name: form.name || form.title || 'Untitled Form',
+      description: form.description || '',
+      version: form.version || form.latest_version || null,
+      updatedAt: form.updated_at || form.updatedAt || null,
+    }))
+  } catch (err) {
+    lastError = err
+    console.error(err)
   }
 
   if (lastError) {
