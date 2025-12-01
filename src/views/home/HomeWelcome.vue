@@ -143,9 +143,13 @@ onMounted(async () => {
   isLoading.value = true
   try {
     let response = await api.get('/course-instances/')
+    console.log('API Response:', response.data)
+    console.log('Response type:', typeof response.data)
+    console.log('Is array?', Array.isArray(response.data))
 
     Object.keys(response.data).forEach((schoolKey) => {
       const schoolArray = response.data[schoolKey]
+      console.log(`Key: ${schoolKey}, Value:`, schoolArray, 'Is array?', Array.isArray(schoolArray))
       if (Array.isArray(schoolArray)) {
         let classes = []
         schoolArray.forEach((item) => {
@@ -163,6 +167,7 @@ onMounted(async () => {
         })
       }
     })
+    console.log('Processed schools:', schools.value)
   } catch (e) {
     console.error(e)
   } finally {
