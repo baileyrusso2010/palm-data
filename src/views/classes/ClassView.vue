@@ -31,7 +31,7 @@
               <p class="detail-subvalue">{{ classProfile.teacher.phone }}</p>
             </div>
           </div>
-          <div class="hero-metrics">
+          <!-- <div class="hero-metrics">
             <div v-for="metric in classMetrics" :key="metric.label" class="metric-card">
               <p class="metric-label">{{ metric.label }}</p>
               <p class="metric-value">{{ metric.value }}</p>
@@ -40,7 +40,7 @@
                 {{ metric.trend }}
               </p>
             </div>
-          </div>
+          </div> -->
         </div>
       </v-container>
     </section>
@@ -134,9 +134,9 @@
   </div>
 
   <div class="text-center pa-8">
-    <v-btn color="primary" size="large" @click="openCategoryDialog">
+    <!-- <v-btn color="primary" size="large" @click="openCategoryDialog">
       Set Up Grading Categories
-    </v-btn>
+    </v-btn> -->
     <v-btn color="secondary" size="large" class="ml-4" @click="openFormDialog">
       Assign Form to Class
     </v-btn>
@@ -348,7 +348,7 @@
               </div>
             </section>
 
-            <section class="form-details-panel">
+            <!-- <section class="form-details-panel">
               <div v-if="selectedFormDetails.id" class="d-flex flex-column" style="gap: 16px">
                 <div>
                   <div class="text-h6 mb-1">{{ selectedFormDetails.name }}</div>
@@ -392,7 +392,7 @@
                   Form details, due dates, and notes will appear here.
                 </p>
               </div>
-            </section>
+            </section> -->
           </div>
         </v-card-text>
 

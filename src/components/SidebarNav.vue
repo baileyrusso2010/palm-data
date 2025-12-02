@@ -9,15 +9,8 @@
     class="sidebar-nav"
   >
     <v-sheet class="px-3 pt-4 pb-2 d-flex align-center" color="transparent">
-      <v-avatar
-        :size="rail ? 48 : 72"
-        color="transparent"
-        class="mr-3 d-flex align-center justify-center"
-        rounded="0"
-      >
-      </v-avatar>
-      <div class="text-subtitle-1 font-weight-medium app-title text-truncate" v-if="!rail">
-        Palm Data
+      <div v-if="!rail" class="sidebar-title-area">
+        <h1 class="sidebar-title">Prathix</h1>
       </div>
       <v-spacer />
       <v-btn
@@ -177,12 +170,62 @@ function isActive(to: string) {
     var(--v-theme-primary) 0%,
     var(--v-theme-primary-darken-1) 100%
   );
-  /* color: white !important; */
 }
 .sidebar-nav :deep(.v-list-item--active .v-icon) {
   color: white !important;
 }
-.app-title {
-  max-width: 140px;
+.sidebar-title-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+}
+.sidebar-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.1;
+  letter-spacing: -1px;
+  color: var(--v-theme-primary-darken-2, #1a237e);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-eyebrow {
+  font-size: 0.85rem;
+  color: var(--v-theme-primary-lighten-2, #90caf9);
+  font-weight: 500;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
+}
+.sidebar-subtitle {
+  font-size: 0.95rem;
+  color: var(--v-theme-on-surface, #666);
+  margin-top: 2px;
+  font-weight: 400;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sidebar-title-avatar {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: var(--v-theme-primary-lighten-4, #e3f2fd);
+  color: var(--v-theme-primary-darken-2, #1a237e);
+  border-radius: 12px;
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar-title-initials {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: inherit;
 }
 </style>
