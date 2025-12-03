@@ -6,7 +6,7 @@
           <div class="header-section mb-12">
             <div class="header-content text-center">
               <v-icon icon="mdi-school" size="large" class="header-icon mb-4"></v-icon>
-              <h1 class="main-title">Monroe/Erie BOCES</h1>
+              <h1 class="main-title">CTE School</h1>
               <p class="sub-title">Central School District</p>
             </div>
           </div>
