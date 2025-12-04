@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <SidebarNav v-model="drawer" @toggle-theme="toggleTheme" />
+    <SidebarNav v-if="!hideDrawer" v-model="drawer" @toggle-theme="toggleTheme" />
     <v-main color="background">
       <router-view />
     </v-main>
@@ -27,6 +27,10 @@ const currentTitle = computed(() => {
     return 'Class Admin'
   }
   return staticTitles[route.path] || 'App'
+})
+
+const hideDrawer = computed(() => {
+  return /^\/wbl\/hours\/[^/]+$/.test(route.path)
 })
 
 function toggleTheme() {

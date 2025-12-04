@@ -15,6 +15,7 @@ import FormConfig from './views/forms/FormConfig.vue'
 import GradingForm from './views/grading/GradingForm.vue'
 import FormList from './views/forms/FormList.vue'
 import FormTest from './views/forms/FormTest.vue'
+import WblStudent from './views/wbl/WblStudent.vue'
 
 const routes = [
   // Public / guest routes
@@ -41,16 +42,6 @@ const routes = [
     component: SkillView,
     meta: { requiresAuth: true },
   },
-  // {
-  //   path: '/form',
-  //   component: FormView,
-  //   meta: { requiresAuth: true },
-  // },
-  // {
-  //   path: '/student-form',
-  //   component: StudentForm,
-  //   meta: { requiresAuth: true },
-  // },
   {
     path: '/class/:id',
     name: 'class',
@@ -78,6 +69,11 @@ const routes = [
     path: '/form-test/:id',
     component: FormTest,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/wbl/hours/:token',
+    component: WblStudent,
+    meta: { requiresAuth: false },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ]
