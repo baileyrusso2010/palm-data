@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!failed">
+  <div v-if="!failed && !submittedSuccess">
     <v-container fluid class="d-flex align-center justify-center fill-height">
       <v-row class="justify-center align-center" style="width: 100%">
         <v-col cols="12" sm="8" md="6" lg="4">
@@ -44,6 +44,25 @@
         </v-col>
       </v-row>
     </v-container>
+    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000" location="bottom">
+      {{ snackbarMessage }}
+    </v-snackbar>
+  </div>
+  <div v-else-if="submittedSuccess">
+    <v-container fluid class="d-flex align-center justify-center fill-height">
+      <v-row class="justify-center align-center" style="width: 100%">
+        <v-col cols="12" sm="8" md="6" lg="4">
+          <v-card elevation="8" class="pa-6 text-center">
+            <v-icon color="success" size="48" class="mb-2">mdi-check-circle</v-icon>
+            <v-card-title class="text-h5 mb-2">Submission Successful</v-card-title>
+            <v-card-subtitle class="mb-4"
+              >Thank you! Your hours have been submitted.</v-card-subtitle
+            >
+            <div class="text-body-1 mb-2">You may now close this window.</div>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
   <div v-else>
     <v-container fluid class="d-flex align-center justify-center fill-height">
@@ -70,6 +89,11 @@ const router = useRoute()
 const token = ref('')
 const student_id = ref('')
 const failed = ref(false)
+const isLoading = ref(false)
+const snackbar = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref('')
+const submittedSuccess = ref(false)
 
 onMounted(async () => {
   token.value = router.params.token
@@ -83,8 +107,33 @@ onMounted(async () => {
   }
 })
 
-function submit() {
-  console.log('working')
+async function submit() {
+  isLoading.value = true
+  try {
+    const payload = {
+      token: token.value,
+      hours: hours.value,
+      catagory_id: 1,
+      comments: description.value,
+    }
+    const results = await api.post('/wbl-students/deployment/hours', payload)
+    if (results && results.status === 200) {
+      snackbarMessage.value = 'Hours submitted successfully!'
+      snackbarColor.value = 'success'
+      submittedSuccess.value = true
+    } else {
+      snackbarMessage.value = 'Submission failed. Please try again.'
+      snackbarColor.value = 'error'
+    }
+    snackbar.value = true
+  } catch (err) {
+    snackbarMessage.value = 'Submission failed. Please try again.'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+    console.error('Error: ', err)
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const description = ref('')
