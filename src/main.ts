@@ -18,10 +18,12 @@ import vueformConfig from './../vueform.config'
 import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community'
 import { AgGridVue } from 'ag-grid-vue3'
 
+import { VFileUpload } from 'vuetify/labs/VFileUpload'
+
 ModuleRegistry.registerModules([AllCommunityModule])
 
 const vuetify = createVuetify({
-  components: { ...components, VDateInput },
+  components: { ...components, VDateInput, VFileUpload },
   directives,
 })
 

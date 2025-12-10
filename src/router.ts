@@ -16,6 +16,7 @@ import GradingForm from './views/grading/GradingForm.vue'
 import FormList from './views/forms/FormList.vue'
 import FormTest from './views/forms/FormTest.vue'
 import WblStudent from './views/wbl/WblStudent.vue'
+import UploadData from './views/admin/UploadData.vue'
 
 const routes = [
   // Public / guest routes
@@ -68,6 +69,11 @@ const routes = [
   {
     path: '/form-test/:id',
     component: FormTest,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/upload',
+    component: UploadData,
     meta: { requiresAuth: true },
   },
   {
