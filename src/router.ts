@@ -17,6 +17,7 @@ import FormList from './views/forms/FormList.vue'
 import FormTest from './views/forms/FormTest.vue'
 import WblStudent from './views/wbl/WblStudent.vue'
 import UploadData from './views/admin/UploadData.vue'
+import BreakDown from './views/data/BreakDown.vue'
 
 const routes = [
   // Public / guest routes
@@ -58,6 +59,12 @@ const routes = [
     path: '/student/:id',
     component: StudentProfile,
     name: 'student-profile',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/breakdown',
+    component: BreakDown,
+    name: 'breakdown',
     meta: { requiresAuth: true },
   },
   {
