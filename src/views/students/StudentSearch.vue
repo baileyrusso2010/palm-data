@@ -9,26 +9,24 @@
       <!-- Search + Filters -->
       <v-row justify="center" class="mb-6">
         <v-col cols="12" md="10" lg="8">
-          <v-card elevation="2" rounded="xl">
-            <v-card-text class="pa-4 d-flex flex-wrap align-center gap-3">
-              <v-text-field
-                v-model="query"
-                variant="solo"
-                prepend-inner-icon="mdi-magnify"
-                placeholder="Search students by name…"
-                hide-details
-                class="flex-1-1"
-              />
-              <v-select
-                v-model="gradeFilter"
-                :items="gradeOptions"
-                label="Grade"
-                variant="solo"
-                hide-details
-                class="max-w-180"
-              />
-            </v-card-text>
-          </v-card>
+          <v-card-text class="pa-4 d-flex flex-wrap align-center gap-3">
+            <v-text-field
+              v-model="query"
+              variant="solo"
+              prepend-inner-icon="mdi-magnify"
+              placeholder="Search students by name…"
+              hide-details
+              class="flex-1-1"
+            />
+            <v-select
+              v-model="gradeFilter"
+              :items="gradeOptions"
+              label="Grade"
+              variant="solo"
+              hide-details
+              class="max-w-180"
+            />
+          </v-card-text>
         </v-col>
       </v-row>
 
@@ -61,18 +59,16 @@
                   @click="openProfile(stu)"
                   role="button"
                 >
-                  <v-card-text class="pa-5 d-flex align-center gap-4">
-                    <v-avatar size="64" color="primary" class="elevation-1">
+                  <v-card-text class="student-card pa-5 d-flex align-start">
+                    <v-avatar size="64" color="primary" class="elevation-1 student-avatar">
                       <span>{{ stu.initials }}</span>
                     </v-avatar>
                     <div class="flex-grow-1">
-                      <div class="text-subtitle-1 font-weight-600">{{ stu.firstName }}</div>
-                      <div class="text-caption text-medium-emphasis">{{ stu.lastName }}</div>
-                      <div class="text-caption text-medium-emphasis">ID #{{ stu.id }}</div>
-                      <div class="mt-2">
-                        <v-chip color="primary" variant="tonal" size="x-small"
-                          >Grade {{ stu.grade }}</v-chip
-                        >
+                      <div class="name-line">{{ stu.firstName }} {{ stu.lastName }}</div>
+                      <div class="meta-line">
+                        <span class="id">ID #{{ stu.id }}</span>
+                        <span class="dot">•</span>
+                        <span class="grade-text">Grade {{ stu.grade }}</span>
                       </div>
                     </div>
                     <v-btn icon="mdi-chevron-right" variant="text" color="primary" />
@@ -191,5 +187,47 @@ function openProfile(stu) {
 .flex-1-1 {
   flex: 1 1 auto;
   min-width: 220px;
+}
+
+.student-card {
+  gap: 16px;
+}
+
+.student-avatar {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.name-line {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  line-height: 1.3;
+  margin-bottom: 6px;
+}
+
+.meta-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.meta-line .dot {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.meta-line .id {
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.meta-line .grade-text {
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: 0.1px;
 }
 </style>
