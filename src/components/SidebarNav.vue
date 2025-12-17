@@ -89,6 +89,7 @@ import {
   PhStudent,
   PhTable,
   PhUserList,
+  PhChartBar,
 } from '@phosphor-icons/vue'
 
 interface NavItem {
@@ -139,6 +140,12 @@ const mainItems = computed<NavItem[]>(() => [
     to: '/students',
     title: 'Search Students',
     iconComp: PhStudent,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+  {
+    to: '/breakdown',
+    title: 'Analyze Data',
+    iconComp: PhChartBar,
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
 ])

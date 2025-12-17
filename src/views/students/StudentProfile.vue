@@ -113,7 +113,12 @@
           </div>
         </header>
         <div class="assessments-grid">
-          <div v-for="item in studentAssessments" :key="item.id" class="assessment-tile">
+          <div
+            v-for="item in studentAssessments"
+            :key="item.id"
+            class="assessment-tile"
+            @click="onAssessmentClick(item)"
+          >
             <div class="assessment-header">
               <p class="assessment-title">{{ item.name }}</p>
               <span :class="['score-badge', scoreClass(item.score)]">{{ item.score }}%</span>
@@ -169,14 +174,31 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <v-dialog v-model="assessmentDialog" max-width="620">
+    <v-card v-if="selectedAssessment">
+      <v-card-title>{{ selectedAssessment.name }}</v-card-title>
+      <v-card-text>
+        <p class="mb-3"><strong>Latest score:</strong> {{ selectedAssessment.score }}%</p>
+        <canvas ref="chartCanvas" height="260"></canvas>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn variant="text" @click="closeAssessmentDialog">Close</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue'
+import { onMounted, computed, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
 import { PhPlusCircle } from '@phosphor-icons/vue'
 import api from '@/api'
+import { Chart, registerables } from 'chart.js'
+
+Chart.register(...registerables)
 
 const router = useRouter()
 const route = useRoute()
@@ -297,11 +319,6 @@ const workBasedLearning = ref<WorkLearningExperience[]>([])
 const studentForms = ref<StudentForm[]>([])
 const studentAssessments = ref<Assessments[]>([])
 
-interface AssessmentItem {
-  section: string
-  score: number
-}
-
 const scoreClass = (score: number) => {
   if (score >= 90) return 'great'
   if (score >= 75) return 'good'
@@ -313,6 +330,11 @@ const selectedCategory = ref('')
 const hoursToAdd = ref(0)
 const dateAdded = ref(new Date().toISOString().split('T')[0])
 const commentsAdded = ref('')
+
+const assessmentDialog = ref(false)
+const selectedAssessment = ref<Assessments | null>(null)
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
+let chartInstance: Chart | null = null
 
 const wblTargetHours = 54
 
@@ -349,6 +371,18 @@ const downloadForm = (id: number) => {
   // In a real implementation, this would fetch a blob or trigger a download URL
 }
 
+async function onAssessmentClick(item: Assessments) {
+  selectedAssessment.value = item
+  assessmentDialog.value = true
+  await nextTick()
+  createChart()
+}
+
+function closeAssessmentDialog() {
+  assessmentDialog.value = false
+  destroyChart()
+}
+
 async function getAssessmentData() {
   try {
     const { data } = await api.get('/assessment/792')
@@ -361,6 +395,52 @@ async function getAssessmentData() {
   } catch (e) {
     console.error(e)
   }
+}
+
+function destroyChart() {
+  if (chartInstance) {
+    chartInstance.destroy()
+    chartInstance = null
+  }
+}
+
+function createChart() {
+  if (!chartCanvas.value || !selectedAssessment.value) return
+  destroyChart()
+
+  // Fake comparison data for now; replace with real class/grade averages when available
+  const labels = ['Student', 'Class Avg', 'Grade Avg']
+  const data = [selectedAssessment.value.score, 82, 76]
+
+  chartInstance = new Chart(chartCanvas.value, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Score (%)',
+          data,
+          backgroundColor: [
+            'rgba(53, 162, 235, 0.6)',
+            'rgba(255, 159, 64, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+          ],
+          borderColor: ['rgba(53, 162, 235, 1)', 'rgba(255, 159, 64, 1)', 'rgba(75, 192, 192, 1)'],
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'top' },
+        title: { display: false },
+      },
+      scales: {
+        y: { beginAtZero: true, max: 100 },
+      },
+    },
+  })
 }
 
 const submitAddHours = async () => {
