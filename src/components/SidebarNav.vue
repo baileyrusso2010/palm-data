@@ -10,7 +10,7 @@
   >
     <v-sheet class="px-3 pt-4 pb-2 d-flex align-center" color="transparent">
       <div v-if="!rail" class="sidebar-title-area">
-        <h1 class="sidebar-title">Prathix</h1>
+        <h1 class="sidebar-title">PyrData</h1>
       </div>
       <v-spacer />
       <v-btn
