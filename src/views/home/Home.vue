@@ -1,292 +1,123 @@
 <template>
-  <v-container fluid class="py-10 px-6 bg-grey-lighten-5">
-    <!-- Header Section -->
-    <v-row align="center" justify="center">
-      <v-col cols="12" class="text-center">
-        <h1 class="text-h3 font-weight-bold gradient-text mb-2">
-          {{ districtTitle }}
-        </h1>
-        <div v-if="loading" class="mt-6">
-          <v-progress-circular indeterminate color="primary" size="40" />
-        </div>
-        <p v-else-if="schools.length" class="text-body-1 text-grey-darken-1 mt-3">
-          <v-icon color="primary" class="mr-1">mdi-school</v-icon>
-          {{ schools.length }} {{ schools.length === 1 ? 'School' : 'Schools' }}
-        </p>
-      </v-col>
-    </v-row>
-
-    <!-- Error Alert -->
-    <v-row v-if="error" class="justify-center mt-8">
-      <v-col cols="12" md="8">
-        <v-alert
-          type="error"
-          variant="tonal"
-          :text="error"
-          icon="mdi-alert-circle"
-          class="rounded-lg"
-        />
-      </v-col>
-    </v-row>
-
-    <!-- Schools Section -->
-    <div v-if="!loading">
-      <v-row v-for="s in schools" :key="s.id" class="school-section mt-12 mb-16" justify="start">
-        <v-col cols="12">
-          <!-- School Header -->
-          <div class="school-header mb-6">
-            <div class="d-flex align-center">
-              <v-icon color="primary" size="32" class="mr-3">mdi-school-outline</v-icon>
-              <h2 class="school-title text-h4 font-weight-bold">{{ s.name }}</h2>
+  <v-container fluid class="bg-grey-lighten-4 h-100">
+    <v-row class="statGrid">
+      <v-col v-for="(stat, index) in stats" :key="index" cols="12" sm="6" md="3">
+        <v-card class="statCard" variant="flat" border rounded="xl" hover>
+          <v-card-text class="pa-8 text-center">
+            <div class="statValueSimple text-high-emphasis font-weight-bold">
+              {{ stat.value }}
             </div>
-            <v-divider class="school-divider mt-4" thickness="3" color="primary" />
-          </div>
+            <div class="statLabelSimple text-medium-emphasis text-uppercase mt-2">
+              {{ stat.title }}
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
-          <!-- Grid of Classes -->
-          <v-row class="cards-row mt-8">
-            <v-col
-              v-for="cls in classesForSchool(s.id).value"
-              :key="cls.id"
-              cols="12"
-              sm="6"
-              md="3"
-            >
-              <v-card
-                class="class-card pa-4 ma-2"
-                elevation="4"
-                min-width="300"
-                max-width="340"
-                rounded="lg"
-                hover
-                color="white"
-                link
-                @click="router.push({ path: '/class_view', query: { class_id: cls.id } })"
-              >
-                <v-card-title class="text-h6 font-weight-bold primary--text">
-                  {{ cls.alias || cls.course_catalog.title }}
-                </v-card-title>
-                <v-card-subtitle class="text-subtitle-2 text-grey-darken-1 mt-1">
-                  {{ cls.program_catalog.title }}
-                </v-card-subtitle>
-                <v-card-text class="mt-2">
-                  <v-chip
-                    :color="isActive(cls) ? 'success' : 'grey'"
-                    variant="flat"
-                    size="small"
-                    class="font-weight-medium"
-                  >
-                    {{ isActive(cls) ? 'Active' : 'Inactive' }}
-                  </v-chip>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </v-row>
-        </v-col>
-      </v-row>
-
-      <!-- No Schools Found -->
-      <div v-if="schools.length === 0" class="text-center mt-12">
-        <v-icon icon="mdi-school-outline" size="64" color="grey-darken-1" class="mb-4" />
-        <div class="text-h6 text-grey-darken-2 font-weight-medium">No schools found</div>
-        <p class="text-body-2 text-grey-darken-1 mt-2">
-          Please check back later or contact support.
-        </p>
-      </div>
-    </div>
+    <v-row class="mt-6">
+      <v-col cols="12" md="6">
+        <v-card class="rounded-xl" elevation="2">
+          <v-card-title class="text-subtitle-1 font-weight-bold pa-4">
+            Framework Distribution
+          </v-card-title>
+          <v-divider></v-divider>
+          <v-card-text style="height: 300px; position: relative" class="pa-4">
+            <Doughnut :data="chartData" :options="chartOptions" />
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
-<script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '../../api'
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js'
+import { Doughnut } from 'vue-chartjs'
+import api from '@/api'
 
-const router = useRouter()
-
-type School = {
-  id: number
-  district_id: number
-  name: string
-  address?: string | null
-  phone_number?: string | null
-  website?: string | null
-  home_schools?: any[]
-}
-
-type District = {
-  district_id: number
-  name?: string
-  district_name?: string
-  schools?: School[]
-}
-
-type CourseCatalog = {
-  id: number
-  course_code: string
+type StatCard = {
   title: string
-  description?: string | null
+  value: string | number
 }
 
-type ProgramCatalog = {
-  id: number
-  state_program_code: string
-  title: string
-  description?: string | null
-}
-
-type ClassInstance = {
-  id: number
-  cte_school_id: number
-  program_catalog_id: number
-  course_catalog_id: number
-  alias: string
-  instructorId?: number | null
-  start_date?: string
-  end_date?: string | null
-  school_year_id?: number | null
-  term_id?: number | null
-  course_catalog: CourseCatalog
-  program_catalog: ProgramCatalog
-}
-
-const loading = ref(false)
-const error = ref<string | null>(null)
-const district = ref<District | null>(null)
-const classes = ref<ClassInstance[]>([])
-
-// In the future this could come from a route param
-const districtId = 1
-
-async function fetchClassInstances() {
-  try {
-    const resp = await api.get(`/course-instances`)
-    const raw = resp?.data
-    const payload: any = raw?.data ?? raw
-    if (!Array.isArray(payload)) {
-      throw new Error('Unexpected response from server')
-    }
-    classes.value = payload as ClassInstance[]
-  } catch (e: any) {
-    console.error('Failed to fetch class instances:', e)
-    // Don't set error here, as it's secondary
-  }
-}
-
-async function fetchDistrict() {
-  loading.value = true
-  error.value = null
-  try {
-    // Primary: fetch from backend
-    const resp = await api.get(`/cte-districts/${districtId}`)
-    const raw = resp?.data
-    const payload: any = raw?.data ?? raw
-    if (!payload || typeof payload !== 'object') {
-      throw new Error('Unexpected response from server')
-    }
-
-    // Normalize district shape
-    const base: District = {
-      district_id: payload.district_id ?? payload.id ?? districtId,
-      name: payload.name ?? payload.district_name,
-      district_name: payload.district_name ?? payload.name,
-      schools: Array.isArray(payload.schools) ? (payload.schools as School[]) : [],
-    }
-
-    district.value = base
-    console.log('District payload:', payload)
-    console.log('Initial schools:', district.value?.schools)
-
-    // If schools not included, attempt to fetch them separately
-    if (!Array.isArray(district.value.schools) || district.value.schools.length === 0) {
-      try {
-        const sResp = await api.get(`/cte-districts/${districtId}/schools`)
-        const sRaw = sResp?.data
-        const sPayload: any = sRaw?.data ?? sRaw
-        const list: any = Array.isArray(sPayload)
-          ? sPayload
-          : Array.isArray(sPayload?.schools)
-            ? sPayload.schools
-            : []
-        if (Array.isArray(list)) {
-          district.value = {
-            ...district.value,
-            schools: list as School[],
-          }
-          console.log('Fetched schools separately:', district.value.schools)
-        }
-      } catch (e) {
-        console.warn('Could not fetch schools separately:', e)
-      }
-    }
-  } catch (e: any) {
-    error.value = e?.message ?? 'Failed to load district'
-  } finally {
-    loading.value = false
-  }
-}
-
-const schools = computed(() => district.value?.schools ?? [])
-const districtTitle = computed(
-  () => (district.value as any)?.name || (district.value as any)?.district_name || 'District',
-)
-
-const classesForSchool = (schoolId: number) =>
-  computed(() => classes.value.filter((c) => c.cte_school_id === schoolId))
-
-function isActive(cls: ClassInstance): boolean {
-  const now = new Date()
-  const start = cls.start_date ? new Date(cls.start_date) : null
-  const end = cls.end_date ? new Date(cls.end_date) : null
-  if (start && now < start) return false
-  if (end && now > end) return false
-  return true
-}
-
+const stats = ref<StatCard[]>([])
 onMounted(async () => {
-  await fetchDistrict()
-  await fetchClassInstances()
+  let data = (await api.get('/metric/summary')).data
+
+  stats.value.push({
+    title: 'Attendance Rate',
+    value: `${data.attendance_rate}%`,
+  })
+
+  stats.value.push({
+    title: 'Behavior Incidents this week',
+    value: data.behavior_incident_count,
+  })
+
+  stats.value.push({
+    title: 'Enrollment',
+    value: data.enrollment,
+  })
+
+  stats.value.push({
+    title: 'Enrollment',
+    value: data.enrollment,
+  })
+})
+
+ChartJS.register(ArcElement, Tooltip, Legend)
+
+const chartData = ref({
+  labels: ['VueJs', 'EmberJs', 'ReactJs', 'AngularJs'],
+  datasets: [
+    {
+      backgroundColor: ['#41B883', '#E46651', '#00D8FF', '#DD1B16'],
+      data: [40, 20, 80, 10],
+    },
+  ],
+})
+
+const chartOptions = ref({
+  responsive: true,
+  maintainAspectRatio: false,
 })
 </script>
 
 <style scoped>
-/* Gradient text for the district title */
-.gradient-text {
-  background: linear-gradient(45deg, #1976d2, #42a5f5);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+.statGrid {
+  row-gap: 16px;
 }
 
-/* School title styling */
-.school-title {
-  letter-spacing: 0.3px;
-  color: var(--v-theme-on-background);
-  transition: color 0.3s ease;
+.statCard {
+  background: rgb(var(--v-theme-surface));
+  transition: all 0.2s ease;
 }
 
-/* School divider styling */
-.school-divider {
-  opacity: 0.8;
-  border-radius: 2px;
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Class card hover effect */
-.class-card {
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+.statLabelSimple {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  opacity: 0.7;
 }
 
-.class-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+.statValueSimple {
+  font-size: 42px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Ensure cards have consistent spacing */
-.cards-row {
-  margin: -8px;
-}
-
-.cards-row > .v-col {
-  padding: 8px;
+@media (max-width: 960px) {
+  .statValueSimple {
+    font-size: 36px;
+  }
 }
 </style>

@@ -18,13 +18,14 @@ import FormTest from './views/forms/FormTest.vue'
 import WblStudent from './views/wbl/WblStudent.vue'
 import UploadData from './views/admin/UploadData.vue'
 import BreakDown from './views/data/BreakDown.vue'
+import Home from './views/home/Home.vue'
 
 const routes = [
   // Public / guest routes
   { path: '/', component: Login, name: 'login', meta: { title: 'Login', guestOnly: true } },
   {
     path: '/home',
-    component: HomeWelcome,
+    component: Home,
     name: 'home',
     meta: { requiresAuth: true },
   },
