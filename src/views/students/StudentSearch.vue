@@ -9,24 +9,26 @@
       <!-- Search + Filters -->
       <v-row justify="center" class="mb-6">
         <v-col cols="12" md="10" lg="8">
-          <v-card-text class="pa-4 d-flex flex-wrap align-center gap-3">
+          <div class="search-bar">
             <v-text-field
               v-model="query"
-              variant="solo"
+              variant="outlined"
               prepend-inner-icon="mdi-magnify"
               placeholder="Search students by name…"
               hide-details
-              class="flex-1-1"
+              density="comfortable"
+              class="search-input"
             />
             <v-select
               v-model="gradeFilter"
               :items="gradeOptions"
               label="Grade"
-              variant="solo"
+              variant="outlined"
               hide-details
-              class="max-w-180"
+              density="comfortable"
+              class="grade-select"
             />
-          </v-card-text>
+          </div>
         </v-col>
       </v-row>
 
@@ -36,44 +38,40 @@
           <template v-if="loading">
             <v-row>
               <v-col v-for="n in 8" :key="n" cols="12" sm="6" md="4">
-                <v-skeleton-loader type="image, list-item-two-line" class="rounded-xl" />
+                <v-skeleton-loader type="image, list-item-two-line" class="skeleton-card" />
               </v-col>
             </v-row>
           </template>
 
           <template v-else>
             <div v-if="filteredStudents.length === 0" class="empty-state">
-              <v-icon size="40" color="grey">mdi-account-search-outline</v-icon>
-              <div class="text-subtitle-1 mt-2">No students found</div>
-              <div class="text-body-2 text-medium-emphasis">
+              <v-icon size="40" color="#94a3b8">mdi-account-search-outline</v-icon>
+              <div class="empty-title">No students found</div>
+              <div class="empty-subtitle">
                 Try another name or clear the grade filter.
               </div>
             </div>
 
             <v-row v-else>
               <v-col v-for="stu in filteredStudents" :key="stu.id" cols="12" sm="6" md="4">
-                <v-card
-                  elevation="2"
-                  rounded="xl"
-                  class="h-100"
+                <div
+                  class="student-card"
                   @click="openProfile(stu)"
                   role="button"
                 >
-                  <v-card-text class="student-card pa-5 d-flex align-start">
-                    <v-avatar size="64" color="primary" class="elevation-1 student-avatar">
-                      <span>{{ stu.initials }}</span>
-                    </v-avatar>
-                    <div class="flex-grow-1">
-                      <div class="name-line">{{ stu.firstName }} {{ stu.lastName }}</div>
-                      <div class="meta-line">
-                        <span class="id">ID #{{ stu.id }}</span>
-                        <span class="dot">•</span>
-                        <span class="grade-text">Grade {{ stu.grade }}</span>
-                      </div>
+                  <div class="student-avatar">
+                    {{ stu.initials }}
+                  </div>
+                  <div class="student-info">
+                    <div class="student-name">{{ stu.firstName }} {{ stu.lastName }}</div>
+                    <div class="student-meta">
+                      <span class="student-id">ID #{{ stu.id }}</span>
+                      <span class="dot">•</span>
+                      <span class="student-grade">Grade {{ stu.grade }}</span>
                     </div>
-                    <v-btn icon="mdi-chevron-right" variant="text" color="primary" />
-                  </v-card-text>
-                </v-card>
+                  </div>
+                  <v-icon icon="mdi-chevron-right" size="20" class="chevron-icon"></v-icon>
+                </div>
               </v-col>
             </v-row>
           </template>
@@ -148,86 +146,158 @@ function openProfile(stu) {
 
 <style scoped>
 .students-page {
-  background: #fafafa;
+  background: #f5f7fa;
   min-height: 100vh;
 }
+
 .dashboard-header {
   width: 100%;
-  background: #f5f7fa;
-  border-bottom: 1px solid #e0e3e7;
-  padding: 32px 0 24px 0;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 24px 0;
   margin-bottom: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .dashboard-header h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #222b45;
+  font-size: 24px;
+  font-weight: 600;
+  color: #0f172a;
   margin: 0;
-  font-family: 'Segoe UI', 'Montserrat', Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  font-family: 'Inter', sans-serif;
 }
+
+.search-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1 1 auto;
+  min-width: 220px;
+}
+
+.grade-select {
+  max-width: 180px;
+  min-width: 140px;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 16px;
-  border: 1px dashed rgba(0, 0, 0, 0.12);
-  border-radius: 16px;
-  background: #fff;
+  padding: 64px 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #ffffff;
 }
-.gap-3 {
-  gap: 12px;
+
+.empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  margin-top: 16px;
 }
-.max-w-180 {
-  max-width: 180px;
+
+.empty-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 8px;
 }
-.flex-1-1 {
-  flex: 1 1 auto;
-  min-width: 220px;
+
+.skeleton-card {
+  border-radius: 4px;
 }
 
 .student-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
   gap: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.student-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .student-avatar {
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.name-line {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #111827;
-  line-height: 1.3;
-  margin-bottom: 6px;
-}
-
-.meta-line {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #64748b;
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #4b5563;
-  font-size: 0.9rem;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.student-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.student-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.student-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
   line-height: 1.4;
 }
 
-.meta-line .dot {
-  font-size: 0.8rem;
-  color: #9ca3af;
+.student-meta .dot {
+  font-size: 10px;
+  color: #94a3b8;
 }
 
-.meta-line .id {
+.student-meta .student-id {
   font-weight: 600;
-  letter-spacing: 0.2px;
 }
 
-.meta-line .grade-text {
+.student-meta .student-grade {
   font-weight: 600;
-  color: #111827;
-  letter-spacing: 0.1px;
+  color: #475569;
+}
+
+.chevron-icon {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-input,
+  .grade-select {
+    width: 100%;
+    max-width: none;
+  }
 }
 </style>

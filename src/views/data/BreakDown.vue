@@ -20,16 +20,24 @@
           </div>
 
           <div class="filter-group">
-            <p class="helper-label">Date Range</p>
-            <v-select
-              v-model="dateRange"
-              :items="dateRanges"
-              item-title="label"
-              item-value="value"
+            <p class="helper-label">Start Date</p>
+            <v-text-field
+              v-model="startDate"
+              type="date"
               variant="outlined"
               density="comfortable"
               hide-details
-              @update:model-value="emitFilters"
+            />
+          </div>
+
+          <div class="filter-group">
+            <p class="helper-label">End Date</p>
+            <v-text-field
+              v-model="endDate"
+              type="date"
+              variant="outlined"
+              density="comfortable"
+              hide-details
             />
           </div>
 
@@ -71,11 +79,18 @@
             <div class="title">Metric Breakdown</div>
             <div class="subtitle">{{ currentSummary }}</div>
           </div>
+          <v-btn
+            icon="mdi-download"
+            variant="text"
+            size="small"
+            @click="downloadChart"
+            class="download-btn"
+          ></v-btn>
         </v-card-title>
         <v-divider></v-divider>
         <v-card-text class="pt-4">
           <div class="chart-wrapper">
-            <Bar :data="chartData" :options="chartOptions" :height="380" />
+            <Bar ref="chartRef" :data="chartData" :options="chartOptions" :height="380" />
           </div>
         </v-card-text>
       </v-card>
@@ -100,6 +115,8 @@ import type { ChartData, ChartOptions } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
+const chartRef = ref<any>(null)
+
 let schoolOptions = ref([{ value: 'all', label: 'All Schools' }])
 
 async function getSchools() {
@@ -113,29 +130,42 @@ async function getSchools() {
   }
 }
 
+function downloadChart() {
+  if (chartRef.value && chartRef.value.chart) {
+    const url = chartRef.value.chart.toBase64Image()
+    const link = document.createElement('a')
+    link.download = 'attendance-chart.png'
+    link.href = url
+    link.click()
+  }
+}
+
 async function getFilteredData() {
   try {
     const payload = {
-      metric: 'assessment',
-      level: 'school',
-      filters: {},
-      startDate: '2025-09-01',
-      endDate: '2025-12-15',
+      startDate: startDate.value,
+      endDate: endDate.value,
+      level: 'grade',
     }
-    const results = await api.post('/metric', payload)
+    const results = await api.post('/metric/attendance-metrics', payload)
     console.log(results)
 
-    const labels = results.data.map((e: any) => e.cte_school_name)
+    // Sort by grade
+    const sortedData = results.data.sort((a: any, b: any) => {
+      return parseInt(a.grade) - parseInt(b.grade)
+    })
+
+    const labels = sortedData.map((e: any) => `Grade ${e.grade}`)
     chartData.value = {
       labels,
       datasets: [
         {
-          label: selectedMetric.value,
-          data: results.data.map((e: any) => e.value),
-          backgroundColor: '#0ea5e9',
-          hoverBackgroundColor: '#0284c7',
-          borderRadius: 6,
-          maxBarThickness: 98,
+          label: 'Attendance Rate (%)',
+          data: sortedData.map((e: any) => e.attendance_rate),
+          backgroundColor: '#64748b',
+          hoverBackgroundColor: '#475569',
+          borderRadius: 4,
+          maxBarThickness: 80,
         },
       ],
     }
@@ -155,14 +185,6 @@ const emit = defineEmits<{ (e: 'change', value: FilterPayload): void }>()
 
 const metrics = [
   { value: 'attendance', label: 'Attendance' },
-  { value: 'assessments', label: 'Assessments' },
-  //  { value: 'behavior', label: 'Behavior Incidents' },
-]
-
-const dateRanges = [
-  { value: 'last7', label: 'Last 7 days' },
-  { value: 'month', label: 'This Month' },
-  { value: 'semester', label: 'This Semester' },
 ]
 
 const gradeOptions = [
@@ -174,7 +196,8 @@ const gradeOptions = [
 ]
 
 const selectedMetric = ref(metrics[0].value)
-const dateRange = ref(dateRanges[0].value)
+const startDate = ref('2024-01-01')
+const endDate = ref('2024-12-31')
 const selectedSchool = ref(schoolOptions.value[0].value)
 const selectedGrade = ref(gradeOptions[0].value)
 
@@ -184,9 +207,23 @@ const chartOptions: ChartOptions<'bar'> = {
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'top',
+      display: false,
     },
     tooltip: {
+      backgroundColor: '#0f172a',
+      padding: 12,
+      cornerRadius: 4,
+      titleFont: {
+        size: 13,
+        family: "'Inter', sans-serif",
+        weight: '600',
+      },
+      bodyFont: {
+        size: 12,
+        family: "'Inter', sans-serif",
+      },
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
       callbacks: {
         title: (items) => `${items[0]?.label}`,
       },
@@ -195,15 +232,38 @@ const chartOptions: ChartOptions<'bar'> = {
   scales: {
     y: {
       beginAtZero: true,
+      max: 100,
       ticks: {
-        stepSize: 5,
+        stepSize: 10,
+        color: '#64748b',
+        font: {
+          size: 11,
+          family: "'Inter', sans-serif",
+        },
+        callback: function(value) {
+          return value + '%';
+        },
       },
       grid: {
-        color: '#e5e7eb',
+        color: '#e2e8f0',
+        drawBorder: false,
+      },
+      border: {
+        display: false,
       },
     },
     x: {
+      ticks: {
+        color: '#64748b',
+        font: {
+          size: 11,
+          family: "'Inter', sans-serif",
+        },
+      },
       grid: {
+        display: false,
+      },
+      border: {
         display: false,
       },
     },
@@ -212,16 +272,15 @@ const chartOptions: ChartOptions<'bar'> = {
 
 const currentSummary = computed(() => {
   const metricLabel = metrics.find((m) => m.value === selectedMetric.value)?.label
-  const dateLabel = dateRanges.find((d) => d.value === dateRange.value)?.label
   const schoolLabel = schoolOptions.value.find((s) => s.value === selectedSchool.value)?.label
   const gradeLabel = gradeOptions.find((g) => g.value === selectedGrade.value)?.label
-  return `${metricLabel} · ${dateLabel} · ${schoolLabel} · ${gradeLabel}`
+  return `${metricLabel} · ${startDate.value} to ${endDate.value} · ${schoolLabel} · ${gradeLabel}`
 })
 
 const emitFilters = () => {
   emit('change', {
     metric: selectedMetric.value,
-    dateRange: dateRange.value,
+    dateRange: `${startDate.value} to ${endDate.value}`,
     school: selectedSchool.value,
     grade: selectedGrade.value,
   })
@@ -235,36 +294,42 @@ onMounted(async () => {
 
 <style scoped>
 .page-shell {
-  padding: 16px 20px;
-  background: #f5f7fb;
+  padding: 24px;
+  background: #f5f7fa;
   min-height: 100%;
 }
 
 .breakdown-layout {
   display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 1.5rem;
-  align-items: start;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+  align-items: stretch;
   max-width: 1400px;
   margin: 0 auto;
 }
 
 .filters-card {
   width: 100%;
-  max-width: 360px;
-  background: #fff;
-  border: 1px solid #e4e7ec;
-  border-radius: 14px;
-  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  box-shadow: none;
+  height: 100%;
 }
 
 .chart-card {
   width: 100%;
-  background: #fff;
-  border: 1px solid #e4e7ec;
-  border-radius: 14px;
-  min-height: 520px;
-  box-shadow: 0 16px 40px rgba(16, 24, 40, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  box-shadow: none;
+  height: 100%;
+}
+
+.filters-card:hover,
+.chart-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .chart-wrapper {
@@ -278,16 +343,28 @@ onMounted(async () => {
   justify-content: space-between;
 }
 
-.title {
-  font-size: 1.05rem;
-  font-weight: 700;
+.download-btn {
+  color: #64748b;
+}
+
+.download-btn:hover {
   color: #0f172a;
+  background-color: #f1f5f9;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .subtitle {
-  font-size: 0.9rem;
-  color: #475467;
-  margin-top: 4px;
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 6px;
+  font-weight: 500;
 }
 
 .chart-summary {
@@ -297,20 +374,23 @@ onMounted(async () => {
 .filter-group {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.75rem;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .helper-label {
   margin: 0;
-  font-size: 0.9rem;
-  color: #475467;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .helper {
   margin: 0.5rem 0 0;
   font-size: 0.9rem;
-  color: #5f6b7a;
+  color: #64748b;
 }
 
 @media (max-width: 1100px) {
@@ -323,7 +403,7 @@ onMounted(async () => {
   }
 
   .page-shell {
-    padding: 14px;
+    padding: 16px;
   }
 }
 </style>

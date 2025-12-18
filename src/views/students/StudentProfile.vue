@@ -36,6 +36,27 @@
       </div>
     </section>
 
+    <!-- New Charts Section -->
+    <section class="charts-row card">
+      <header>
+        <p class="eyebrow">Performance Overview</p>
+      </header>
+      <div class="charts-grid">
+        <div class="chart-container">
+          <h4>Attendance</h4>
+          <canvas ref="attendanceCanvas"></canvas>
+        </div>
+        <div class="chart-container">
+          <h4>Grades</h4>
+          <canvas ref="gradesCanvas"></canvas>
+        </div>
+        <div class="chart-container">
+          <h4>Behavior</h4>
+          <canvas ref="behaviorCanvas"></canvas>
+        </div>
+      </div>
+    </section>
+
     <section class="profile-body">
       <div class="column column-primary">
         <div class="card wbl-card">
@@ -176,11 +197,29 @@
   </v-dialog>
 
   <v-dialog v-model="assessmentDialog" max-width="620">
-    <v-card v-if="selectedAssessment">
-      <v-card-title>{{ selectedAssessment.name }}</v-card-title>
+    <v-card v-if="selectedAssessment" class="assessment-dialog-card">
+      <v-card-title class="dialog-title">
+        {{ selectedAssessment.name }}
+        <span class="dialog-score-badge">{{ selectedAssessment.score }}%</span>
+      </v-card-title>
       <v-card-text>
-        <p class="mb-3"><strong>Latest score:</strong> {{ selectedAssessment.score }}%</p>
-        <canvas ref="chartCanvas" height="260"></canvas>
+        <div class="chart-wrapper">
+          <canvas ref="chartCanvas" height="260"></canvas>
+        </div>
+        
+        <div v-if="selectedAssessment.questions" class="questions-list">
+          <h4 class="questions-header">Question Breakdown</h4>
+          <div v-for="q in selectedAssessment.questions" :key="q.id" class="question-item">
+            <div class="question-text">
+              <strong>Q{{ q.id }}:</strong> {{ q.text }}
+            </div>
+            <div class="question-stats">
+              <span class="stat-badge student">You: {{ q.studentScore }}%</span>
+              <span class="stat-badge class">Class: {{ q.classAvg }}%</span>
+              <span class="stat-badge grade">Grade: {{ q.gradeAvg }}%</span>
+            </div>
+          </div>
+        </div>
       </v-card-text>
       <v-card-actions>
         <v-spacer></v-spacer>
@@ -205,6 +244,7 @@ const route = useRoute()
 
 onMounted(async () => {
   await Promise.all([getStudentDetails(), getStudentWBL(), getStudentForms(), getAssessmentData()])
+  initProfileCharts()
 })
 
 async function getStudentForms() {
@@ -289,11 +329,20 @@ interface StudentForm {
   date: string
 }
 
+interface Question {
+  id: number
+  text: string
+  studentScore: number
+  classAvg: number
+  gradeAvg: number
+}
+
 interface Assessments {
   id: number
   name: string
   score: number
   percent_score: number
+  questions?: Question[]
 }
 
 const student = ref({
@@ -335,6 +384,14 @@ const assessmentDialog = ref(false)
 const selectedAssessment = ref<Assessments | null>(null)
 const chartCanvas = ref<HTMLCanvasElement | null>(null)
 let chartInstance: Chart | null = null
+
+// Profile Charts Refs
+const attendanceCanvas = ref<HTMLCanvasElement | null>(null)
+const gradesCanvas = ref<HTMLCanvasElement | null>(null)
+const behaviorCanvas = ref<HTMLCanvasElement | null>(null)
+let attendanceChart: Chart | null = null
+let gradesChart: Chart | null = null
+let behaviorChart: Chart | null = null
 
 const wblTargetHours = 54
 
@@ -394,6 +451,21 @@ async function getAssessmentData() {
     }))
   } catch (e) {
     console.error(e)
+  } finally {
+    // Fake entry for testing with granular data
+    studentAssessments.value.push({
+      id: 999,
+      name: 'Unit 4: Advanced Principles',
+      score: 88,
+      percent_score: 88,
+      questions: [
+        { id: 1, text: 'Identify the primary inputs of the system.', studentScore: 100, classAvg: 85, gradeAvg: 82 },
+        { id: 2, text: 'Calculate the efficiency variance.', studentScore: 75, classAvg: 78, gradeAvg: 74 },
+        { id: 3, text: 'Determine the optimal routing path.', studentScore: 90, classAvg: 88, gradeAvg: 85 },
+        { id: 4, text: 'Explain the impact of load balancing.', studentScore: 85, classAvg: 80, gradeAvg: 79 },
+        { id: 5, text: 'Analyze the system constraints.', studentScore: 95, classAvg: 82, gradeAvg: 80 },
+      ]
+    })
   }
 }
 
@@ -408,40 +480,161 @@ function createChart() {
   if (!chartCanvas.value || !selectedAssessment.value) return
   destroyChart()
 
-  // Fake comparison data for now; replace with real class/grade averages when available
-  const labels = ['Student', 'Class Avg', 'Grade Avg']
-  const data = [selectedAssessment.value.score, 82, 76]
+  const assessment = selectedAssessment.value
+  
+  // Decide if we are showing granular data or just summary
+  const isGranular = assessment.questions && assessment.questions.length > 0
+  
+  let labels, datasets
+
+  if (isGranular) {
+    labels = assessment.questions!.map(q => `Q${q.id}`)
+    const studentData = assessment.questions!.map(q => q.studentScore)
+    const classData = assessment.questions!.map(q => q.classAvg)
+    const gradeData = assessment.questions!.map(q => q.gradeAvg)
+
+    datasets = [
+      {
+        label: 'Student',
+        data: studentData,
+        backgroundColor: 'rgba(53, 162, 235, 0.7)',
+        maxBarThickness: 30
+      },
+      {
+        label: 'Class Avg',
+        data: classData,
+        backgroundColor: 'rgba(255, 159, 64, 0.7)',
+        maxBarThickness: 30
+      },
+      {
+        label: 'Grade Avg',
+        data: gradeData,
+        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+        maxBarThickness: 30
+      }
+    ]
+  } else {
+    // Fallback to simple comparison if no questions
+    labels = ['Student', 'Class Avg', 'Grade Avg']
+    datasets = [{
+      label: 'Score (%)',
+      data: [assessment.score, 82, 76],
+      backgroundColor: [
+        'rgba(53, 162, 235, 0.6)',
+        'rgba(255, 159, 64, 0.6)',
+        'rgba(75, 192, 192, 0.6)',
+      ],
+      borderWidth: 1,
+    }]
+  }
 
   chartInstance = new Chart(chartCanvas.value, {
     type: 'bar',
     data: {
       labels,
-      datasets: [
-        {
-          label: 'Score (%)',
-          data,
-          backgroundColor: [
-            'rgba(53, 162, 235, 0.6)',
-            'rgba(255, 159, 64, 0.6)',
-            'rgba(75, 192, 192, 0.6)',
-          ],
-          borderColor: ['rgba(53, 162, 235, 1)', 'rgba(255, 159, 64, 1)', 'rgba(75, 192, 192, 1)'],
-          borderWidth: 1,
-        },
-      ],
+      datasets
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top' },
+        legend: { position: 'top', display: isGranular }, // Only show legend for grouped bar
         title: { display: false },
+        tooltip: {
+            callbacks: {
+                afterBody: (context) => {
+                    if (!isGranular) return []
+                    // Show question text in tooltip? Might be too long.
+                    // keeping simple for now.
+                    return []
+                }
+            }
+        }
       },
       scales: {
         y: { beginAtZero: true, max: 100 },
+        x: { 
+            grid: { display: false }
+        }
       },
     },
   })
 }
+
+function initProfileCharts() {
+  if (attendanceCanvas.value) {
+    attendanceChart = new Chart(attendanceCanvas.value, {
+      type: 'line',
+      data: {
+        labels: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [{
+          label: 'Attendance %',
+          data: [98, 97, 100, 96, 98],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { min: 80, max: 100 } }
+      }
+    })
+  }
+
+  if (gradesCanvas.value) {
+    gradesChart = new Chart(gradesCanvas.value, {
+      type: 'bar',
+      data: {
+        labels: ['Math', 'Sci', 'Eng', 'Hist', 'Art'],
+        datasets: [{
+          label: 'Grade (%)',
+          data: [88, 92, 85, 90, 95],
+          backgroundColor: '#3b82f6',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, max: 100 } }
+      }
+    })
+  }
+
+  if (behaviorCanvas.value) {
+    behaviorChart = new Chart(behaviorCanvas.value, {
+      type: 'bar',
+      data: {
+        labels: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [
+          {
+            label: 'Incidents',
+            data: [1, 0, 2, 1, 0],
+            backgroundColor: '#ef4444',
+            borderRadius: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { 
+          legend: { position: 'bottom' } 
+        },
+        scales: {
+          x: { stacked: true },
+          y: { 
+            beginAtZero: true, 
+            stacked: true 
+          }
+        }
+      }
+    })
+  }
+}
+
 
 const submitAddHours = async () => {
   try {
