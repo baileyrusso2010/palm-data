@@ -5,7 +5,6 @@
     app
     color="surface"
     elevation="2"
-    expand-on-hover
     class="sidebar-nav"
   >
     <v-sheet class="px-3 pt-4 pb-2 d-flex align-center" color="transparent">
@@ -16,7 +15,7 @@
       <v-btn
         size="small"
         variant="text"
-        icon="mdi-chevron-double-left"
+        :icon="rail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left'"
         class="ml-1 d-none d-lg-flex"
         @click.stop="toggleRail"
       />
@@ -30,7 +29,7 @@
         v-for="item in mainItems"
         :key="item.to"
         :to="item.to"
-        :title="item.title"
+        :title="rail ? undefined : item.title"
         :active="isActive(item.to)"
         rounded="lg"
       >
@@ -51,7 +50,7 @@
         v-for="item in formItems"
         :key="item.to"
         :to="item.to"
-        :title="item.title"
+        :title="rail ? undefined : item.title"
         :active="isActive(item.to)"
         rounded="lg"
       >
@@ -71,7 +70,7 @@
       <v-list-item
         rounded="lg"
         prepend-icon="mdi-theme-light-dark"
-        :title="rail ? 'Theme' : 'Toggle Theme'"
+        :title="rail ? undefined : 'Toggle Theme'"
         @click="emit('toggle-theme')"
       />
     </v-list>
