@@ -95,6 +95,25 @@
         </v-card-text>
       </v-card>
     </div>
+
+    <div class="grid-layout">
+      <v-card class="grid-card" flat>
+        <v-card-title class="py-3">Detailed Breakdown</v-card-title>
+        <v-divider></v-divider>
+        <div style="height: 500px">
+          <ag-grid-vue
+            :theme="gridTheme"
+            :rowData="rowData"
+            :columnDefs="colDefs"
+            :defaultColDef="defaultColDef"
+            :suppressKeyboardEvent="suppressKeyboardEvent"
+            :stopEditingWhenCellsLoseFocus="false"
+            @cell-focused="onCellFocused"
+            style="height: 100%; width: 100%"
+          />
+        </div>
+      </v-card>
+    </div>
   </div>
 </template>
 
@@ -114,6 +133,10 @@ import {
 import type { ChartData, ChartOptions } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+
+import { AgGridVue } from 'ag-grid-vue3'
+import { themeQuartz } from 'ag-grid-community'
+import type { ColDef } from 'ag-grid-community'
 
 const chartRef = ref<any>(null)
 
@@ -155,6 +178,9 @@ async function getFilteredData() {
       return parseInt(a.grade) - parseInt(b.grade)
     })
 
+    // Update Grid Data
+    rowData.value = sortedData
+
     const labels = sortedData.map((e: any) => `Grade ${e.grade}`)
     chartData.value = {
       labels,
@@ -183,9 +209,7 @@ type FilterPayload = {
 
 const emit = defineEmits<{ (e: 'change', value: FilterPayload): void }>()
 
-const metrics = [
-  { value: 'attendance', label: 'Attendance' },
-]
+const metrics = [{ value: 'attendance', label: 'Attendance' }]
 
 const gradeOptions = [
   { value: 'all', label: 'All Grades / Classes' },
@@ -240,8 +264,8 @@ const chartOptions: ChartOptions<'bar'> = {
           size: 11,
           family: "'Inter', sans-serif",
         },
-        callback: function(value) {
-          return value + '%';
+        callback: function (value) {
+          return value + '%'
         },
       },
       grid: {
@@ -277,6 +301,26 @@ const currentSummary = computed(() => {
   return `${metricLabel} · ${startDate.value} to ${endDate.value} · ${schoolLabel} · ${gradeLabel}`
 })
 
+// AG Grid Setup
+const gridTheme = themeQuartz
+const rowData = ref([])
+const colDefs = ref<ColDef[]>([
+  { field: 'grade', headerName: 'Grade' },
+  { field: 'attendance_rate', headerName: 'Attendance Rate', valueFormatter: (p) => p.value + '%' },
+])
+
+const defaultColDef = {
+  flex: 1,
+  minWidth: 100,
+  filter: true,
+  sortable: true,
+}
+
+const suppressKeyboardEvent = (params: any) => false
+const onCellFocused = (params: any) => {
+  // Console log or handle focus
+}
+
 const emitFilters = () => {
   emit('change', {
     metric: selectedMetric.value,
@@ -306,6 +350,24 @@ onMounted(async () => {
   align-items: stretch;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+.grid-layout {
+  max-width: 1400px;
+  margin: 24px auto 0;
+}
+
+.grid-card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+.grid-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .filters-card {
