@@ -18,6 +18,7 @@ import FormTest from './views/forms/FormTest.vue'
 import WblStudent from './views/wbl/WblStudent.vue'
 import UploadData from './views/admin/UploadData.vue'
 import BreakDown from './views/data/BreakDown.vue'
+import CreateRubric from './views/forms/CreateRubric.vue'
 import Home from './views/home/Home.vue'
 
 const routes = [
@@ -38,6 +39,11 @@ const routes = [
   {
     path: '/form-view',
     component: FormView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/rubric/create',
+    component: CreateRubric,
     meta: { requiresAuth: true },
   },
   {

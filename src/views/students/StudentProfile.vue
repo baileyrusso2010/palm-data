@@ -124,6 +124,56 @@
         </div>
       </div>
 
+      <!-- Grades Section: own full row in profile-body -->
+      <div class="card grades-card">
+        <header>
+          <div>
+            <p class="eyebrow">Academics</p>
+            <h3>Term Grades</h3>
+            <p class="meta">Performance by grading period</p>
+          </div>
+        </header>
+        <div class="grades-grid-container">
+          <div class="grades-grid">
+            <div v-for="grade in termGrades" :key="grade.courseName" class="grade-course-card">
+              <div class="grade-card-header">
+                <div>
+                  <h4 class="grade-course-title">{{ grade.courseName }}</h4>
+                  <p class="grade-course-teacher">{{ grade.teacher }}</p>
+                </div>
+                <!-- Logic: Show S1 if available, otherwise Q2 or Q1. Or use 'current' logic. -->
+                <div class="grade-main-score">
+                  <span
+                    :class="[
+                      'big-score',
+                      scoreClass(grade.s1 || grade.q2 || grade.q1 || grade.q3 || grade.q4),
+                    ]"
+                  >
+                    {{ grade.s1 || grade.q2 || grade.q1 || grade.q3 || grade.q4 || '-' }}%
+                  </span>
+                </div>
+              </div>
+              <div class="grade-card-footer">
+                <div class="grade-pill-row">
+                  <div class="grade-pill">
+                    <span class="lbl">Q1</span>
+                    <span :class="['val', scoreClass(grade.q1)]">{{ grade.q1 || '-' }}</span>
+                  </div>
+                  <div class="grade-pill">
+                    <span class="lbl">Q2</span>
+                    <span :class="['val', scoreClass(grade.q2)]">{{ grade.q2 || '-' }}</span>
+                  </div>
+                  <div class="grade-pill semester">
+                    <span class="lbl">S1</span>
+                    <span :class="['val', scoreClass(grade.s1)]">{{ grade.s1 || '-' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Assessments Section: own full row in profile-body -->
       <div class="card assessments-card">
         <header>
@@ -241,6 +291,7 @@ Chart.register(...registerables)
 const router = useRouter()
 const route = useRoute()
 const wblTypes = ref([])
+const behaviorAggregates = ref([])
 
 onMounted(async () => {
   await Promise.all([
@@ -249,14 +300,27 @@ onMounted(async () => {
     getStudentForms(),
     getAssessmentData(),
     getWblTypes(),
+    getStudentGrades(),
+    getBehaviorAggregates(),
   ])
   initProfileCharts()
 })
 
+async function getBehaviorAggregates() {
+  try {
+    const { data } = await api.get(
+      `/behaviors/analytics?groupBy=month&studentId=${route.params.id}`,
+    )
+    behaviorAggregates.value = data
+    console.log(data)
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 async function getWblTypes() {
   try {
     const { data } = await api.get(`/wbl-categories`)
-    console.log(data)
     wblTypes.value = data
   } catch (err) {
     console.log(err)
@@ -266,7 +330,6 @@ async function getWblTypes() {
 async function getStudentForms() {
   try {
     const { data } = await api.get(`/forms/student/${route.params.id}`)
-    console.log(data)
     studentForms.value = data.map((f: any) => ({
       id: f.form.id,
       title: f.form.name,
@@ -384,7 +447,8 @@ const workBasedLearning = ref<WorkLearningExperience[]>([])
 const studentForms = ref<StudentForm[]>([])
 const studentAssessments = ref<Assessments[]>([])
 
-const scoreClass = (score: number) => {
+const scoreClass = (score: number | null | undefined) => {
+  if (score === null || score === undefined) return ''
   if (score >= 90) return 'great'
   if (score >= 75) return 'good'
   return 'needs-improvement'
@@ -609,6 +673,84 @@ function createChart() {
   })
 }
 
+const termGrades = ref<any[]>([])
+
+async function getStudentGrades() {
+  try {
+    const { data } = await api.get(`/gradebook/student-grades?studentId=${route.params.id}`)
+
+    // Check if we have student data
+    if (!data || !data.length) {
+      termGrades.value = []
+      return
+    }
+
+    const studentData = data[0]
+
+    if (!studentData.enrollments) {
+      termGrades.value = []
+      return
+    }
+
+    termGrades.value = studentData.enrollments.map((enrollment: any) => {
+      const courseInstance = enrollment.course_instance || {}
+      const grades = enrollment.student_term_grades || []
+
+      // Determine Q1, Q2, S1 based on tasks
+      // Assuming logic:
+      // Term 1 + Task 'Quarter' -> Q1
+      // Term 2 + Task 'Quarter' -> Q2
+      // S1 could be an average or a specific task. For now, let's leave S1 calculation to a computed or just null if not explicit.
+      // Based on the mock, we want to populate these fields.
+
+      let q1 = null
+      let q2 = null
+      let s1 = null
+      let q3 = null
+      let q4 = null
+
+      grades.forEach((g: any) => {
+        const taskName = g.task?.name
+        const termId = g.task?.term_id
+
+        if (taskName === 'Quarter') {
+          if (termId === 1) q1 = g.numeric_score
+          if (termId === 2) q2 = g.numeric_score
+          if (termId === 3) q3 = g.numeric_score
+          if (termId === 4) q4 = g.numeric_score
+        }
+
+        // Example logic for S1 if it exists as a separate task, or we could compute it
+        // if (taskName === 'Semester' && termId === 1) s1 = g.numeric_score
+      })
+
+      // Rudimentary S1 calculation if not present (Avg of Q1 and Q2)
+      if (s1 === null && q1 !== null) {
+        if (q2 !== null) {
+          s1 = Math.round((q1 + q2) / 2)
+        } else {
+          s1 = q1 // Temporary fallback or leave null
+        }
+      }
+
+      return {
+        courseName: courseInstance.alias || 'Unknown Course',
+        teacher: courseInstance.instructor
+          ? `${courseInstance.instructor.first_name} ${courseInstance.instructor.last_name}`
+          : '',
+        q1,
+        q2,
+        s1,
+        q3,
+        q4,
+        final: null,
+      }
+    })
+  } catch (err) {
+    console.log(err)
+  }
+}
+
 function initProfileCharts() {
   if (attendanceCanvas.value) {
     attendanceChart = new Chart(attendanceCanvas.value, {
@@ -659,17 +801,38 @@ function initProfileCharts() {
   if (behaviorCanvas.value) {
     behaviorChart = new Chart(behaviorCanvas.value, {
       type: 'bar',
-      data: {
-        labels: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [
-          {
-            label: 'Incidents',
-            data: [1, 0, 2, 1, 0],
-            backgroundColor: '#ef4444',
-            borderRadius: 2,
-          },
-        ],
-      },
+      data: (() => {
+        const months = []
+        const counts = []
+        const today = new Date()
+
+        // Generate last 5 months
+        for (let i = 4; i >= 0; i--) {
+          const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
+          months.push(d.toLocaleDateString('en-US', { month: 'short' }))
+
+          const match = behaviorAggregates.value.find((item: any) => {
+            const itemDate = new Date(item.time_period)
+            return (
+              itemDate.getMonth() === d.getMonth() && itemDate.getFullYear() === d.getFullYear()
+            )
+          })
+
+          counts.push(match ? match.count : 0)
+        }
+
+        return {
+          labels: months,
+          datasets: [
+            {
+              label: 'Incidents',
+              data: counts,
+              backgroundColor: '#ef4444',
+              borderRadius: 2,
+            },
+          ],
+        }
+      })(),
       options: {
         responsive: true,
         plugins: {

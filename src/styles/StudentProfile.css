@@ -7,7 +7,12 @@
   padding: 24px;
   background: #f5f7fa;
   color: #0f172a;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
 }
 
 .profile-page h1,
@@ -206,6 +211,28 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+/* Custom Scrollbar for WBL List */
+.wbl-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.wbl-list::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.wbl-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.wbl-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .wbl-item {
@@ -605,4 +632,128 @@
 .stat-badge.grade {
   background: rgba(75, 192, 192, 0.15);
   color: #064e3b;
+}
+
+/* Grades Section */
+.grades-card {
+  grid-column: 1 / -1;
+  background: transparent; /* Remove white bg from container so cards pop? Or keep white container? */
+  /* Actually, let's keep the container white for consistency with other sections, but maybe transparent padding */
+  background: #ffffff;
+  padding: 24px;
+}
+
+.grades-grid-container {
+  width: 100%;
+}
+
+.grades-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.grade-course-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.grade-course-card:hover {
+  border-color: #cbd5e1;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.grade-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.grade-course-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+}
+
+.grade-course-teacher {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+.grade-main-score {
+  text-align: right;
+}
+
+.big-score {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.big-score.great {
+  color: #059669;
+}
+.big-score.good {
+  color: #2563eb;
+}
+.big-score.needs-improvement {
+  color: #dc2626;
+}
+
+.grade-card-footer {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+}
+
+.grade-pill-row {
+  display: flex;
+  gap: 12px;
+}
+
+.grade-pill {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grade-pill .lbl {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.grade-pill .val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+/* Colorize mini vals too? */
+.grade-pill .val.great {
+  color: #059669;
+}
+.grade-pill .val.good {
+  color: #2563eb;
+}
+.grade-pill .val.needs-improvement {
+  color: #dc2626;
+}
+
+.grade-pill.semester {
+  margin-left: auto;
+  align-items: flex-end;
 }
