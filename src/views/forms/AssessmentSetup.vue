@@ -281,8 +281,19 @@ const handleBack = () => {
   }
 }
 
-const startAssessment = () => {
+const startAssessment = async () => {
   if (!selectedForm.value || !selectedRubric.value) return
+
+  const res = await api.post('/forms/class', {
+    course_instance_id: 1,
+    form_id: selectedForm.value.id,
+    rubric_id: selectedRubric.value.id,
+  })
+
+  if (res.status !== 201) {
+    console.error('Error creating class form:', res.data)
+    return
+  }
 
   router.push({
     path: '/forms/builder',

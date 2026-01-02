@@ -27,6 +27,7 @@
               bg-color="white"
               class="mr-4"
               style="width: 300px"
+              @update:model-value="handleStudentChange()"
             ></v-autocomplete>
 
             <v-btn color="white" variant="outlined" prepend-icon="mdi-arrow-left" to="/assessments">
@@ -40,7 +41,7 @@
       <v-row class="mb-4">
         <!-- Student Selector -->
         <v-col cols="12" md="6">
-          <v-card class="app-card" style="height: 350px; display: flex; flex-direction: column">
+          <v-card class="app-card" style="height: 400px; display: flex; flex-direction: column">
             <div class="pa-3 border-b bg-grey-lighten-5">
               <h3 class="text-subtitle-2 font-weight-bold">Score Summary</h3>
             </div>
@@ -68,18 +69,10 @@
                     <td class="text-center text-caption font-weight-bold align-middle">
                       {{ averages[i] }}
                     </td>
-                    <td class="pa-2 align-middle">
-                      <v-text-field
-                        v-model="scoreDates[i]"
-                        type="date"
-                        variant="outlined"
-                        density="compact"
-                        hide-details
-                        bg-color="white"
-                        single-line
-                        flat
-                        style="min-width: 140px"
-                      ></v-text-field>
+                    <td class="pa-2 align-middle text-center">
+                      <span class="text-caption font-weight-bold text-medium-emphasis">
+                        {{ scoreDates[i] }}
+                      </span>
                     </td>
                   </tr>
                   <tr class="bg-green-lighten-5">
@@ -99,7 +92,7 @@
 
         <!-- Rubric Reference Table -->
         <v-col cols="12" md="6">
-          <v-card class="app-card" style="height: 350px; display: flex; flex-direction: column">
+          <v-card class="app-card" style="height: 400px; display: flex; flex-direction: column">
             <div class="pa-3 border-b d-flex justify-space-between align-center bg-grey-lighten-5">
               <span class="text-subtitle-2 font-weight-bold"
                 >Rubric Reference: {{ currentRubricName }}</span
@@ -159,15 +152,16 @@
                 :gridOptions="gridOptions"
                 @grid-ready="onGridReady"
                 @cell-value-changed="onCellValueChanged"
+                @row-data-updated="onRowDataUpdated"
               >
               </ag-grid-vue>
             </div>
 
             <!-- Actions -->
             <div class="d-flex align-center justify-space-between mt-4 px-4 pb-4">
-              <v-btn color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addRow">
+              <!-- <v-btn color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addRow">
                 Add Row
-              </v-btn>
+              </v-btn> -->
               <v-btn
                 color="primary"
                 variant="elevated"
@@ -182,11 +176,22 @@
         </v-col>
       </v-row>
     </v-container>
+    <v-snackbar
+      v-model="snackbarVisible"
+      :color="snackbarColor"
+      :timeout="3000"
+      location="top right"
+    >
+      {{ snackbarText }}
+      <template v-slot:actions>
+        <v-btn color="white" variant="text" @click="snackbarVisible = false"> Close </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { GridApi, GridOptions } from 'ag-grid-community'
 import api from '../../api'
@@ -201,23 +206,39 @@ const rubricData = ref<any[]>([])
 const currentRubricName = ref('')
 const formName = ref('') // Added formName ref
 const scorePoints = ref([])
+const submissionId = ref(null)
+const rubricId = ref('')
+const formId = ref('')
 
-// Fake Students Data
-const students = ref([
-  { id: 1, name: 'Alice Johnson', grade: 11 },
-  { id: 2, name: 'Bob Smith', grade: 12 },
-  { id: 3, name: 'Charlie Brown', grade: 10 },
-  { id: 4, name: 'Diana Prince', grade: 11 },
-  { id: 5, name: 'Evan Wright', grade: 12 },
-])
+// Snackbar
+const snackbarVisible = ref(false)
+const snackbarText = ref('')
+const snackbarColor = ref('success')
 
-const selectedStudent = ref(students.value[0]) // Default to first student
+// Students Data
+interface Student {
+  id: string
+  name: string
+  grade: string
+}
+const students = ref<Student[]>([])
+
+const selectedStudent = ref<Student | null>(null)
+
+const getTodayDate = () => {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    // weekday: 'short',
+  })
+}
 
 const scoreDates = ref<Record<number, string | null>>({
-  1: null,
-  2: null,
-  3: null,
-  4: null,
+  1: getTodayDate(),
+  2: getTodayDate(),
+  3: getTodayDate(),
+  4: getTodayDate(),
 })
 
 const updateTrigger = ref(0)
@@ -262,175 +283,12 @@ const averages = computed(() => {
 })
 
 // Initial Data provided by user
-const rowData = ref([
-  {
-    skill: 'Attendance',
-    standard:
-      'Understands work expectations for attendance and adheres to them. Notifies supervisor in advance in case of absence.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Punctuality',
-    standard:
-      'Understands work expectations for punctuality. Arrives on time for work, takes and returns from breaks on time and calls the supervisor prior to being late.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Takes Initiative',
-    standard:
-      'Participates fully in task or project from initiation to completion. Initiates interactions with supervisor for the next task upon completion of previous one.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Quality of Work',
-    standard:
-      'Gives best effort, evaluates own work and utilizes feedback to improve work performance. Strives to meet quality standards and provides optimal customer service.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Response to Supervision',
-    standard:
-      'Accepts direction, feedback and constructive criticism with positive attitude and uses information to improve work performance. Demonstrates flexibility when nature of work changes.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Workplace Appearance',
-    standard:
-      'Dresses appropriately for the position and duties. Practices personal hygiene appropriate for position and duties.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Observes Critically',
-    standard:
-      'Carefully attends to visual sources of information. Evaluates the information for accuracy, bias and usefulness. Develops a clear understanding of the information.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Knowledge of Workplace',
-    standard: 'Demonstrates understanding of workplace policy and ethics.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Solves Problems and Makes Decisions',
-    standard:
-      'Identifies the nature of the problem, evaluates various ways of solving the problem and selects the best alternative.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Takes Responsibility',
-    standard:
-      'Identifies one’s strengths and weaknesses. Sets goals for learning. Identifies and pursues opportunities for learning. Monitors one’s progress toward achieving these goals.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Communication Skills',
-    standard:
-      'Gives full attention to what other people are saying, asks questions as appropriate and understands what was heard. Communicates concerns clearly and asks for assistance when needed.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Cooperates with Others',
-    standard:
-      'Interacts and communicates with others in a friendly and courteous way. Shows respect for others’ ideas, opinions and racial and cultural diversity. Effectively works as a member of a team.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Resolves Conflicts',
-    standard:
-      'Identifies the source of conflict, suggests options to resolve it and helps parties reach a mutually satisfactory agreement.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Reads with Understanding',
-    standard:
-      'Reads print materials in a variety of formats (signs, books, instruction sheets, forms, charts, etc.) to locate, understand, apply and manage information they contain.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Solves Problems using Math',
-    standard:
-      'Works with mathematical information (numbers, symbols, etc.), procedures, and tools and applies skills to answer a question, solve a problem, verify the reasonableness of results, make a prediction or carry out a task that has mathematical dimensions.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Health and Safety',
-    standard: 'Complies with health and safety rules for specific workplace.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-  {
-    skill: 'Technology',
-    standard: 'Uses job-related tools, technologies and materials appropriately.',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  },
-])
+const rowData = ref([])
+
+const numberParser = (params: any) => {
+  const val = parseFloat(params.newValue)
+  return isNaN(val) ? null : val
+}
 
 const columnDefs = ref([
   {
@@ -452,24 +310,44 @@ const columnDefs = ref([
     headerName: 'Score 1',
     flex: 1,
     editable: true,
+    valueFormatter: (params: any) => {
+      const val = parseFloat(params.value)
+      return isNaN(val) ? '' : val
+    },
+    valueParser: numberParser,
   },
   {
     field: 'score2',
     headerName: 'Score 2',
     flex: 1,
     editable: true,
+    valueFormatter: (params: any) => {
+      const val = parseFloat(params.value)
+      return isNaN(val) ? '' : val
+    },
+    valueParser: numberParser,
   },
   {
     field: 'score3',
     headerName: 'Score 3',
     flex: 1,
     editable: true,
+    valueFormatter: (params: any) => {
+      const val = parseFloat(params.value)
+      return isNaN(val) ? '' : val
+    },
+    valueParser: numberParser,
   },
   {
     field: 'score4',
     headerName: 'Score 4',
     flex: 1,
     editable: true,
+    valueFormatter: (params: any) => {
+      const val = parseFloat(params.value)
+      return isNaN(val) ? '' : val
+    },
+    valueParser: numberParser,
   },
   {
     field: 'comment',
@@ -497,52 +375,228 @@ const onGridReady = (params: any) => {
   params.api.sizeColumnsToFit()
 }
 
-const addRow = () => {
-  const newRow = {
-    skill: 'New Skill',
-    standard: 'Description...',
-    score1: '',
-    score2: '',
-    score3: '',
-    score4: '',
-    comment: '',
-  }
-  rowData.value = [...rowData.value, newRow]
-  // Scroll to bottom
-  setTimeout(() => {
-    gridApi.value?.ensureIndexVisible(rowData.value.length - 1)
-  }, 100)
-}
-
-const saveForm = () => {
+const saveForm = async () => {
   if (!selectedStudent.value) {
-    alert('Please select a student first')
+    showSnackbar('Please select a student first', 'error')
     return
   }
 
-  // Mock save functionality
-  console.log('Saving form data for student:', selectedStudent.value.name)
-  console.log('Form Data:', rowData.value)
-  // Here we would call the API to save the form structure and grades
+  if (!submissionId.value) {
+    const success = await createStudentSubmission()
+    if (!success) {
+      showSnackbar('Failed to create submission', 'error')
+      return
+    }
+  }
+
+  await createStudentSubmissionData()
+}
+
+const showSnackbar = (text: string, color: string = 'success') => {
+  snackbarText.value = text
+  snackbarColor.value = color
+  snackbarVisible.value = true
+}
+
+async function createStudentSubmission() {
+  if (!selectedStudent.value) return false
+  try {
+    let response = await api.post(`/forms/submission`, {
+      form_id: formId.value,
+      student_id: selectedStudent.value.id,
+      course_instance_id: 1,
+      status: 'draft',
+    })
+    submissionId.value = response.data.id
+    return true
+  } catch (err) {
+    console.log(err)
+    showSnackbar('Failed to create submission', 'error')
+    return false
+  }
+}
+
+async function createStudentSubmissionData() {
+  try {
+    const formattedData: Record<string, any> = {}
+
+    rowData.value.forEach((row: any) => {
+      // Map scores
+      ;['score1', 'score2', 'score3', 'score4'].forEach((key) => {
+        const fieldName = row.fieldNames?.[key]
+        if (fieldName && row[key] !== '' && row[key] !== null && row[key] !== undefined) {
+          const num = parseFloat(row[key])
+          if (!isNaN(num)) {
+            formattedData[fieldName] = num
+          }
+        }
+      })
+
+      // Map comment
+      const commentFieldName = row.fieldNames?.comment
+      if (commentFieldName) {
+        // Send null if empty string, or the actual comment
+        formattedData[commentFieldName] = row.comment === '' ? null : row.comment
+      }
+    })
+
+    //this is an upsert
+    await api.post(`/forms/submission/${submissionId.value}`, {
+      data: formattedData,
+    })
+    showSnackbar('Form saved successfully')
+  } catch (err) {
+    console.log(err)
+    showSnackbar('Failed to save form data', 'error')
+  }
+}
+
+// Store loaded submission values
+const loadedValues = ref<Record<string, any>>({})
+
+async function getStudentSubmission() {
+  if (!selectedStudent.value) return null
+
+  // Always reset submissionId to prevent using a previous student's ID
+  submissionId.value = null
+
+  try {
+    let response = await api.get(`/forms/submission/${formId.value}/${selectedStudent.value.id}`)
+    let data = response.data
+
+    // If successful, update the submissionId
+    submissionId.value = data.id
+
+    return data.data?.data || {}
+  } catch (error) {
+    // If 404 or error, submissionId remains null (correct for new/unsaved student)
+    console.log('Error fetching student submission (likely new):', error)
+    return null
+  }
+}
+
+async function getStudents() {
+  try {
+    let response = await api.get('/course-instances/1')
+    let data = response.data
+
+    if (data.enrollments) {
+      students.value = data.enrollments.map((enrollment: any) => ({
+        id: enrollment.student.id,
+        name: `${enrollment.student.first_name} ${enrollment.student.last_name}`,
+        grade: enrollment.student.grade,
+      }))
+
+      if (students.value.length > 0) {
+        selectedStudent.value = students.value[0]
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching students:', error)
+  }
+}
+
+// Store form definition
+const formDefinition = ref<any>(null)
+
+const onRowDataUpdated = () => {
+  updateTrigger.value++
+}
+
+const populateGrid = (savedValues: any) => {
+  if (!formDefinition.value?.form_sections) return
+
+  rowData.value = formDefinition.value.form_sections.map((section: any) => {
+    // Find fields for scores
+    const numberFields = section.form_fields.filter((f: any) => f.type === 'number')
+    const commentField = section.form_fields.find((f: any) => f.type === 'text')
+
+    // Helper to get value by field name
+    const getValue = (field: any) => {
+      if (!field?.name) return ''
+      const val = savedValues[field.name]
+      // Return if defined and valid number, otherwise empty string
+      if (val === undefined || val === null || val === '') return ''
+      const num = typeof val === 'number' ? val : parseFloat(val)
+      return isNaN(num) ? '' : num
+    }
+
+    return {
+      skill: section.name,
+      standard: section.description,
+      score1: getValue(numberFields[0]),
+      score2: getValue(numberFields[1]),
+      score3: getValue(numberFields[2]),
+      score4: getValue(numberFields[3]),
+      comment: getValue(commentField),
+      // Meta data for potentially saving later
+      sectionId: section.id,
+      fieldIds: {
+        score1: numberFields[0]?.id || 0,
+        score2: numberFields[1]?.id,
+        score3: numberFields[2]?.id,
+        score4: numberFields[3]?.id,
+        comment: commentField?.id,
+      },
+      fieldNames: {
+        score1: numberFields[0]?.name,
+        score2: numberFields[1]?.name,
+        score3: numberFields[2]?.name,
+        score4: numberFields[3]?.name,
+        comment: commentField?.name,
+      },
+    }
+  })
+}
+
+const handleStudentChange = async () => {
+  // 1. Immediately clear the grid values (keep form structure)
+  populateGrid({})
+
+  // 2. Fetch new data
+  const data = await getStudentSubmission()
+
+  // 3. If data exists, re-populate (if empty, it remains cleared from step 1)
+  if (data) {
+    populateGrid(data)
+  }
 }
 
 onMounted(async () => {
   rubricLoading.value = true
 
   // Get params from query
-  const rubricId = route.query.rubricId || 3
+  rubricId.value = (route.query.rubricId as string) || ''
+  formId.value = (route.query.formId as string) || ''
+
   if (route.query.formName) {
     formName.value = route.query.formName as string
   }
 
   try {
-    const res = await api.get(`/rubrics/${rubricId}`)
-    currentRubricName.value = res.data.name
-    rubricData.value = res.data.entries || []
-    scorePoints.value = res.data.entries.map((entry: any) => entry.score)
-    console.log(scorePoints.value)
+    // 1. Fetch Form Definition & Rubric
+    const formPromise = api.get(`/forms/${formId.value}?advanced=1`)
+    const rubricPromise = api.get(`/rubrics/${rubricId.value}`)
+
+    // 2. Fetch Students first, THEN submission
+    await getStudents()
+    const submissionData = await getStudentSubmission()
+
+    const [formRes, rubricRes] = await Promise.all([formPromise, rubricPromise])
+
+    // Handle Rubric
+    currentRubricName.value = rubricRes.data.name
+    rubricData.value = rubricRes.data.criteria || []
+    scorePoints.value = rubricRes.data.criteria.map((entry: any) => entry.score)
+
+    // Handle Form & Submission Merge
+    formDefinition.value = formRes.data
+    formName.value = formDefinition.value.name || 'Form Builder'
+
+    // Populate Initial Data
+    populateGrid(submissionData || {})
   } catch (error) {
-    console.error('Error fetching rubric:', error)
+    console.error('Error fetching data:', error)
   } finally {
     rubricLoading.value = false
   }

@@ -72,7 +72,7 @@
 
                   <template v-slot:append>
                     <v-btn variant="text" color="primary" append-icon="mdi-arrow-right">
-                      Begin Assessment
+                      Resume Assessment
                     </v-btn>
                   </template>
                 </v-list-item>
@@ -98,7 +98,8 @@ const loading = ref(false)
 const fetchForms = async () => {
   loading.value = true
   try {
-    const res = await api.get('/forms')
+    const res = await api.get('/forms/class')
+    console.log(res.data)
     forms.value = res.data || []
   } catch (error) {
     console.error('Error fetching forms:', error)
@@ -110,10 +111,11 @@ const fetchForms = async () => {
 const startAssessment = (form: any) => {
   // Navigate to setup wizard, pre-selecting this form and moving to step 2 (Rubric selection)
   router.push({
-    path: '/assessments/setup',
+    path: '/forms/builder',
     query: {
-      formId: form.id,
-      step: 2,
+      formId: form.form_id,
+      rubricId: form.rubric_id,
+      formName: form.name,
     },
   })
 }
