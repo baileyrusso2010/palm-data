@@ -157,8 +157,14 @@ const formItems = computed<NavItem[]>(() => [
   //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
   // },
   {
-    to: '/skills',
-    title: 'Create Form Skills',
+    to: '/assessments',
+    title: 'Assessments',
+    iconComp: PhExam,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+  {
+    to: '/rubric/create',
+    title: 'Create Rubric',
     iconComp: PhTable,
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },

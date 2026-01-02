@@ -19,15 +19,6 @@
             >
               Cancel
             </v-btn>
-            <v-btn
-              color="primary"
-              variant="elevated"
-              prepend-icon="mdi-content-save"
-              @click="saveRubric"
-              :loading="saving"
-            >
-              Save Rubric
-            </v-btn>
           </div>
         </div>
       </header>
@@ -68,16 +59,6 @@
                     Define the rows for your rubric matrix
                   </p>
                 </div>
-                <!-- Action button shifted right in line with header -->
-                <v-btn
-                  color="primary"
-                  variant="tonal"
-                  size="small"
-                  prepend-icon="mdi-plus"
-                  @click="addEntry"
-                >
-                  Add Criterion
-                </v-btn>
               </div>
 
               <!-- Grid Container -->
@@ -100,6 +81,23 @@
                   @grid-ready="onGridReady"
                 >
                 </ag-grid-vue>
+              </div>
+
+              <!-- Actions row -->
+              <div class="d-flex align-center justify-space-between mt-4">
+                <v-btn color="primary" variant="tonal" prepend-icon="mdi-plus" @click="addEntry">
+                  Add Row
+                </v-btn>
+                <v-btn
+                  color="primary"
+                  variant="elevated"
+                  prepend-icon="mdi-content-save"
+                  @click="saveRubric"
+                  :loading="saving"
+                  width="150"
+                >
+                  Save
+                </v-btn>
               </div>
             </div>
           </v-card>
@@ -136,21 +134,7 @@ const snackbar = ref({
   color: 'success',
 })
 
-const rowData = ref([
-  {
-    name: 'Content Accuracy',
-    description: 'Information is accurate and well-researched.',
-    score: 10,
-    sort_order: 1,
-  },
-  { name: 'Organization', description: 'Logical flow and structure.', score: 5, sort_order: 2 },
-  {
-    name: 'Delivery',
-    description: 'Clear voice, eye contact, and pacing.',
-    score: 5,
-    sort_order: 3,
-  },
-])
+const rowData = ref([])
 
 const columnDefs = ref([
   {
@@ -176,12 +160,11 @@ const columnDefs = ref([
   },
   {
     field: 'score',
-    headerName: 'Max Pts',
+    headerName: 'Pts',
     editable: true,
     type: 'numericColumn',
     width: 100,
     cellClass: 'font-weight-bold text-primary',
-    valueFormatter: (params: any) => params.value + ' pts',
   },
 ])
 
@@ -225,6 +208,13 @@ const saveRubric = async () => {
 
   if (rowData.value.length === 0) {
     showSnackbar('At least one criterion is required', 'error')
+    return
+  }
+
+  // Validation: Check if Name and Max Points are filled out
+  const invalidEntries = rowData.value.filter((entry) => !entry.name || !entry.score)
+  if (invalidEntries.length > 0) {
+    showSnackbar('Please ensure Name and Max Points are filled out for all criteria', 'error')
     return
   }
 
