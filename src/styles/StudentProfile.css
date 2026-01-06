@@ -207,73 +207,106 @@
   line-height: 1.2;
 }
 
-.wbl-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-height: 400px;
+/* WBL Circular Progress Grid */
+.wbl-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 24px;
+  max-height: 450px;
   overflow-y: auto;
-  padding-right: 8px;
+  padding: 4px;
 }
 
-/* Custom Scrollbar for WBL List */
-.wbl-list::-webkit-scrollbar {
+/* Custom Scrollbar for WBL Grid */
+.wbl-progress-grid::-webkit-scrollbar {
   width: 6px;
 }
 
-.wbl-list::-webkit-scrollbar-track {
+.wbl-progress-grid::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 3px;
 }
 
-.wbl-list::-webkit-scrollbar-thumb {
+.wbl-progress-grid::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
 
-.wbl-list::-webkit-scrollbar-thumb:hover {
+.wbl-progress-grid::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-.wbl-item {
+.wbl-progress-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
 
-.wbl-row-header {
+.circular-progress {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring-bg {
+  stroke: #e2e8f0;
+}
+
+.progress-ring-fill {
+  stroke: #64748b;
+  transition: stroke-dashoffset 0.5s ease;
+  stroke-linecap: round;
+}
+
+.progress-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.wbl-label {
+.progress-hours {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.progress-label {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.wbl-progress-info {
+  text-align: center;
+}
+
+.wbl-category-name {
   font-weight: 600;
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   color: #0f172a;
+  line-height: 1.3;
 }
 
-.wbl-hours-text {
-  font-weight: 600;
-  font-size: 16px;
-  color: #0f172a;
-}
-
-.mini-meter {
-  width: 100%;
-  height: 4px;
-  border-radius: 2px;
-  background: #e2e8f0;
-  overflow: hidden;
-  margin-top: 6px;
-}
-
-.mini-meter span {
-  display: block;
-  height: 100%;
-  background: #64748b;
-  border-radius: 2px;
+.wbl-percentage {
+  font-size: 11px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+  font-weight: 500;
 }
 
 .focus-row {

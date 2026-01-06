@@ -20,9 +20,12 @@
           <p class="meta">ID {{ student.id }}</p>
         </div>
         <div class="signal">
-          <p class="eyebrow">Focus Track</p>
-          <h3>{{ student.focusTrack }}</h3>
-          <p class="meta">{{ student.scheduleFocus }}</p>
+          <p class="eyebrow">MTSS Profile</p>
+          <h3>{{ mtssData.tierName || 'N/A' }}</h3>
+          <p class="meta">
+            {{ mtssData.domainName || 'N/A' }} ·
+            {{ mtssData.daysInTier !== null ? mtssData.daysInTier + ' days' : 'N/A' }}
+          </p>
         </div>
       </div>
       <div class="stat-row">
@@ -58,72 +61,6 @@
     </section>
 
     <section class="profile-body">
-      <div class="column column-primary">
-        <div class="card wbl-card">
-          <header>
-            <div>
-              <p class="eyebrow">Work-Based Learning</p>
-              <h3>Real-World Hours</h3>
-              <p class="meta">Live experiences across internship, co-op, and field</p>
-              <PhPlusCircle
-                :size="30"
-                color="#0e7a00"
-                weight="duotone"
-                @click="addHoursDialog = true"
-              />
-            </div>
-            <div class="wbl-header-stats">
-              <p class="hours-stat">{{ wblTotalHours }}h / {{ wblTargetHours }}h</p>
-              <p class="meta">{{ wblCompletion }}% complete</p>
-            </div>
-          </header>
-          <div class="wbl-list">
-            <div v-for="experience in workBasedLearning" :key="experience.label" class="wbl-item">
-              <div class="wbl-row-header">
-                <div>
-                  <p class="wbl-label">{{ experience.label }}</p>
-                  <p class="meta">{{ experience.context }}</p>
-                </div>
-                <span class="wbl-hours-text">{{ experience.hours }}h</span>
-              </div>
-              <div class="mini-meter">
-                <span :style="{ width: getWblPercent(experience) + '%' }"></span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="column column-secondary">
-        <div class="card">
-          <header>
-            <div>
-              <p class="eyebrow">Assignments</p>
-              <h3>Active Forms</h3>
-            </div>
-          </header>
-          <ul class="form-list">
-            <li v-for="form in studentForms" :key="form.id">
-              <div class="form-info clickable" @click="goToForm()">
-                <p class="form-title">{{ form.title }}</p>
-                <p class="meta">{{ form.date }}</p>
-              </div>
-              <div class="form-actions">
-                <span :class="['status-badge', form.status.toLowerCase()]">{{ form.status }}</span>
-                <v-btn
-                  icon="mdi-download"
-                  variant="text"
-                  size="small"
-                  color="primary"
-                  class="ml-2"
-                  @click.stop="downloadForm(form.id)"
-                ></v-btn>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </div>
-
       <!-- Grades Section: own full row in profile-body -->
       <div class="card grades-card">
         <header>
@@ -196,6 +133,99 @@
             </div>
             <p class="assessment-meta">Latest attempt</p>
           </div>
+        </div>
+      </div>
+
+      <div class="column column-primary">
+        <div class="card wbl-card">
+          <header>
+            <div>
+              <p class="eyebrow">Work-Based Learning</p>
+              <h3>Real-World Hours</h3>
+              <p class="meta">Live experiences across internship, co-op, and field</p>
+            </div>
+            <div class="wbl-header-stats">
+              <p class="hours-stat">{{ wblTotalHours }}h / {{ wblTargetHours }}h</p>
+              <p class="meta">{{ wblCompletion }}% complete</p>
+              <PhPlusCircle
+                :size="30"
+                color="#0e7a00"
+                weight="duotone"
+                @click="addHoursDialog = true"
+                style="cursor: pointer; margin-top: 8px"
+              />
+            </div>
+          </header>
+          <div class="wbl-progress-grid">
+            <div
+              v-for="experience in workBasedLearning"
+              :key="experience.label"
+              class="wbl-progress-item"
+            >
+              <div class="circular-progress">
+                <svg class="progress-ring" :width="120" :height="120">
+                  <circle
+                    class="progress-ring-bg"
+                    :stroke-width="8"
+                    fill="transparent"
+                    :r="52"
+                    :cx="60"
+                    :cy="60"
+                  />
+                  <circle
+                    class="progress-ring-fill"
+                    :stroke-width="8"
+                    fill="transparent"
+                    :r="52"
+                    :cx="60"
+                    :cy="60"
+                    :style="{
+                      strokeDasharray: `${2 * Math.PI * 52}`,
+                      strokeDashoffset: `${2 * Math.PI * 52 * (1 - getWblPercent(experience) / 100)}`,
+                    }"
+                  />
+                </svg>
+                <div class="progress-center">
+                  <span class="progress-hours">{{ experience.hours }}</span>
+                  <span class="progress-label">hrs</span>
+                </div>
+              </div>
+              <div class="wbl-progress-info">
+                <p class="wbl-category-name">{{ experience.label }}</p>
+                <p class="wbl-percentage">{{ getWblPercent(experience) }}% of target</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="column column-secondary">
+        <div class="card">
+          <header>
+            <div>
+              <p class="eyebrow">Assignments</p>
+              <h3>Active Forms</h3>
+            </div>
+          </header>
+          <ul class="form-list">
+            <li v-for="form in studentForms" :key="form.id">
+              <div class="form-info clickable" @click="goToForm()">
+                <p class="form-title">{{ form.title }}</p>
+                <p class="meta">{{ form.date }}</p>
+              </div>
+              <div class="form-actions">
+                <span :class="['status-badge', form.status.toLowerCase()]">{{ form.status }}</span>
+                <v-btn
+                  icon="mdi-download"
+                  variant="text"
+                  size="small"
+                  color="primary"
+                  class="ml-2"
+                  @click.stop="downloadForm(form.id)"
+                ></v-btn>
+              </div>
+            </li>
+          </ul>
         </div>
       </div>
     </section>
@@ -293,6 +323,16 @@ const route = useRoute()
 const wblTypes = ref([])
 const behaviorAggregates = ref([])
 
+// MTSS Data
+const mtssData = ref({
+  tierName: '',
+  tierDescription: '',
+  daysInTier: null as number | null,
+  startDate: '',
+  domainName: '',
+  domainDescription: '',
+})
+
 onMounted(async () => {
   await Promise.all([
     getStudentDetails(),
@@ -302,9 +342,46 @@ onMounted(async () => {
     getWblTypes(),
     getStudentGrades(),
     getBehaviorAggregates(),
+    getMtssData(),
   ])
   initProfileCharts()
 })
+
+async function getMtssData() {
+  try {
+    const { data } = await api.get(`/mtss/student-tiers?student_id=${route.params.id}`)
+
+    // Find the active tier (end_date is null)
+    const activeTier = data.find((tier: any) => tier.end_date === null)
+
+    if (activeTier) {
+      // Fetch tier details
+      const tierResponse = await api.get(`/mtss/tiers/${activeTier.tier_id}`)
+      const domainResponse = await api.get(`/mtss/domains/${activeTier.domain_id}`)
+
+      // Calculate days in tier
+      const startDate = new Date(activeTier.start_date)
+      const today = new Date()
+      const diffTime = Math.abs(today.getTime() - startDate.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+      mtssData.value = {
+        tierName: tierResponse.data.name || 'N/A',
+        tierDescription: tierResponse.data.description || '',
+        daysInTier: diffDays,
+        startDate: startDate.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+        domainName: domainResponse.data.name || 'N/A',
+        domainDescription: domainResponse.data.description || '',
+      }
+    }
+  } catch (err) {
+    console.error('Error getting MTSS data', err)
+  }
+}
 
 async function getBehaviorAggregates() {
   try {
