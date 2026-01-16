@@ -1,146 +1,205 @@
 <template>
-  <div class="class-view">
-    <section class="hero">
-      <v-container class="py-8">
-        <div class="hero-card">
-          <div class="hero-main">
-            <div class="hero-title-area">
+  <v-container fluid class="pa-4 bg-background">
+    <!-- Context Bar -->
+    <!-- Header Section -->
+    <div class="mb-8 mt-2">
+      <div class="d-flex align-center mb-2">
+        <v-icon size="small" color="primary" class="mr-2">mdi-domain</v-icon>
+        <span
+          class="text-subtitle-2 text-medium-emphasis text-uppercase font-weight-bold"
+          style="letter-spacing: 1px"
+        >
+          Rochester CSD • East HS
+        </span>
+      </div>
+      <div class="d-flex align-center justify-space-between">
+        <h1 class="text-h3 font-weight-bold text-high-emphasis">
+          {{ classProfile.name }}
+        </h1>
+        <div class="d-flex gap-2">
+          <v-chip
+            v-if="classProfile.term"
+            color="primary"
+            variant="flat"
+            size="large"
+            class="font-weight-medium"
+          >
+            {{ classProfile.term }}
+          </v-chip>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overview Section -->
+    <div class="mb-6">
+      <v-row>
+        <!-- Card 1: Details -->
+        <v-col cols="12" md="4">
+          <v-card elevation="2" class="pa-4 h-100">
+            <div class="d-flex justify-space-between align-start mb-4">
               <div>
-                <p class="eyebrow">Class Intelligence • {{ classProfile.term }}</p>
-                <h1>{{ classProfile.name }}</h1>
-                <p class="subtitle">
-                  {{ classProfile.track }} • {{ classProfile.period }} • {{ classProfile.location }}
-                </p>
+                <div class="text-subtitle-1 font-weight-bold">Class Details</div>
+                <div class="text-caption text-medium-emphasis">{{ classProfile.term }}</div>
+              </div>
+              <v-icon color="primary" size="24">mdi-information-outline</v-icon>
+            </div>
+            <div class="d-flex flex-column gap-2">
+              <div class="text-body-2">
+                <strong class="text-medium-emphasis">Track:</strong> {{ classProfile.track }}
+              </div>
+              <div class="text-body-2">
+                <strong class="text-medium-emphasis">Period:</strong> {{ classProfile.period }}
+              </div>
+              <div class="text-body-2">
+                <strong class="text-medium-emphasis">Location:</strong>
+                {{ classProfile.location }} ({{ classProfile.room }})
+              </div>
+              <div class="d-flex align-center mt-1">
+                <v-chip size="x-small" label class="mr-2">CIP {{ classProfile.cipCode }}</v-chip>
+                <v-chip size="x-small" label>SCED {{ classProfile.scedCode }}</v-chip>
               </div>
             </div>
-          </div>
-          <div class="hero-details">
-            <div class="detail-item">
-              <p class="detail-label">Instructor</p>
-              <p class="detail-value">{{ classProfile.teacher.name }}</p>
-              <p class="detail-subvalue">{{ classProfile.teacher.email }}</p>
-            </div>
-            <div class="detail-item">
-              <p class="detail-label">Program Codes</p>
-              <p class="detail-value">CIP {{ classProfile.cipCode }}</p>
-              <p class="detail-subvalue">SCED {{ classProfile.scedCode }}</p>
-            </div>
-            <div class="detail-item">
-              <p class="detail-label">Support Contact</p>
-              <p class="detail-value">{{ classProfile.teacher.support }}</p>
-              <p class="detail-subvalue">{{ classProfile.teacher.phone }}</p>
-            </div>
-          </div>
-          <!-- <div class="hero-metrics">
-            <div v-for="metric in classMetrics" :key="metric.label" class="metric-card">
-              <p class="metric-label">{{ metric.label }}</p>
-              <p class="metric-value">{{ metric.value }}</p>
-              <p class="metric-trend" :class="metric.trendClass">
-                <v-icon size="18" class="mr-1">{{ metric.icon }}</v-icon>
-                {{ metric.trend }}
-              </p>
-            </div>
-          </div> -->
-        </div>
-      </v-container>
-    </section>
-
-    <v-container class="py-10 content" fluid>
-      <v-row dense class="main-grid">
-        <v-col cols="12">
-          <v-card class="glass-card mb-6" rounded="xl">
-            <v-card-title class="card-title card-title-row">
-              <span>Students</span>
-              <span class="highlight-text"> {{ students.length }} students </span>
-            </v-card-title>
-            <v-divider></v-divider>
-            <v-card-text>
-              <v-data-table
-                :headers="studentHeaders"
-                :items="filteredStudents"
-                :items-per-page="-1"
-                class="custom-table scrollable-table"
-                density="comfortable"
-                fixed-header
-                height="420"
-                hide-default-footer
-                @click:row="goToStudentProfile"
-              >
-                <template #item.name="{ item }">
-                  <div class="student-pill">
-                    <v-avatar size="36" color="primary" class="mr-3">
-                      <span>{{ item.initials }}</span>
-                    </v-avatar>
-                    <div>
-                      <div class="student-name">{{ item.name }}</div>
-                      <div class="student-meta">{{ item.email }}</div>
-                    </div>
-                  </div>
-                </template>
-                <template #item.gradePulse="{ item }">
-                  <div class="grading-pulse">
-                    <span class="">{{ formatScore(item.gradePulse.score) }}</span>
-                  </div>
-                </template>
-                <template #item.status="{ item }">
-                  <v-chip :color="statusColor(item.status)" variant="tonal" size="small">
-                    {{ item.status }}
-                  </v-chip>
-                </template>
-                <template #item.actions>
-                  <v-btn icon variant="text" density="compact">
-                    <v-icon size="20">mdi-eye</v-icon>
-                  </v-btn>
-                  <v-btn icon variant="text" density="compact">
-                    <v-icon size="20">mdi-dots-vertical</v-icon>
-                  </v-btn>
-                </template>
-              </v-data-table>
-            </v-card-text>
           </v-card>
         </v-col>
 
-        <v-col cols="12">
-          <v-card class="glass-card mb-6" rounded="xl">
-            <v-card-title class="card-title card-title-row">
-              <span>Assigned Forms</span>
-              <span class="highlight-text"> {{ assignedForms.length }} forms </span>
-            </v-card-title>
-            <v-divider></v-divider>
-            <v-card-text>
-              <v-list v-if="assignedForms.length" lines="two">
-                <v-list-item v-for="form in assignedForms" :key="form.id">
-                  <template #title>
-                    {{ form.name }}
-                  </template>
-                  <template #subtitle>
-                    Due:
-                    {{ form.dueDate ? new Date(form.dueDate).toLocaleDateString() : 'No due date' }}
-                  </template>
-                  <template #append>
-                    <v-chip size="small" color="secondary" variant="tonal"> Assigned </v-chip>
-                  </template>
-                </v-list-item>
-              </v-list>
-              <div v-else class="text-center py-6">
-                <v-icon size="48" color="grey">mdi-form-select</v-icon>
-                <p class="text-body-1 text-medium-emphasis mt-2">No forms assigned yet</p>
+        <!-- Card 2: Instructor -->
+        <v-col cols="12" md="4">
+          <v-card elevation="2" class="pa-4 h-100">
+            <div class="d-flex justify-space-between align-start mb-4">
+              <div>
+                <div class="text-subtitle-1 font-weight-bold">Instructor</div>
+                <div class="text-caption text-medium-emphasis">Staff Info</div>
               </div>
-            </v-card-text>
+              <v-icon color="success" size="24">mdi-account-tie</v-icon>
+            </div>
+            <div class="d-flex flex-column gap-2">
+              <div class="text-body-1 font-weight-medium">{{ classProfile.teacher.name }}</div>
+              <div class="text-caption text-medium-emphasis">{{ classProfile.teacher.email }}</div>
+              <div class="text-caption text-medium-emphasis">{{ classProfile.teacher.phone }}</div>
+              <v-divider class="my-2"></v-divider>
+              <div class="text-caption text-medium-emphasis">
+                {{ classProfile.teacher.support }}
+              </div>
+            </div>
+          </v-card>
+        </v-col>
+
+        <!-- Card 3: Metrics -->
+        <v-col cols="12" md="4">
+          <v-card elevation="2" class="pa-4 h-100">
+            <div class="d-flex justify-space-between align-start mb-4">
+              <div>
+                <div class="text-subtitle-1 font-weight-bold">Performance</div>
+                <div class="text-caption text-medium-emphasis">Key Metrics</div>
+              </div>
+              <v-icon color="error" size="24">mdi-chart-box-outline</v-icon>
+            </div>
+            <div class="d-flex flex-column gap-2">
+              <div
+                v-for="metric in classMetrics"
+                :key="metric.label"
+                class="d-flex justify-space-between align-center"
+              >
+                <span class="text-caption text-medium-emphasis">{{ metric.label }}</span>
+                <div class="text-right d-flex align-center">
+                  <span class="text-body-2 font-weight-bold mr-2">{{ metric.value }}</span>
+                  <v-icon
+                    size="16"
+                    :color="
+                      metric.trendClass === 'positive'
+                        ? 'success'
+                        : metric.trendClass === 'negative'
+                          ? 'error'
+                          : 'grey'
+                    "
+                  >
+                    {{ metric.icon }}
+                  </v-icon>
+                </div>
+              </div>
+            </div>
           </v-card>
         </v-col>
       </v-row>
-    </v-container>
-  </div>
+    </div>
 
-  <div class="text-center pa-8">
-    <!-- <v-btn color="primary" size="large" @click="openCategoryDialog">
-      Set Up Grading Categories
-    </v-btn> -->
-    <v-btn color="secondary" size="large" class="ml-4" @click="openFormDialog">
-      Assign Form to Class
-    </v-btn>
+    <!-- Students Table Section -->
+    <div class="mb-6">
+      <div class="d-flex align-center justify-space-between mb-4 px-1">
+        <div class="text-h6 font-weight-bold">Students ({{ students.length }})</div>
+      </div>
 
+      <v-card elevation="2">
+        <v-data-table-virtual
+          :headers="studentHeaders"
+          :items="filteredStudents"
+          height="600"
+          fixed-header
+          class="details-table"
+          hover
+          @click:row="goToStudentProfile"
+        >
+          <template #item.name="{ item }">
+            <div class="d-flex align-center py-2">
+              <v-avatar size="36" color="primary" variant="tonal" class="mr-3 rounded-circle">
+                <span class="text-body-2 font-weight-bold">{{ item.initials }}</span>
+              </v-avatar>
+              <div>
+                <div class="text-body-1 font-weight-medium text-high-emphasis">{{ item.name }}</div>
+                <div class="text-caption text-medium-emphasis">{{ item.email }}</div>
+              </div>
+            </div>
+          </template>
+
+          <template #item.gradePulse="{ item }">
+            <div class="font-weight-medium">{{ formatScore(item.gradePulse.score) }}</div>
+          </template>
+
+          <template #item.status="{ item }">
+            <v-chip :color="statusColor(item.status)" variant="tonal" size="small" label>
+              {{ item.status }}
+            </v-chip>
+          </template>
+          <template #item.actions>
+            <v-btn icon variant="text" density="compact" color="medium-emphasis">
+              <v-icon size="20">mdi-chevron-right</v-icon>
+            </v-btn>
+          </template>
+        </v-data-table-virtual>
+      </v-card>
+    </div>
+
+    <!-- Assigned Forms Section -->
+    <div class="mb-6">
+      <div class="text-h6 font-weight-bold mb-4 px-1">
+        Assigned Forms ({{ assignedForms.length }})
+      </div>
+      <v-card elevation="2">
+        <v-list lines="two" v-if="assignedForms.length" class="bg-transparent">
+          <v-list-item v-for="form in assignedForms" :key="form.id" active-color="primary">
+            <template #prepend>
+              <v-avatar color="secondary" variant="tonal" class="rounded-lg">
+                <v-icon>mdi-file-document-outline</v-icon>
+              </v-avatar>
+            </template>
+
+            <v-list-item-title class="font-weight-medium">{{ form.name }}</v-list-item-title>
+            <v-list-item-subtitle>
+              Due: {{ form.dueDate ? new Date(form.dueDate).toLocaleDateString() : 'No due date' }}
+            </v-list-item-subtitle>
+            <template #append>
+              <v-chip size="small" color="secondary" variant="tonal"> Assigned </v-chip>
+            </template>
+          </v-list-item>
+        </v-list>
+        <div v-else class="text-center py-8">
+          <v-icon size="40" color="grey-lighten-1" class="mb-2">mdi-form-select</v-icon>
+          <div class="text-body-2 text-medium-emphasis">No forms assigned yet</div>
+        </div>
+      </v-card>
+    </div>
+
+    <!-- Dialogs -->
     <v-dialog v-model="dialog" max-width="560" persistent>
       <v-card class="pa-4">
         <v-card-title class="text-h6 font-weight-bold d-flex align-center">
@@ -153,7 +212,6 @@
             Most teachers use this setup — just adjust if needed:
           </p>
 
-          <!-- Category Inputs (Set #1 pre-filled) -->
           <div v-for="(cat, index) in categories" :key="index" class="category-row mb-5">
             <div class="category-name flex-grow-1">
               <div v-if="editingIndex === index">
@@ -171,12 +229,13 @@
               </div>
               <div
                 v-else
-                class="category-name-display"
+                class="category-name-display d-flex align-center justify-space-between"
                 role="button"
                 tabindex="0"
                 @click="startEditingCategory(index)"
                 @keyup.enter.prevent="startEditingCategory(index)"
                 @keyup.space.prevent="startEditingCategory(index)"
+                style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 4px"
               >
                 <span class="category-name-text">{{ cat.name }}</span>
                 <v-btn
@@ -191,7 +250,7 @@
               </div>
             </div>
 
-            <div class="category-weight">
+            <div class="category-weight ml-4" style="width: 120px">
               <v-text-field
                 v-model.number="cat.weight"
                 label="Weight"
@@ -206,24 +265,20 @@
                 class="category-weight-input"
               ></v-text-field>
 
-              <v-btn
-                v-if="categories.length > 1"
-                icon="mdi-delete"
-                color="error"
-                variant="text"
-                @click="removeCategory(index)"
-              ></v-btn>
+              <div class="d-flex justify-end mt-1" v-if="categories.length > 1">
+                <v-btn
+                  icon="mdi-delete"
+                  size="small"
+                  color="error"
+                  variant="text"
+                  @click="removeCategory(index)"
+                ></v-btn>
+              </div>
             </div>
           </div>
 
-          <!-- Add New Category
-          <v-btn variant="text" color="primary" prepend-icon="mdi-plus" @click="addCategory">
-            Add Category
-          </v-btn> -->
-
           <v-divider class="my-6"></v-divider>
 
-          <!-- Total Weight Display -->
           <div class="d-flex justify-space-between align-center">
             <span class="text-h6">Total Weight</span>
             <span
@@ -347,52 +402,6 @@
                 </template>
               </div>
             </section>
-
-            <!-- <section class="form-details-panel">
-              <div v-if="selectedFormDetails.id" class="d-flex flex-column" style="gap: 16px">
-                <div>
-                  <div class="text-h6 mb-1">{{ selectedFormDetails.name }}</div>
-                  <p class="text-body-2 text-medium-emphasis mb-0">
-                    {{ selectedFormDetails.description || 'No description provided.' }}
-                  </p>
-                </div>
-
-                <div class="d-flex flex-column gap-3">
-                  <v-text-field
-                    v-model="dueDate"
-                    type="date"
-                    label="Optional due date"
-                    density="comfortable"
-                    variant="outlined"
-                    hide-details
-                  ></v-text-field>
-
-                  <v-textarea
-                    v-model="assignmentNotes"
-                    label="Notes for assignees (optional)"
-                    density="comfortable"
-                    variant="outlined"
-                    auto-grow
-                    rows="3"
-                    hide-details
-                  ></v-textarea>
-                </div>
-
-                <v-alert type="info" variant="tonal" border="start" density="comfortable">
-                  Assigned to
-                  <strong class="ml-1">{{ classProfile.name || 'this class' }}</strong>
-                  on
-                  {{ new Date().toLocaleDateString() }}
-                </v-alert>
-              </div>
-              <div v-else class="form-details-placeholder">
-                <v-icon size="64" color="secondary" class="mb-3">mdi-form-select</v-icon>
-                <p class="text-h6 mb-2">Choose a form to preview</p>
-                <p class="text-body-2 text-medium-emphasis">
-                  Form details, due dates, and notes will appear here.
-                </p>
-              </div>
-            </section> -->
           </div>
         </v-card-text>
 
@@ -411,11 +420,11 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-  </div>
 
-  <v-snackbar v-model="assignmentSnackbar.open" :color="assignmentSnackbar.color" timeout="3000">
-    {{ assignmentSnackbar.message }}
-  </v-snackbar>
+    <v-snackbar v-model="assignmentSnackbar.open" :color="assignmentSnackbar.color" timeout="3000">
+      {{ assignmentSnackbar.message }}
+    </v-snackbar>
+  </v-container>
 </template>
 
 <script setup>
@@ -791,7 +800,6 @@ const normalizeGradePulse = (gradePulse) => ({
 
 const studentHeaders = [
   { title: 'Student', value: 'name' },
-  { title: 'ID', value: 'id' },
   { title: 'Grade Level', value: 'grade' },
   { title: 'Grade', value: 'gradePulse' },
   { title: 'Status', value: 'status' },
@@ -904,4 +912,66 @@ const trendClass = (direction) => {
 }
 </script>
 
-<style src="@/styles/ClassView.css"></style>
+<style scoped>
+.pa-4 {
+  background: #f8fafc;
+}
+
+.text-subtitle-2 {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.v-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 4px; /* Slightly more rounded */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.v-card:hover {
+  border-color: #cbd5e1;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+.text-h6 {
+  font-size: 1.1rem !important;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.text-subtitle-1 {
+  font-size: 15px;
+  line-height: 1.2;
+  color: #1e293b;
+}
+
+/* Custom Utils */
+.gap-2 {
+  gap: 8px;
+}
+.gap-4 {
+  gap: 16px;
+}
+
+/* Table Overrides */
+:deep(.v-data-table) {
+  background: transparent !important;
+}
+:deep(.v-data-table__tr:hover td) {
+  background-color: #f8fafc !important;
+}
+
+/* Dialog Styles needed generally to ensure they look okay */
+.form-list-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+</style>

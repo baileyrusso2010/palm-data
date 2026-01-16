@@ -40,7 +40,7 @@ const getRiskColor = (level: string) => {
 </script>
 
 <template>
-  <v-app-bar flat density="compact" color="surface" class="border-b px-6" height="72">
+  <div class="student-header bg-surface border-b px-6 d-flex align-center" style="height: 72px">
     <div class="d-flex align-center w-100" style="gap: 32px">
       <!-- Student Identity -->
       <div class="flex-grow-0">
@@ -119,7 +119,7 @@ const getRiskColor = (level: string) => {
         />
       </div>
     </div>
-  </v-app-bar>
+  </div>
 </template>
 
 <style scoped>

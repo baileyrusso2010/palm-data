@@ -19,7 +19,7 @@
               density="comfortable"
               class="search-input"
             />
-            <v-select
+            <!-- <v-select
               v-model="gradeFilter"
               :items="gradeOptions"
               label="Grade"
@@ -27,7 +27,7 @@
               hide-details
               density="comfortable"
               class="grade-select"
-            />
+            /> -->
           </div>
         </v-col>
       </v-row>
@@ -47,18 +47,12 @@
             <div v-if="filteredStudents.length === 0" class="empty-state">
               <v-icon size="40" color="#94a3b8">mdi-account-search-outline</v-icon>
               <div class="empty-title">No students found</div>
-              <div class="empty-subtitle">
-                Try another name or clear the grade filter.
-              </div>
+              <div class="empty-subtitle">Try another name or clear the grade filter.</div>
             </div>
 
             <v-row v-else>
               <v-col v-for="stu in filteredStudents" :key="stu.id" cols="12" sm="6" md="4">
-                <div
-                  class="student-card"
-                  @click="openProfile(stu)"
-                  role="button"
-                >
+                <div class="student-card" @click="openProfile(stu)" role="button">
                   <div class="student-avatar">
                     {{ stu.initials }}
                   </div>
@@ -100,42 +94,57 @@ watch(
   () => query.value,
   (v) => {
     clearTimeout(qTimer)
-    qTimer = setTimeout(() => (debouncedQuery.value = (v || '').trim().toLowerCase()), 200)
+    qTimer = setTimeout(() => {
+      debouncedQuery.value = (v || '').trim()
+    }, 300)
   },
   { immediate: true },
 )
 
-onMounted(async () => {
+watch(debouncedQuery, (newVal) => {
+  getStudents(newVal)
+})
+
+onMounted(() => {
+  getStudents('')
+})
+
+async function getStudents(name) {
+  loading.value = true
   try {
-    const res = await api.get('/students')
+    const res = await api.get('/students/search', {
+      params: {
+        q: name,
+        limit: 9, // Increased limit slightly to allow some client-side grade filtering overlap
+      },
+    })
+
     const list = Array.isArray(res.data) ? res.data : Object.values(res.data)
     students.value = list.map((item) => {
       const firstName = item.first_name ?? item.firstName ?? ''
       const lastName = item.last_name ?? item.lastName ?? ''
-      const grade = item.grade ?? item.class_grade ?? ''
       const fullName = `${firstName} ${lastName}`.trim()
-      const initials = `${firstName[0]}${lastName[0]}`.toUpperCase()
-      return { id: item.id, firstName, lastName, fullName, grade, initials }
+      const initials = (firstName[0] || '') + (lastName[0] || '').toUpperCase()
+      return { id: item.id, firstName, lastName, fullName, initials }
     })
+  } catch (err) {
+    console.error(err)
   } finally {
     loading.value = false
   }
-})
+}
 
-const gradeOptions = computed(() => {
-  const grades = Array.from(new Set(students.value.map((s) => s.grade).filter(Boolean))).sort(
-    (a, b) => Number(a) - Number(b),
-  )
-  return ['All', ...grades]
-})
+// const gradeOptions = computed(() => {
+//   // Static options since partial data might not populate all grades
+//   return ['All', '9', '10', '11', '12']
+// })
 
 const filteredStudents = computed(() => {
-  const q = debouncedQuery.value
   const gf = gradeFilter.value
   return students.value.filter((s) => {
-    const matchesText = !q || s.fullName.toLowerCase().includes(q)
+    // Server handles text search, we just handle grade filter here
     const matchesGrade = gf === 'All' || String(s.grade) === String(gf)
-    return matchesText && matchesGrade
+    return matchesGrade
   })
 })
 
@@ -176,11 +185,62 @@ function openProfile(stu) {
   gap: 16px;
   align-items: center;
   flex-wrap: wrap;
+  max-width: 600px; /* Constrain width for better aesthetic */
+  margin: 0 auto; /* Center it */
 }
 
 .search-input {
   flex: 1 1 auto;
-  min-width: 220px;
+  min-width: 280px;
+}
+
+/* Enhanced Search Input Styling */
+:deep(.v-field) {
+  border-radius: 10px !important;
+  background-color: #ffffff !important; /* Pure white background to pop against gray */
+  /* distinct shadow to lift it off the page */
+  box-shadow:
+    0 10px 25px -5px rgba(15, 23, 42, 0.1),
+    0 8px 10px -6px rgba(15, 23, 42, 0.1) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:deep(.v-field__outline) {
+  --v-field-border-opacity: 1;
+  color: #cbd5e1 !important; /* default visible border */
+}
+
+:deep(.v-field:hover) {
+  transform: translateY(-1px);
+}
+
+:deep(.v-field:hover .v-field__outline) {
+  color: #94a3b8 !important; /* Darker on hover */
+}
+
+:deep(.v-field--focused .v-field__outline) {
+  color: #3b82f6 !important; /* Tech blue focus */
+  /* No extra box shadow here, rely on the main shadow + border color */
+}
+
+:deep(.v-field__input) {
+  font-size: 18px !important;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #0f172a !important;
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
+  min-height: 60px; /* Taller touch target */
+}
+
+:deep(.v-field__prepend-inner) {
+  color: #64748b;
+  opacity: 0.7;
+}
+
+:deep(.v-field--focused .v-field__prepend-inner) {
+  color: #3b82f6;
+  opacity: 1;
 }
 
 .grade-select {

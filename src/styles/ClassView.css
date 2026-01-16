@@ -1,13 +1,6 @@
 /* ClassView styles extracted from <style scoped> in ClassView.vue */
 :global(body) {
-  font-family:
-    'Inter',
-    'Segoe UI',
-    'Montserrat',
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    sans-serif;
+  /* font-family: 'Inter'; */
 }
 
 .class-view {

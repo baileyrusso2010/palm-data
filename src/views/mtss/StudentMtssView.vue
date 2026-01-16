@@ -302,14 +302,17 @@ const handleSelect = (item: any) => {
 </script>
 
 <template>
-  <div class="h-screen d-flex flex-column overflow-hidden">
+  <div class="students-page d-flex flex-column">
     <!-- Top Header -->
     <StudentHeader v-if="student" :student="student" />
     <v-progress-linear v-if="isLoading" indeterminate color="primary"></v-progress-linear>
 
-    <div class="d-flex flex-grow-1 overflow-hidden position-relative" v-if="!isLoading && student">
+    <div
+      class="d-flex flex-grow-1 overflow-hidden position-relative pa-6"
+      v-if="!isLoading && student"
+    >
       <!-- Main Content -->
-      <v-main class="flex-grow-1 h-100 position-relative">
+      <v-card class="flex-grow-1 d-flex flex-column overflow-hidden mtss-card" elevation="0">
         <MtssTimeline :tracks="tracks" @select-item="handleSelect" />
 
         <!-- Floating Action Button -->
@@ -321,7 +324,7 @@ const handleSelect = (item: any) => {
               color="primary"
               variant="elevated"
               size="large"
-              style="position: fixed; bottom: 24px; right: 24px; z-index: 1000"
+              style="position: absolute; bottom: 24px; right: 24px; z-index: 1000"
             ></v-btn>
           </template>
           <v-list density="compact">
@@ -342,7 +345,7 @@ const handleSelect = (item: any) => {
             </v-list-item>
           </v-list>
         </v-menu>
-      </v-main>
+      </v-card>
 
       <!-- Detail Panel -->
       <MtssDetailPanel
@@ -465,3 +468,21 @@ const handleSelect = (item: any) => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.students-page {
+  background: #f5f7fa;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.mtss-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow:
+    0 1px 3px 0 rgba(0, 0, 0, 0.1),
+    0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+</style>
+```

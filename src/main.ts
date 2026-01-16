@@ -4,6 +4,7 @@ import './amplify'
 // Vuetify base styles first
 import 'vuetify/styles'
 // Then our overrides so they win the cascade
+import './styles/fonts.css'
 import './styles/typography.css'
 import router from './router'
 import { createVuetify } from 'vuetify'
@@ -19,6 +20,7 @@ import { ModuleRegistry, AllCommunityModule } from 'ag-grid-community'
 import { AgGridVue } from 'ag-grid-vue3'
 
 import { VFileUpload } from 'vuetify/labs/VFileUpload'
+import { createPinia } from 'pinia'
 
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -34,6 +36,7 @@ app.use(router)
 app.use(vuetify)
 app.use(Vueform, vueformConfig)
 app.component('AgGridVue', AgGridVue)
+app.use(createPinia())
 app.mount('#app')
 
 // createApp(App).use(router).use(vuetify).mount('#app')

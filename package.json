@@ -30,6 +30,7 @@
     "interactjs": "^1.10.27",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.296",
+    "pinia": "^3.0.4",
     "vue": "^3.5.18",
     "vue-chartjs": "^5.3.2",
     "vue-router": "^4.5.1"

@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
-import HomeWelcome from './views/home/HomeWelcome.vue'
 import Login from './views/auth/Login.vue'
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
 import SkillView from './views/classes/SkillView.vue'
