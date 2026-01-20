@@ -18,6 +18,7 @@ import AssessmentSetup from './views/forms/AssessmentSetup.vue'
 import FormBuilder from './views/forms/FormBuilder.vue'
 import Home from './views/home/Home.vue'
 import StudentMtssView from './views/mtss/StudentMtssView.vue'
+import Settings from './views/admin/Settings.vue'
 
 const routes = [
   // Public / guest routes
@@ -113,6 +114,12 @@ const routes = [
     path: '/mtss/management',
     component: () => import('./views/mtss/MtssManagementView.vue'),
     name: 'mtss-management',
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/settings',
+    component: Settings,
+    name: 'settings',
     meta: { requiresAuth: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

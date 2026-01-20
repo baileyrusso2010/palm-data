@@ -15,7 +15,7 @@
       <v-btn
         size="small"
         variant="text"
-        :icon="rail ? 'mdi-chevron-double-right' : 'mdi-chevron-double-left'"
+        :icon="rail ? PhList : PhList"
         class="ml-1 d-none d-lg-flex"
         @click.stop="toggleRail"
       />
@@ -89,6 +89,7 @@ import {
   PhTable,
   PhUserList,
   PhChartBar,
+  PhList,
 } from '@phosphor-icons/vue'
 
 interface NavItem {
@@ -166,6 +167,12 @@ const formItems = computed<NavItem[]>(() => [
     to: '/rubric/create',
     title: 'Create Rubric',
     iconComp: PhTable,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+  {
+    to: '/settings',
+    title: 'Settings',
+    iconComp: PhGear,
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
 ])
