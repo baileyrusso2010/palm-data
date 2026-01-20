@@ -90,7 +90,7 @@
         <v-divider></v-divider>
         <v-card-text class="pt-4">
           <div class="chart-wrapper">
-            <Bar ref="chartRef" :data="chartData" :options="chartOptions" :height="380" />
+            <Line ref="chartRef" :data="chartData" :options="chartOptions" :height="380" />
           </div>
         </v-card-text>
       </v-card>
@@ -119,11 +119,12 @@
 
 <script setup lang="ts">
 import api from '@/api'
-import { Bar } from 'vue-chartjs'
+import { Line } from 'vue-chartjs'
 import { computed, onMounted, ref } from 'vue'
 import {
   Chart as ChartJS,
-  BarElement,
+  LineElement,
+  PointElement,
   CategoryScale,
   Legend,
   LinearScale,
@@ -132,7 +133,7 @@ import {
 } from 'chart.js'
 import type { ChartData, ChartOptions } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, LineElement, PointElement, Title, Tooltip, Legend)
 
 import { AgGridVue } from 'ag-grid-vue3'
 import { themeQuartz } from 'ag-grid-community'
@@ -153,6 +154,84 @@ async function getSchools() {
   }
 }
 
+async function getAttendanceMetrics() {
+  try {
+    let url = `/attendance/analytics?groupBy=month&startDate=${startDate.value}&endDate=${endDate.value}`
+
+    const results = await api.get(url)
+    const rawData = results.data
+
+    // 1. Process for Chart
+    // Get unique dates (months) and sort them
+    const uniqueDates = [...new Set(rawData.map((d: any) => d.time_period))].sort(
+      (a: any, b: any) => new Date(a).getTime() - new Date(b).getTime(),
+    )
+
+    // Get unique status codes
+    const uniqueCodes = [
+      ...new Set(rawData.map((d: any) => d.attendance_status?.code || 'Unknown')),
+    ] as string[]
+
+    const colorMap: Record<string, string> = {
+      PRESENT: '#10b981', // green
+      ABSENT: '#ef4444', // red
+      TARDY: '#f59e0b', // amber
+      UNEXCUSED: '#f43f5e', // rose
+      EXCUSED: '#3b82f6', // blue
+    }
+    const defaultColors = ['#64748b', '#8b5cf6', '#06b6d4', '#84cc16']
+
+    const datasets = uniqueCodes.map((code, index) => {
+      const data = uniqueDates.map((date) => {
+        const entry = rawData.find(
+          (d: any) => d.time_period === date && (d.attendance_status?.code || 'Unknown') === code,
+        )
+        return entry ? parseInt(entry.count) : 0
+      })
+
+      const color = colorMap[code.toUpperCase()] || defaultColors[index % defaultColors.length]
+
+      return {
+        label: code,
+        data,
+        borderColor: color,
+        backgroundColor: color,
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }
+    })
+
+    chartData.value = {
+      labels: uniqueDates.map((d: any) =>
+        new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      ),
+      datasets,
+    }
+
+    // 2. Process for Grid
+    // We'll show the raw grouped data
+    rowData.value = rawData.map((d: any) => ({
+      month: new Date(d.time_period).toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+      }),
+      status: d.attendance_status?.code || 'Unknown',
+      count: parseInt(d.count),
+    }))
+
+    // Update columns to match
+    colDefs.value = [
+      { field: 'month', headerName: 'Month', flex: 1 },
+      { field: 'status', headerName: 'Status', flex: 1 },
+      { field: 'count', headerName: 'Count', flex: 1 },
+    ]
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 function downloadChart() {
   if (chartRef.value && chartRef.value.chart) {
     const url = chartRef.value.chart.toBase64Image()
@@ -164,40 +243,7 @@ function downloadChart() {
 }
 
 async function getFilteredData() {
-  try {
-    const payload = {
-      startDate: startDate.value,
-      endDate: endDate.value,
-      level: 'grade',
-    }
-    const results = await api.post('/metric/attendance-metrics', payload)
-    console.log(results)
-
-    // Sort by grade
-    const sortedData = results.data.sort((a: any, b: any) => {
-      return parseInt(a.grade) - parseInt(b.grade)
-    })
-
-    // Update Grid Data
-    rowData.value = sortedData
-
-    const labels = sortedData.map((e: any) => `Grade ${e.grade}`)
-    chartData.value = {
-      labels,
-      datasets: [
-        {
-          label: 'Attendance Rate (%)',
-          data: sortedData.map((e: any) => e.attendance_rate),
-          backgroundColor: '#64748b',
-          hoverBackgroundColor: '#475569',
-          borderRadius: 4,
-          maxBarThickness: 80,
-        },
-      ],
-    }
-  } catch (err) {
-    console.error(err)
-  }
+  await getAttendanceMetrics()
 }
 
 type FilterPayload = {
@@ -220,13 +266,13 @@ const gradeOptions = [
 ]
 
 const selectedMetric = ref(metrics[0].value)
-const startDate = ref('2024-01-01')
-const endDate = ref('2024-12-31')
+const startDate = ref('2025-01-01')
+const endDate = ref('2025-12-31')
 const selectedSchool = ref(schoolOptions.value[0].value)
 const selectedGrade = ref(gradeOptions[0].value)
 
-const chartData = ref<ChartData<'bar'>>({ labels: [], datasets: [] })
-const chartOptions: ChartOptions<'bar'> = {
+const chartData = ref<ChartData<'line'>>({ labels: [], datasets: [] })
+const chartOptions: ChartOptions<'line'> = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
@@ -240,7 +286,7 @@ const chartOptions: ChartOptions<'bar'> = {
       titleFont: {
         size: 13,
         family: "'Inter', sans-serif",
-        weight: '600',
+        // weight: '600',
       },
       bodyFont: {
         size: 12,
