@@ -1,40 +1,37 @@
 <template>
   <h1>{{ formName }}</h1>
-  <div style="height: 500px; width: 100%">
-    <AgGridVue
-      class="ag-theme-quartz"
-      style="height: 100%; width: 100%"
-      :columnDefs="columnDefs"
-      :rowData="rowData"
-      :defaultColDef="defaultColDef"
-      :animateRows="true"
-      @grid-ready="onGridReady"
-      @cell-value-changed="onCellValueChanged"
-    />
+
+  <div v-for="section in form.sections" :key="section.key" class="mb-6">
+    <h2>{{ section.label }}</h2>
+    <div style="height: 300px; width: 100%">
+      <AgGridVue
+        class="ag-theme-quartz"
+        style="height: 100%; width: 100%"
+        :columnDefs="getColumnDefs(section)"
+        :rowData="getRowData(section)"
+        :defaultColDef="defaultColDef"
+        :animateRows="true"
+        @cell-value-changed="onCellValueChanged(section.key)"
+      />
+    </div>
   </div>
-  <v-btn @click="saveChanges">Save Changes</v-btn>
 </template>
 
 <script setup>
+import { ref, reactive, onMounted } from 'vue'
 import { AgGridVue } from 'ag-grid-vue3'
-import { onMounted, reactive, ref } from 'vue'
 import api from '../../api'
 
 const formName = ref('')
-const columnDefs = ref([])
-const rowData = ref([])
 const form = reactive({ sections: [] })
-let cells = {} // backend cells for student
+const defaultColDef = { flex: 1, editable: true, sortable: true, filter: true }
+
+let cells = {} // backend cells for one student
 let changedCells = [] // buffer for edits
 
-const defaultColDef = {
-  flex: 1,
-  filter: true,
-  sortable: true,
-  editable: true,
-}
-
-onMounted(() => getForm())
+onMounted(async () => {
+  await getForm()
+})
 
 async function getForm() {
   const form_id = 1
@@ -44,71 +41,66 @@ async function getForm() {
   formName.value = f.name
   form.sections = f.sections
   cells = c['1'] || {} // only one student for now
+}
 
-  // --- generate columnDefs ---
+// Generate columns for a section
+function getColumnDefs(section) {
   const cols = [{ field: 'rowLabel', headerName: 'Skill / Assessment', pinned: 'left' }]
 
-  f.sections.forEach((section) => {
+  section.columns.forEach((col) => {
+    cols.push({
+      field: col.key,
+      headerName: col.label,
+      editable: true,
+      cellEditor:
+        col.valueType === 'number'
+          ? 'agNumericCellEditor'
+          : col.valueType === 'boolean'
+            ? 'agCheckboxCellEditor'
+            : 'agTextCellEditor',
+    })
+  })
+
+  return cols
+}
+
+// Generate rowData for a section
+function getRowData(section) {
+  return section.rows.map((row) => {
+    const rowObj = {
+      rowLabel: row.label,
+      sectionKey: section.key,
+      rowKey: row.key,
+    }
+
     section.columns.forEach((col) => {
-      cols.push({
-        field: col.key,
-        headerName: col.label,
-        editable: true,
-        cellEditor:
-          col.valueType === 'number'
-            ? 'agNumericCellEditor'
-            : col.valueType === 'boolean'
-              ? 'agCheckboxCellEditor'
-              : 'agTextCellEditor',
-      })
+      rowObj[col.key] = cells[section.key]?.[row.key]?.[col.key] ?? null
     })
-  })
 
-  columnDefs.value = cols
-
-  // --- generate rowData ---
-  const rows = []
-  f.sections.forEach((section) => {
-    section.rows.forEach((row) => {
-      const rowObj = {
-        rowLabel: row.label,
-        sectionKey: section.key, // store keys for upsert
-        rowKey: row.key,
-      }
-
-      section.columns.forEach((col) => {
-        rowObj[col.key] = cells[section.key]?.[row.key]?.[col.key] ?? null
-      })
-
-      rows.push(rowObj)
-    })
-  })
-
-  rowData.value = rows
-}
-
-// track changes
-function onCellValueChanged(event) {
-  const { data, colDef, newValue } = event
-  if (colDef.field === 'rowLabel') return
-
-  changedCells.push({
-    studentId: '1',
-    sectionKey: data.sectionKey,
-    rowKey: data.rowKey,
-    columnKey: colDef.field,
-    value: newValue,
+    return rowObj
   })
 }
 
-// optional: call backend to save all changes
+// Track changes
+function onCellValueChanged(sectionKey) {
+  return (event) => {
+    const { data, colDef, newValue } = event
+    if (colDef.field === 'rowLabel') return
+
+    changedCells.push({
+      studentId: '1',
+      sectionKey,
+      rowKey: data.rowKey,
+      columnKey: colDef.field,
+      value: newValue,
+    })
+  }
+}
+
+// Save all changes to backend
 async function saveChanges() {
   if (!changedCells.length) return
-
-  console.log(changedCells)
-  await api.post(`/evaluations/1/cells`, { changes: changedCells })
+  await api.post(`/evaluations/1/cells/bulk`, { changes: changedCells })
   changedCells = []
 }
-
-const onGridReady = (params) => console.log('Grid ready', params)
 </script>
