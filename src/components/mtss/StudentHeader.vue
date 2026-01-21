@@ -24,19 +24,6 @@ const getTierColor = (tier: number) => {
       return 'grey'
   }
 }
-
-const getRiskColor = (level: string) => {
-  switch (level) {
-    case 'Low':
-      return 'success'
-    case 'Medium':
-      return 'warning'
-    case 'High':
-      return 'error'
-    default:
-      return 'grey'
-  }
-}
 </script>
 
 <template>
@@ -89,22 +76,6 @@ const getRiskColor = (level: string) => {
         </div>
 
         <!-- Risk Level -->
-        <div>
-          <div
-            class="text-caption text-grey-darken-1 mb-1 text-uppercase"
-            style="letter-spacing: 0.5px; font-size: 10px"
-          >
-            Risk Level
-          </div>
-          <v-chip
-            :color="getRiskColor(student.riskLevel)"
-            variant="outlined"
-            size="small"
-            class="font-weight-medium"
-          >
-            {{ student.riskLevel }}
-          </v-chip>
-        </div>
       </div>
 
       <v-spacer />

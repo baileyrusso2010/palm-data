@@ -19,12 +19,12 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   startDate: () => {
     const date = new Date()
-    date.setMonth(date.getMonth() - 6)
+    date.setMonth(date.getMonth() - 9) // 9 months back
     return date
   },
   endDate: () => {
     const date = new Date()
-    date.setMonth(date.getMonth() + 1)
+    date.setMonth(date.getMonth() + 3) // 3 months forward
     return date
   },
 })
@@ -54,93 +54,138 @@ const handleSelectItem = (item: any) => {
 </script>
 
 <template>
-  <div class="mtss-timeline">
-    <!-- Time Scale Header -->
-    <div class="timeline-header">
-      <div class="timeline-header-label">
-        <!-- Empty space for track labels -->
-      </div>
-      <div class="timeline-header-scale">
-        <div
-          v-for="month in monthMarkers"
-          :key="month.toISOString()"
-          class="month-marker"
-          :style="{ left: `${getMonthPosition(month)}%` }"
-        >
-          <div class="month-label">
-            {{ format(month, 'MMM yyyy') }}
+  <div class="mtss-timeline-container">
+    <div class="timeline-scroll-area">
+      <div class="timeline-content" :style="{ minWidth: '1200px' }">
+        <!-- Time Scale Header -->
+        <div class="timeline-header">
+          <div class="timeline-header-label sticky-col">
+            <span class="text-caption text-medium-emphasis font-weight-bold">TRACKS</span>
+            <div class="header-shadow"></div>
+          </div>
+          <div class="timeline-header-scale">
+            <div
+              v-for="month in monthMarkers"
+              :key="month.toISOString()"
+              class="month-marker"
+              :style="{ left: `${getMonthPosition(month)}%` }"
+            >
+              <div class="month-label">
+                {{ format(month, 'MMMM yyyy') }}
+              </div>
+              <div class="month-grid-line"></div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Timeline Tracks -->
-    <div class="timeline-body">
-      <TimelineTrack
-        v-for="track in tracks"
-        :key="track.id"
-        :title="track.title"
-        :events="track.events"
-        :height="track.height"
-        :start-date="startDate"
-        :end-date="endDate"
-        @select-item="handleSelectItem"
-      />
+        <!-- Timeline Tracks -->
+        <div class="timeline-body">
+          <TimelineTrack
+            v-for="track in tracks"
+            :key="track.id"
+            :title="track.title"
+            :events="track.events"
+            :height="track.height"
+            :start-date="startDate"
+            :end-date="endDate"
+            @select-item="handleSelectItem"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.mtss-timeline {
+.mtss-timeline-container {
   height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  background: rgb(var(--v-theme-surface));
+  background: white;
+  overflow: hidden; /* Container clips */
+}
+
+.timeline-scroll-area {
+  flex: 1;
+  overflow: auto; /* Both X and Y scrolling happens here */
+  position: relative;
+}
+
+.timeline-content {
+  position: relative;
+  /* min-width set inline */
 }
 
 /* Time Scale Header */
 .timeline-header {
   display: flex;
-  border-bottom: 2px solid rgb(var(--v-theme-grey-lighten-2));
-  background: rgb(var(--v-theme-surface));
+  height: 48px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 20; /* Above tracks */
 }
 
 .timeline-header-label {
-  width: 180px;
+  width: 200px;
   flex-shrink: 0;
-  border-right: 1px solid rgb(var(--v-theme-grey-lighten-3));
+  background: #f8fafc;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  position: sticky;
+  left: 0;
+  z-index: 30; /* Above header scale */
+}
+
+.header-shadow {
+  position: absolute;
+  top: 0;
+  right: -4px;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.05), transparent);
+  pointer-events: none;
 }
 
 .timeline-header-scale {
   flex: 1;
   position: relative;
-  height: 48px;
-  background: rgb(var(--v-theme-grey-lighten-5));
+  height: 100%;
 }
 
 .month-marker {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-left: 1px solid rgb(var(--v-theme-grey-lighten-3));
+  /* border-left: 1px dashed #e2e8f0; */
 }
 
 .month-label {
   padding: 12px 8px;
-  font-size: 11px;
-  font-weight: 500;
-  color: rgb(var(--v-theme-grey-darken-1));
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.month-grid-line {
+  position: absolute;
+  left: 0;
+  top: 48px; /* Start below header */
+  bottom: -10000px; /* Hack to extend down? No, better to handle in track */
+  width: 1px;
+  background: #f1f5f9;
+  display: none; /* Handled in tracks for cleanliness, or global overlay */
 }
 
 /* Timeline Body */
 .timeline-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  position: relative;
+  z-index: 10;
 }
 </style>

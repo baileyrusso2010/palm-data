@@ -155,81 +155,67 @@ async function getSchools() {
 }
 
 async function getAttendanceMetrics() {
-  try {
-    let url = `/attendance/analytics?groupBy=month&startDate=${startDate.value}&endDate=${endDate.value}`
+  // Fake data simulation
+  const months = [
+    '2024-09-01',
+    '2024-10-01',
+    '2024-11-01',
+    '2024-12-01',
+    '2025-01-01',
+    '2025-02-01',
+    '2025-03-01',
+    '2025-04-01',
+    '2025-05-01',
+    '2025-06-01',
+  ]
 
-    const results = await api.get(url)
-    const rawData = results.data
-
-    // 1. Process for Chart
-    // Get unique dates (months) and sort them
-    const uniqueDates = [...new Set(rawData.map((d: any) => d.time_period))].sort(
-      (a: any, b: any) => new Date(a).getTime() - new Date(b).getTime(),
-    )
-
-    // Get unique status codes
-    const uniqueCodes = [
-      ...new Set(rawData.map((d: any) => d.attendance_status?.code || 'Unknown')),
-    ] as string[]
-
-    const colorMap: Record<string, string> = {
-      PRESENT: '#10b981', // green
-      ABSENT: '#ef4444', // red
-      TARDY: '#f59e0b', // amber
-      UNEXCUSED: '#f43f5e', // rose
-      EXCUSED: '#3b82f6', // blue
+  const fakeData = months.map((date) => {
+    // Random percentage between 82 and 98
+    const percentage = Math.floor(Math.random() * (98 - 82 + 1) + 82)
+    return {
+      date,
+      percentage,
     }
-    const defaultColors = ['#64748b', '#8b5cf6', '#06b6d4', '#84cc16']
+  })
 
-    const datasets = uniqueCodes.map((code, index) => {
-      const data = uniqueDates.map((date) => {
-        const entry = rawData.find(
-          (d: any) => d.time_period === date && (d.attendance_status?.code || 'Unknown') === code,
-        )
-        return entry ? parseInt(entry.count) : 0
-      })
-
-      const color = colorMap[code.toUpperCase()] || defaultColors[index % defaultColors.length]
-
-      return {
-        label: code,
-        data,
-        borderColor: color,
-        backgroundColor: color,
+  // 1. Process for Chart
+  chartData.value = {
+    labels: fakeData.map((d) =>
+      new Date(d.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+    ),
+    datasets: [
+      {
+        label: 'Attendance Rate',
+        data: fakeData.map((d) => d.percentage),
+        borderColor: '#10b981', // green
+        backgroundColor: '#10b981',
         borderWidth: 2,
         tension: 0.3,
         pointRadius: 4,
         pointHoverRadius: 6,
-      }
-    })
-
-    chartData.value = {
-      labels: uniqueDates.map((d: any) =>
-        new Date(d).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      ),
-      datasets,
-    }
-
-    // 2. Process for Grid
-    // We'll show the raw grouped data
-    rowData.value = rawData.map((d: any) => ({
-      month: new Date(d.time_period).toLocaleDateString('en-US', {
-        month: 'short',
-        year: 'numeric',
-      }),
-      status: d.attendance_status?.code || 'Unknown',
-      count: parseInt(d.count),
-    }))
-
-    // Update columns to match
-    colDefs.value = [
-      { field: 'month', headerName: 'Month', flex: 1 },
-      { field: 'status', headerName: 'Status', flex: 1 },
-      { field: 'count', headerName: 'Count', flex: 1 },
-    ]
-  } catch (err) {
-    console.error(err)
+      },
+    ],
   }
+
+  // 2. Process for Grid
+  rowData.value = fakeData.map((d) => ({
+    month: new Date(d.date).toLocaleDateString('en-US', {
+      month: 'short',
+      year: 'numeric',
+    }),
+    attendance_rate: d.percentage,
+  })) as any
+
+  // Update columns to match
+  colDefs.value = [
+    { field: 'month', headerName: 'Month', flex: 1 },
+    {
+      field: 'attendance_rate',
+      headerName: 'Attendance Rate',
+      flex: 1,
+      valueFormatter: (p: any) => p.value + '%',
+    },
+  ]
 }
 
 function downloadChart() {

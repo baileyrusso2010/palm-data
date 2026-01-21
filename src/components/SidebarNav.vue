@@ -157,24 +157,24 @@ const formItems = computed<NavItem[]>(() => [
   //   iconComp: PhUserList,
   //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
   // },
-  {
-    to: '/assessments',
-    title: 'Assessments',
-    iconComp: PhExam,
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
-  {
-    to: '/rubric/create',
-    title: 'Create Rubric',
-    iconComp: PhTable,
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
-  {
-    to: '/settings',
-    title: 'Settings',
-    iconComp: PhGear,
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
+  // {
+  //   to: '/assessments',
+  //   title: 'Assessments',
+  //   iconComp: PhExam,
+  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  // },
+  // {
+  //   to: '/rubric/create',
+  //   title: 'Create Rubric',
+  //   iconComp: PhTable,
+  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  // },
+  // {
+  //   to: '/settings',
+  //   title: 'Settings',
+  //   iconComp: PhGear,
+  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  // },
 ])
 
 function isActive(to: string) {

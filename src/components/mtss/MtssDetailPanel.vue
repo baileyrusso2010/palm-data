@@ -52,7 +52,6 @@ const getTypeColor = (type: string) => {
 
 <template>
   <!-- Backdrop -->
-  <v-overlay :model-value="isOpen" class="align-center justify-center" @click="close" />
 
   <!-- Detail Panel -->
   <v-navigation-drawer v-model="isOpen" location="right" temporary width="420" class="detail-panel">
@@ -110,6 +109,9 @@ const getTypeColor = (type: string) => {
       <!-- Details -->
       <div v-if="item.data" class="panel-section">
         <div class="section-title">Details</div>
+        <div v-if="item.data.reason || item.data.outcome" class="mb-3">
+          <div class="metadata-value">{{ item.data.reason || item.data.outcome }}</div>
+        </div>
 
         <div v-if="item.data.owner" class="mb-3">
           <div class="metadata-label">Owner</div>
@@ -127,10 +129,6 @@ const getTypeColor = (type: string) => {
       <!-- Actions -->
       <div class="panel-section">
         <div class="d-flex flex-column" style="gap: 8px">
-          <v-btn prepend-icon="ph:file-text" variant="outlined" color="grey-darken-3" block>
-            View Full Logs
-          </v-btn>
-
           <v-btn
             prepend-icon="ph:pencil-simple"
             variant="outlined"

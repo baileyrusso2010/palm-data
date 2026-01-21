@@ -5,6 +5,8 @@ import api from '../../api'
 import StudentHeader from '../../components/mtss/StudentHeader.vue'
 import MtssTimeline from '../../components/mtss/MtssTimeline.vue'
 import MtssDetailPanel from '../../components/mtss/MtssDetailPanel.vue'
+import { PhPlus } from '@phosphor-icons/vue'
+import { DateTime } from 'luxon'
 
 const route = useRoute()
 const studentId = route.params.id as string
@@ -23,24 +25,11 @@ const fetchData = async () => {
   isLoading.value = true
   error.value = null
   try {
-    // 1. Fetch Student Details (if not already part of timeline response, strictly speaking we might need a separate call or the timeline includes it)
-    // Assuming timeline endpoint returns `{ student: ..., tracks: ... }` or similar, OR we fetch student separately.
-    // For now, let's assume we need to fetch student basic info, or maybe the timeline has it.
-    // Based on standard patterns, let's fetch timeline.
-    const response = await api.get(`/students/${studentId}/mtss-timeline`)
-    // API endpoint per user request: GET /api/students/:studentId/mtss-timeline.
-    // Wait, user request said "GET /api/students/:studentId/mtss-timeline".
-    // My api.ts has baseURL.
-    // NOTE: The user prompt listing says "GET /api/students/:studentId/mtss-timeline".
-    // AND "GET /api/mtss/..." for others.
-    // I will try `/students/${studentId}/mtss-timeline` first (relative to base URL).
-
-    // Actually, looking at the user request again:
-    // "GET /api/students/:studentId/mtss-timeline"
-    // "GET /api/mtss/student-tiers?student_id=..."
-
     const timelineRes = await api.get(`/students/${studentId}/mtss-timeline`)
     rawTimelineData.value = timelineRes.data
+
+    const studentData = await api.get(`/students/${studentId}`)
+    console.log(studentData.data)
 
     // If the timeline response includes student info, use it. Otherwise we might Mock it or fetch it.
     // For now, let's assume the response structure.
@@ -49,13 +38,28 @@ const fetchData = async () => {
     } else {
       // Fallback or separate fetch if needed.
       // Let's keep the mock student structure filled with data if possible.
+
+      console.log(timelineRes.data.tiers)
+
+      let currentTier = null
+      let daysInTier = 0
+
+      timelineRes.data.tiers.forEach((tier: any) => {
+        if (tier.end_date === null) {
+          currentTier = tier.tier_id
+          //this is start_date "2025-09-22T04:00:00.000Z"
+          daysInTier = Math.abs(
+            Math.floor(DateTime.fromISO(tier.start_date).diff(DateTime.now(), 'days').days),
+          )
+        }
+      })
+
       student.value = {
-        name: timelineRes.data.studentName || 'Student Name',
-        grade: timelineRes.data.grade || 'N/A',
-        school: timelineRes.data.school || 'N/A',
-        currentTier: timelineRes.data.currentTier || 1,
-        daysInTier: timelineRes.data.daysInTier || 0,
-        riskLevel: timelineRes.data.riskLevel || 'Low',
+        name: studentData.data.first_name + ' ' + studentData.data.last_name || 'Student Name',
+        grade: studentData.data.grade || 'N/A',
+        school: studentData.data.school || 'N/A',
+        currentTier: currentTier || 1,
+        daysInTier: daysInTier || 0,
       }
     }
   } catch (err: any) {
@@ -107,7 +111,14 @@ onMounted(() => {
 
 // CRUD Handlers
 const handleAdd = (type: 'tier' | 'intervention' | 'screening' | 'meeting' | 'referral') => {
-  editingItem.value = {} // New item
+  const today = new Date().toISOString().substring(0, 10)
+  editingItem.value = {
+    start_date: today,
+    date: today,
+    tier_id: null,
+    domain_id: null,
+    intervention_id: null,
+  }
   dialogs.value[type] = true
 }
 
@@ -161,24 +172,60 @@ const saveItem = async (type: string, data: any) => {
   try {
     let endpoint = ''
     let method = 'post'
-    let payload = { ...data, student_id: studentId }
+    // Base payload with student_id
+    let payload: any = { student_id: studentId }
+    const today = new Date().toISOString().substring(0, 10)
 
-    // If editing
+    // Construct specific payloads based on type
+    if (type === 'tier') {
+      endpoint = '/mtss/student-tiers'
+      payload = {
+        ...payload,
+        tier_id: data.tier_id,
+        domain_id: data.domain_id,
+        start_date: data.start_date || today,
+        reason: data.details, // Map details to reason
+      }
+    } else if (type === 'intervention') {
+      endpoint = '/mtss/student-interventions'
+      payload = {
+        ...payload,
+        intervention_id: data.intervention_id,
+        start_date: data.start_date || today,
+        status: data.status || 'active',
+      }
+    } else if (type === 'screening') {
+      endpoint = '/mtss/screenings'
+      payload = {
+        ...payload,
+        domain_id: data.domain_id,
+        assessment_name: data.name,
+        screening_date: data.date || today,
+        score: data.score,
+        benchmark: data.benchmark,
+      }
+    } else if (type === 'meeting') {
+      endpoint = '/mtss/meetings'
+      payload = {
+        ...payload,
+        meeting_type: data.type,
+        meeting_date: data.date || today,
+        outcome: data.outcome,
+      }
+    } else if (type === 'referral') {
+      endpoint = '/mtss/referrals'
+      payload = {
+        ...payload,
+        referral_type: data.reason, // Assuming reason text is the type for now
+        referral_date: data.date || today,
+        status: data.status || 'pending',
+      }
+    }
+
+    // If editing, append ID and change method
     if (editingItem.value && editingItem.value.id) {
       method = 'put'
-      // Endpoint logic
-      if (type === 'tier') endpoint = `/mtss/student-tiers/${editingItem.value.id}`
-      if (type === 'intervention') endpoint = `/mtss/student-interventions/${editingItem.value.id}`
-      if (type === 'screening') endpoint = `/mtss/screenings/${editingItem.value.id}`
-      if (type === 'meeting') endpoint = `/mtss/meetings/${editingItem.value.id}`
-      if (type === 'referral') endpoint = `/mtss/referrals/${editingItem.value.id}`
-    } else {
-      // Creating
-      if (type === 'tier') endpoint = `/mtss/student-tiers`
-      if (type === 'intervention') endpoint = `/mtss/student-interventions`
-      if (type === 'screening') endpoint = `/mtss/screenings`
-      if (type === 'meeting') endpoint = `/mtss/meetings`
-      if (type === 'referral') endpoint = `/mtss/referrals`
+      endpoint = `${endpoint}/${editingItem.value.id}`
     }
 
     if (method === 'put') {
@@ -193,6 +240,7 @@ const saveItem = async (type: string, data: any) => {
     fetchData()
   } catch (e) {
     console.error('Save failed', e)
+    // Optional: set error state to show user
   }
 }
 
@@ -200,8 +248,8 @@ const saveItem = async (type: string, data: any) => {
 const tracks = computed(() => {
   if (!rawTimelineData.value) return []
 
-  // We expect rawTimelineData to have arrays: tiers, interventions, screenings, meetings
-  const { tiers, interventions, screenings, meetings } = rawTimelineData.value
+  // We expect rawTimelineData to have arrays: tiers, interventions, screenings, meetings, referrals
+  const { tiers, interventions, screenings, meetings, referrals } = rawTimelineData.value
 
   const t = []
 
@@ -256,8 +304,8 @@ const tracks = computed(() => {
       events: screenings.map((item: any) => ({
         id: item.id,
         type: 'screening',
-        title: item.name || 'Screening',
-        startDate: item.date,
+        title: item.assessment_name || item.name || 'Screening',
+        startDate: item.screening_date || item.date,
         data: item,
       })),
     })
@@ -274,14 +322,33 @@ const tracks = computed(() => {
       events: meetings.map((item: any) => ({
         id: item.id,
         type: 'meeting',
-        title: item.type || 'Meeting',
-        startDate: item.date,
+        title: item.meeting_type || item.type || 'Meeting',
+        startDate: item.meeting_date || item.date,
         color: 'purple',
         data: item,
       })),
     })
   } else {
     t.push({ id: 'meetings', title: 'Meetings', height: 80, events: [] })
+  }
+
+  // 5. Referrals
+  if (referrals) {
+    t.push({
+      id: 'referrals',
+      title: 'Referrals',
+      height: 80,
+      events: referrals.map((item: any) => ({
+        id: item.id,
+        type: 'referral',
+        title: item.referral_type || 'Referral',
+        startDate: item.referral_date || item.date,
+        color: 'orange',
+        data: item,
+      })),
+    })
+  } else {
+    t.push({ id: 'referrals', title: 'Referrals', height: 80, events: [] })
   }
 
   return t
@@ -319,7 +386,7 @@ const handleSelect = (item: any) => {
         <v-menu location="top">
           <template v-slot:activator="{ props }">
             <v-btn
-              icon="ph:plus"
+              :icon="PhPlus"
               v-bind="props"
               color="primary"
               variant="elevated"
@@ -368,6 +435,13 @@ const handleSelect = (item: any) => {
               item-title="name"
               item-value="id"
             ></v-autocomplete>
+            <v-autocomplete
+              label="Domain"
+              v-model="editingItem.domain_id"
+              :items="definitions.domains"
+              item-title="name"
+              item-value="id"
+            ></v-autocomplete>
             <v-text-field
               type="date"
               label="Start Date"
@@ -413,9 +487,17 @@ const handleSelect = (item: any) => {
       <v-dialog v-model="dialogs.screening" max-width="500">
         <v-card title="Screening Record">
           <v-card-text>
+            <v-autocomplete
+              label="Domain"
+              v-model="editingItem.domain_id"
+              :items="definitions.domains"
+              item-title="name"
+              item-value="id"
+            ></v-autocomplete>
             <v-text-field label="Screening Name" v-model="editingItem.name"></v-text-field>
             <v-text-field type="date" label="Date" v-model="editingItem.date"></v-text-field>
             <v-text-field label="Score" v-model="editingItem.score"></v-text-field>
+            <v-text-field label="Benchmark" v-model="editingItem.benchmark"></v-text-field>
             <v-textarea label="Details" v-model="editingItem.details"></v-textarea>
           </v-card-text>
           <v-card-actions>

@@ -19,8 +19,11 @@
           <h3>{{ student.advisor }}</h3>
           <p class="meta">ID {{ student.id }}</p>
         </div>
-        <div class="signal">
-          <p class="eyebrow">MTSS Profile</p>
+        <div class="signal clickable" @click="goToMtss">
+          <div class="signal-header">
+            <p class="eyebrow">MTSS Profile</p>
+            <PhCaretRight :size="14" weight="bold" class="action-icon" />
+          </div>
           <h3>{{ mtssData.tierName || 'N/A' }}</h3>
           <p class="meta">
             {{ mtssData.domainName || 'N/A' }} ·
@@ -312,7 +315,7 @@
 import { onMounted, computed, ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoute } from 'vue-router'
-import { PhPlusCircle } from '@phosphor-icons/vue'
+import { PhPlusCircle, PhCaretRight } from '@phosphor-icons/vue'
 import api from '@/api'
 import { Chart, registerables } from 'chart.js'
 
@@ -577,6 +580,10 @@ const getWblPercent = (experience: WorkLearningExperience) => {
 const goToForm = () => {
   router.push({ path: `/form-test/${route.params.id}` })
   // router.push({ path: '/student-form', query: { id: id.toString() } })
+}
+
+const goToMtss = () => {
+  router.push({ name: 'mtss-student-view', params: { id: route.params.id } })
 }
 
 const downloadForm = (id: number) => {

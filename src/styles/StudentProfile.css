@@ -405,6 +405,46 @@
   }
 }
 
+.signal.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 8px 16px; /* slightly adjust padding to look like a button/card area if needed, but original was just padding-left */
+  padding-left: 16px; /* Resetting to match original structure but maybe we want a background hover? */
+  border-radius: 4px;
+  margin: -8px 0; /* Negate padding add so layout doesn't shift? Or just keep simple */
+  /* Let's try to keep it simple first without messing layout too much */
+  margin: 0;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.signal.clickable:hover {
+  background: rgba(241, 245, 249, 0.5); /* subtle Slate-100ish */
+}
+
+.signal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.signal .eyebrow {
+  margin-bottom: 0; /* Flex alignment */
+}
+
+.action-icon {
+  color: #94a3b8;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: all 0.2s ease;
+}
+
+.signal.clickable:hover .action-icon {
+  opacity: 1;
+  transform: translateX(0);
+  color: #3b82f6; /* Blue-500 */
+}
+
 .form-list {
   list-style: none;
   padding: 0;

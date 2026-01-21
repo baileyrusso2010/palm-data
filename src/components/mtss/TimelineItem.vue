@@ -4,7 +4,7 @@ import { computed } from 'vue'
 interface TimelineItemProps {
   item: {
     id: string
-    type: 'tier' | 'intervention' | 'screening' | 'meeting'
+    type: 'tier' | 'intervention' | 'screening' | 'meeting' | 'referral'
     title: string
     subtitle?: string
     startDate: string
@@ -51,6 +51,7 @@ const itemHeight = computed(() => {
       return '80%'
     case 'screening':
     case 'meeting':
+    case 'referral':
       return 'auto'
     default:
       return 'auto'
@@ -134,45 +135,59 @@ const handleClick = () => {
 .timeline-item {
   position: absolute;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
 }
 
 /* Tier Blocks */
 .timeline-tier {
-  top: 0;
-  opacity: 0.85;
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  top: 4px;
+  bottom: 4px;
+  height: auto !important; /* Override inline height to respect padding */
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
 
 .timeline-tier:hover {
-  opacity: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 20;
 }
 
 .tier-label {
   padding: 8px 12px;
   color: white;
-  font-size: 13px;
-  font-weight: 500;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Intervention Bars */
 .timeline-intervention {
-  top: 10%;
+  top: 15%;
+  height: 70% !important;
   border-radius: 6px;
-  opacity: 0.9;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0));
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 3px rgba(33, 150, 243, 0.2);
 }
 
 .timeline-intervention:hover {
-  opacity: 1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(33, 150, 243, 0.3);
+  z-index: 20;
 }
 
 .intervention-content {
-  padding: 8px 12px;
+  padding: 0 12px;
   color: white;
   height: 100%;
   display: flex;
@@ -181,89 +196,112 @@ const handleClick = () => {
 }
 
 .intervention-title {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .intervention-subtitle {
-  font-size: 11px;
+  font-size: 10px;
   opacity: 0.9;
-  margin-top: 2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Screening Markers */
 .timeline-screening {
   top: 0;
   bottom: 0;
-  width: 2px;
-  transform: translateX(-1px);
+  width: 24px !important; /* Override width to be a touch target */
+  transform: translateX(-12px); /* Center on date */
+  display: flex;
+  justify-content: center;
 }
 
 .screening-marker {
   position: relative;
   height: 100%;
+  width: 2px;
 }
 
 .screening-line {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 24px; /* Start below header/pin */
+  bottom: 0;
+  left: 50%;
   width: 2px;
-  height: 100%;
   background-color: currentColor;
-  opacity: 0.4;
+  opacity: 0.3;
 }
 
 .screening-dot {
   position: absolute;
-  top: 8px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
-  width: 8px;
-  height: 8px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background-color: currentColor;
   border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.timeline-screening:hover .screening-dot {
+  transform: translateX(-50%) scale(1.3);
 }
 
 .screening-primary {
-  color: #2196f3;
-}
+  color: #3b82f6;
+} /* Blue 500 */
 .screening-error {
-  color: #f44336;
-}
+  color: #ef4444;
+} /* Red 500 */
 .screening-success {
-  color: #4caf50;
-}
+  color: #22c55e;
+} /* Green 500 */
 .screening-warning {
-  color: #ff9800;
-}
+  color: #f59e0b;
+} /* Amber 500 */
 
 .screening-label {
   position: absolute;
   top: 28px;
-  left: 8px;
+  left: 10px;
   font-size: 11px;
-  font-weight: 500;
-  color: rgb(var(--v-theme-grey-darken-2));
+  font-weight: 600;
+  color: #475569;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 2px 6px;
-  border-radius: 3px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  z-index: 30;
+  pointer-events: none; /* Let clicks pass to marker */
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
 .timeline-screening:hover .screening-label {
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  opacity: 1;
 }
 
 /* Meeting Markers */
 .timeline-meeting {
   top: 50%;
-  transform: translate(-50%, -50%);
+  margin-top: -16px;
+  height: 32px;
+  width: 32px !important;
+  transform: translateX(-50%);
 }
 
 .meeting-marker {
@@ -274,32 +312,38 @@ const handleClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  border: 2px solid rgb(var(--v-theme-purple));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid #a855f7; /* Purple 500 */
+  transition: transform 0.2s;
 }
 
 .timeline-meeting:hover .meeting-marker {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.15);
 }
 
 .meeting-label {
   position: absolute;
-  top: 40px;
+  top: 36px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 11px;
-  font-weight: 500;
-  color: rgb(var(--v-theme-grey-darken-2));
+  font-weight: 600;
+  color: #475569;
   white-space: nowrap;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 2px 6px;
-  border-radius: 3px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  z-index: 30;
+  opacity: 0;
+  transition: opacity 0.2s;
 }
 
 .timeline-meeting:hover .meeting-label {
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  opacity: 1;
 }
 </style>
