@@ -323,8 +323,8 @@ Chart.register(...registerables)
 
 const router = useRouter()
 const route = useRoute()
-const wblTypes = ref([])
-const behaviorAggregates = ref([])
+const wblTypes = ref<WblCategory[]>([])
+const behaviorAggregates = ref<BehaviorAggregate[]>([])
 
 // MTSS Data
 const mtssData = ref({
@@ -504,6 +504,16 @@ interface Assessments {
   questions?: Question[]
 }
 
+interface BehaviorAggregate {
+  time_period: string
+  count: number
+}
+
+interface WblCategory {
+  id: number | string
+  name: string
+}
+
 const student = ref({
   name: '',
   gradeLevel: '',
@@ -535,7 +545,7 @@ const scoreClass = (score: number | null | undefined) => {
 }
 
 const addHoursDialog = ref(false)
-const selectedCategory = ref('')
+const selectedCategory = ref<number | string | null>(null)
 const hoursToAdd = ref(0)
 const dateAdded = ref(new Date().toISOString().split('T')[0])
 const commentsAdded = ref('')
@@ -945,7 +955,7 @@ const submitAddHours = async () => {
       comments: commentsAdded.value,
     })
     addHoursDialog.value = false
-    selectedCategory.value = ''
+    selectedCategory.value = null
     hoursToAdd.value = 0
     dateAdded.value = new Date().toISOString().split('T')[0]
     commentsAdded.value = ''

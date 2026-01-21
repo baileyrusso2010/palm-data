@@ -302,7 +302,7 @@ const chartOptions: ChartOptions<'line'> = {
       },
       grid: {
         color: '#e2e8f0',
-        drawBorder: false,
+        // drawBorder: false,
       },
       border: {
         display: false,
