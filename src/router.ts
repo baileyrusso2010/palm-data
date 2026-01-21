@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteLocationNormalized } from 'vue-router'
 import Login from './views/auth/Login.vue'
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth'
-import SkillView from './views/classes/SkillView.vue'
 import StudentProfile from './views/students/StudentProfile.vue'
 import StudentSearch from './views/students/StudentSearch.vue'
 import StudentGrading from './views/grading/StudentGrading.vue'
@@ -11,14 +10,10 @@ import GradeBook from './views/grading/GradeBook.vue'
 import WblStudent from './views/wbl/WblStudent.vue'
 import UploadData from './views/admin/UploadData.vue'
 import BreakDown from './views/data/BreakDown.vue'
-import CreateRubric from './views/forms/CreateRubric.vue'
-import CreateForm from './views/forms/CreateForm.vue'
-import AssessmentsList from './views/forms/AssessmentsList.vue'
-import AssessmentSetup from './views/forms/AssessmentSetup.vue'
-import FormBuilder from './views/forms/FormBuilder.vue'
 import Home from './views/home/Home.vue'
 import StudentMtssView from './views/mtss/StudentMtssView.vue'
 import Settings from './views/admin/Settings.vue'
+import CreateForm from './views/forms/CreateForm.vue'
 
 const routes = [
   // Public / guest routes
@@ -30,39 +25,14 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/grading/:studentId',
-    component: StudentGrading,
-    name: 'grading',
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/rubric/create',
-    component: CreateRubric,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/forms/create',
+    path: '/forms',
     component: CreateForm,
     meta: { requiresAuth: true },
   },
   {
-    path: '/assessments',
-    component: AssessmentsList,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/assessments/setup',
-    component: AssessmentSetup,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/forms/builder',
-    component: FormBuilder,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/skills',
-    component: SkillView,
+    path: '/grading/:studentId',
+    component: StudentGrading,
+    name: 'grading',
     meta: { requiresAuth: true },
   },
   {
