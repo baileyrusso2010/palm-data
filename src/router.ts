@@ -14,6 +14,7 @@ import Home from './views/home/Home.vue'
 import StudentMtssView from './views/mtss/StudentMtssView.vue'
 import Settings from './views/admin/Settings.vue'
 import CreateForm from './views/forms/CreateForm.vue'
+import SelectForm from './views/forms/SelectForm.vue'
 
 const routes = [
   // Public / guest routes
@@ -27,6 +28,11 @@ const routes = [
   {
     path: '/forms',
     component: CreateForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/forms/select',
+    component: SelectForm,
     meta: { requiresAuth: true },
   },
   {
