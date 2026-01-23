@@ -525,7 +525,7 @@ const saveCategories = async () => {
       if (needsSetup.value == true) {
         response = await api.post('/gradebook', payload)
         needsSetup.value = false
-        let cat = response.data.data
+        const cat = response.data.data
 
         categories.value = []
         cat.forEach((item) => {
@@ -681,7 +681,7 @@ onMounted(async () => {
     const course_id = route.params.id
     const response = await api.get(`/course-instances/${course_id}`)
 
-    let data = response.data
+    const data = response.data
 
     classProfile.value = {
       ...classProfile.value,
@@ -691,7 +691,7 @@ onMounted(async () => {
       location: data?.cte_school?.name ?? classProfile.value.location,
     }
 
-    let enrollments = response.data.enrollments
+    const enrollments = response.data.enrollments
 
     enrollments.forEach((element) => {
       students.value.push({
@@ -710,12 +710,12 @@ onMounted(async () => {
 
     //put in promise all
 
-    let gradebook_data = await api.get(`/gradebook/${course_id}`)
+    const gradebook_data = await api.get(`/gradebook/${course_id}`)
 
     //no grades in gradebook
     needsSetup.value = gradebook_data.data.needsSetup
 
-    let g_book = gradebook_data.data.data
+    const g_book = gradebook_data.data.data
 
     if (needsSetup.value == false) {
       g_book.forEach((item) => {

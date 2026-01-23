@@ -152,7 +152,7 @@ async function save() {
 async function fetchData(categoryId) {
   try {
     //api
-    let response = await api.get(`/skill/student/${categoryId}/${studentId.value}`)
+    const response = await api.get(`/skill/student/${categoryId}/${studentId.value}`)
     console.dir(response.data)
 
     const rows = []

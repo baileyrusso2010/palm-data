@@ -141,7 +141,7 @@ import type { ColDef } from 'ag-grid-community'
 
 const chartRef = ref<any>(null)
 
-let schoolOptions = ref([{ value: 'all', label: 'All Schools' }])
+const schoolOptions = ref([{ value: 'all', label: 'All Schools' }])
 
 async function getSchools() {
   try {
