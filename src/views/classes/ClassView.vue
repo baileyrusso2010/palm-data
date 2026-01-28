@@ -169,32 +169,50 @@
       </v-card>
     </div>
 
-    <!-- Assigned Forms Section -->
+    <!-- Evaluations Section -->
     <div class="mb-6">
-      <div class="text-h6 font-weight-bold mb-4 px-1">
-        Assigned Forms ({{ assignedForms.length }})
+      <div class="d-flex align-center justify-space-between mb-4 px-1">
+        <div class="text-h6 font-weight-bold">Evaluations ({{ assignedForms.length }})</div>
+        <v-btn
+          color="primary"
+          variant="tonal"
+          size="small"
+          prepend-icon="mdi-plus"
+          @click="openFormDialog"
+        >
+          Add Evaluation
+        </v-btn>
       </div>
       <v-card elevation="2">
         <v-list lines="two" v-if="assignedForms.length" class="bg-transparent">
-          <v-list-item v-for="form in assignedForms" :key="form.id" active-color="primary">
+          <v-list-item
+            v-for="form in assignedForms"
+            :key="form.id"
+            active-color="primary"
+            :to="`/evaluation/${form.id}`"
+            class="evaluation-item"
+          >
             <template #prepend>
               <v-avatar color="secondary" variant="tonal" class="rounded-lg">
-                <v-icon>mdi-file-document-outline</v-icon>
+                <v-icon>mdi-clipboard-text-outline</v-icon>
               </v-avatar>
             </template>
 
             <v-list-item-title class="font-weight-medium">{{ form.name }}</v-list-item-title>
-            <v-list-item-subtitle>
-              Due: {{ form.dueDate ? new Date(form.dueDate).toLocaleDateString() : 'No due date' }}
+            <v-list-item-subtitle class="text-medium-emphasis">
+              {{ form.description || 'Student evaluation form' }}
             </v-list-item-subtitle>
             <template #append>
-              <v-chip size="small" color="secondary" variant="tonal"> Assigned </v-chip>
+              <div class="d-flex align-center gap-2">
+                <v-chip size="small" color="success" variant="tonal">Active</v-chip>
+                <v-icon size="20" color="medium-emphasis">mdi-chevron-right</v-icon>
+              </div>
             </template>
           </v-list-item>
         </v-list>
         <div v-else class="text-center py-8">
-          <v-icon size="40" color="grey-lighten-1" class="mb-2">mdi-form-select</v-icon>
-          <div class="text-body-2 text-medium-emphasis">No forms assigned yet</div>
+          <v-icon size="40" color="grey-lighten-1" class="mb-2">mdi-clipboard-text-outline</v-icon>
+          <div class="text-body-2 text-medium-emphasis">No evaluations created yet</div>
         </div>
       </v-card>
     </div>
@@ -467,20 +485,6 @@ const filteredForms = computed(() => {
   })
 })
 
-const selectedFormDetails = computed(() => getFormById(selectedForm.value))
-
-const openCategoryDialog = () => {
-  dialog.value = true
-  editingIndex.value = null
-}
-
-const closeDialog = () => {
-  if (editingIndex.value !== null) {
-    stopEditingCategory()
-  }
-  dialog.value = false
-}
-
 const startEditingCategory = (index) => {
   if (editingIndex.value !== null && editingIndex.value !== index) {
     stopEditingCategory()
@@ -545,21 +549,8 @@ const saveCategories = async () => {
 }
 
 const openFormDialog = () => {
-  formDialog.value = true
-  selectedForm.value = null
-  dueDate.value = ''
-  assignmentNotes.value = ''
-
-  if (!availableForms.value.length && !formsLoading.value) {
-    fetchForms()
-  }
-}
-
-const closeFormDialog = () => {
-  formDialog.value = false
-  selectedForm.value = null
-  dueDate.value = ''
-  assignmentNotes.value = ''
+  //route to
+  router.push(`/forms/select`) //add id later
 }
 
 const assignForm = async () => {
@@ -599,53 +590,29 @@ const fetchForms = async () => {
   formsLoading.value = true
   formsError.value = ''
 
-  let lastError
-
   try {
-    const response = await api.get('/forms')
+    const classId = route.params.id
+    const response = await api.get(`/evaluations/class/${classId}`)
+    console.log('Evaluations response:', response)
     const payload = Array.isArray(response.data)
       ? response.data
       : Object.values(response.data || {})
 
-    availableForms.value = payload.map((form) => ({
+    const formsList = payload.map((form) => ({
       id: form.id,
       name: form.name || form.title || 'Untitled Form',
       description: form.description || '',
       version: form.version || form.latest_version || null,
       updatedAt: form.updated_at || form.updatedAt || null,
     }))
+
+    availableForms.value = formsList
+    assignedForms.value = formsList
   } catch (err) {
-    lastError = err
     console.error(err)
-  }
-
-  if (lastError) {
-    formsError.value = lastError?.response?.data?.error || 'Unable to load forms. Please try again.'
-  }
-
-  formsLoading.value = false
-}
-
-const getFormById = (id) => {
-  return availableForms.value.find((form) => form.id === id) || {}
-}
-
-const fetchAssignedForms = async () => {
-  try {
-    const course_id = route.params.id
-    const response = await api.get(`/forms/course/${course_id}`)
-    console.log(response)
-    const forms = response.data
-    assignedForms.value = forms
-      .filter((form) => form.class_form_assignments && form.class_form_assignments.length > 0)
-      .map((form) => ({
-        id: form.id,
-        name: form.name,
-        dueDate: form.class_form_assignments[0]?.due_date || null,
-      }))
-  } catch (err) {
-    console.error('Failed to fetch assigned forms:', err)
-    assignedForms.value = []
+    formsError.value = 'Failed to load evaluations'
+  } finally {
+    formsLoading.value = false
   }
 }
 
@@ -658,7 +625,7 @@ const classProfile = ref({
   track: 'STEM Academy Core',
   term: 'Fall 2025',
   period: 'Block 2',
-  location: 'Monroe Campus — North Tower',
+  location: 'Phillips Campus — North Tower',
   room: '204A',
   cipCode: '27.0101',
   scedCode: '02052',
@@ -678,6 +645,7 @@ onMounted(async () => {
   isLoading.value = true
 
   try {
+    await fetchForms()
     const course_id = route.params.id
     const response = await api.get(`/course-instances/${course_id}`)
 
@@ -707,35 +675,6 @@ onMounted(async () => {
     if (Array.isArray(data?.students) && data.students.length) {
       students.value = data.students
     }
-
-    //put in promise all
-
-    const gradebook_data = await api.get(`/gradebook/${course_id}`)
-
-    //no grades in gradebook
-    needsSetup.value = gradebook_data.data.needsSetup
-
-    const g_book = gradebook_data.data.data
-
-    if (needsSetup.value == false) {
-      g_book.forEach((item) => {
-        categories.value.push({
-          id: item.id,
-          name: item.name,
-          weight: Math.round(item.weight), // Cast decimal to integer
-        })
-      })
-    } else {
-      categories.value.push(
-        { name: 'Homework / Classwork', weight: 20 },
-        { name: 'Quizzes', weight: 20 },
-        { name: 'Tests / Exams', weight: 40 },
-        { name: 'Final Exam', weight: 20 },
-      )
-    }
-
-    // Fetch assigned forms
-    await fetchAssignedForms()
   } catch (e) {
     console.error(e)
   } finally {

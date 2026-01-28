@@ -9,7 +9,7 @@
   >
     <v-sheet class="px-3 pt-4 pb-2 d-flex align-center" color="transparent">
       <div v-if="!rail" class="sidebar-title-area">
-        <h1 class="sidebar-title">EduData</h1>
+        <h1 class="sidebar-title">ByteLeaf</h1>
       </div>
       <v-spacer />
       <v-btn
@@ -90,6 +90,7 @@ import {
   PhUserList,
   PhChartBar,
   PhList,
+  PhFileText,
 } from '@phosphor-icons/vue'
 
 interface NavItem {
@@ -151,12 +152,12 @@ const mainItems = computed<NavItem[]>(() => [
 ])
 
 const formItems = computed<NavItem[]>(() => [
-  // {
-  //   to: '/student-form',
-  //   title: 'Assign Forms',
-  //   iconComp: PhUserList,
-  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  // },
+  {
+    to: '/forms/select',
+    title: 'Deploy Forms',
+    iconComp: PhFileText,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
   // {
   //   to: '/assessments',
   //   title: 'Assessments',

@@ -854,8 +854,19 @@ function initProfileCharts() {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { y: { min: 80, max: 100 } },
+        scales: {
+          y: { min: 80, max: 100, ticks: { color: '#0f172a' } },
+          x: {
+            ticks: {
+              color: '#0f172a',
+              maxRotation: 0,
+              autoSkip: false,
+            },
+            grid: { display: false },
+          },
+        },
       },
     })
   }
@@ -876,8 +887,19 @@ function initProfileCharts() {
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, max: 100 } },
+        scales: {
+          y: { beginAtZero: true, max: 100, ticks: { color: '#0f172a' } },
+          x: {
+            ticks: {
+              color: '#0f172a',
+              maxRotation: 0,
+              autoSkip: false,
+            },
+            grid: { display: false },
+          },
+        },
       },
     })
   }
@@ -886,8 +908,9 @@ function initProfileCharts() {
     behaviorChart = new Chart(behaviorCanvas.value, {
       type: 'bar',
       data: (() => {
-        const months = []
-        const counts = []
+        const months: string[] = []
+        const counts: number[] = []
+        const backgroundColors: string[] = []
         const today = new Date()
 
         // Generate last 5 months
@@ -902,7 +925,17 @@ function initProfileCharts() {
             )
           })
 
-          counts.push(match ? match.count : 0)
+          const count = match ? match.count : 0
+          counts.push(count)
+
+          // Dynamic color based on incident count
+          if (count === 0) {
+            backgroundColors.push('#10b981') // Green - no incidents
+          } else if (count <= 2) {
+            backgroundColors.push('#f59e0b') // Amber - low incidents
+          } else {
+            backgroundColors.push('#ef4444') // Red - high incidents
+          }
         }
 
         return {
@@ -911,22 +944,30 @@ function initProfileCharts() {
             {
               label: 'Incidents',
               data: counts,
-              backgroundColor: '#ef4444',
-              borderRadius: 2,
+              backgroundColor: backgroundColors,
+              borderRadius: 4,
             },
           ],
         }
       })(),
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'bottom' },
+          legend: { display: false },
         },
         scales: {
-          x: { stacked: true },
+          x: {
+            ticks: {
+              color: '#0f172a',
+              maxRotation: 0,
+              autoSkip: false,
+            },
+            grid: { display: false },
+          },
           y: {
             beginAtZero: true,
-            stacked: true,
+            ticks: { color: '#0f172a' },
           },
         },
       },
