@@ -32,6 +32,7 @@
                 color="primary"
                 @click="openAddColumnDialog(section)"
               >
+                <PhColumnsPlusLeft />
                 Add Column
               </v-btn>
               <v-btn
@@ -41,6 +42,7 @@
                 color="primary"
                 @click="openAddRowDialog(section)"
               >
+                <PhRowsPlusTop />
                 Add Row
               </v-btn>
             </div>
@@ -63,7 +65,7 @@
     </div>
 
     <!-- Add Section Card -->
-    <v-card class="add-section-card" @click="showAddSectionDialog = true">
+    <v-card v-if="formId" class="add-section-card" @click="showAddSectionDialog = true">
       <div class="d-flex flex-column align-center justify-center py-8">
         <v-avatar size="48" color="primary" variant="tonal" class="mb-3">
           <v-icon size="24">mdi-plus</v-icon>
@@ -72,6 +74,33 @@
         <span class="add-section-hint">Click to create a new evaluation section</span>
       </div>
     </v-card>
+
+    <!-- Create Form Modal -->
+    <v-dialog v-model="showCreateFormDialog" max-width="500" persistent>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <v-icon class="mr-2" color="primary">mdi-file-document-plus</v-icon>
+          Create New Form
+        </v-card-title>
+        <v-card-text class="pt-4">
+          <v-text-field
+            v-model="newFormName"
+            label="Form Name"
+            placeholder="Enter form name"
+            variant="outlined"
+            autofocus
+            hide-details="auto"
+            @keyup.enter="createForm"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer />
+          <v-btn color="primary" variant="flat" :disabled="!newFormName.trim()" @click="createForm">
+            Start Building
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Add Section Modal -->
     <v-dialog v-model="showAddSectionDialog" max-width="500" persistent>
@@ -321,12 +350,22 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import api from '../../api'
+import { PhColumnsPlusLeft, PhRowsPlusTop } from '@phosphor-icons/vue'
 
+const route = useRoute()
+const router = useRouter()
+
+const formId = ref(null)
 const formName = ref('')
 const form = reactive({ sections: [] })
 const defaultColDef = { flex: 1, editable: true, sortable: true, filter: true }
+
+// Create Form Modal state
+const showCreateFormDialog = ref(false)
+const newFormName = ref('')
 
 // Add Section Modal state
 const showAddSectionDialog = ref(false)
@@ -344,12 +383,35 @@ const showAddRowDialog = ref(false)
 const newRowLabel = ref('')
 
 onMounted(async () => {
-  await getForm()
+  if (route.query.id) {
+    formId.value = route.query.id
+    await getForm()
+  } else {
+    showCreateFormDialog.value = true
+  }
 })
 
+async function createForm() {
+  const name = newFormName.value.trim()
+  if (!name) return
+
+  try {
+    const result = await api.post('/evaluations/templates', { name })
+    formId.value = result.data.id
+    formName.value = result.data.name
+
+    // Add id to url
+    router.replace({ query: { ...route.query, id: formId.value } })
+
+    showCreateFormDialog.value = false
+  } catch (e) {
+    console.error(e)
+  }
+}
+
 async function getForm() {
-  const form_id = 1
-  const result = await api.get(`/evaluations/templates/${form_id}`)
+  if (!formId.value) return
+  const result = await api.get(`/evaluations/templates/${formId.value}`)
   const _form = result.data.form
 
   formName.value = _form.name
@@ -398,10 +460,9 @@ function cancelAddSection() {
 
 async function confirmAddSection() {
   const name = newSectionName.value.trim()
-  if (!name) return
+  if (!name || !formId.value) return
 
-  const form_id = 1
-  await api.post(`/evaluations/templates/${form_id}/sections`, { label: name })
+  await api.post(`/evaluations/templates/${formId.value}/sections`, { label: name })
 
   // Refresh the form to get the new section
   await getForm()
@@ -444,14 +505,13 @@ function cancelAddRow() {
 }
 
 async function confirmAddRow() {
-  if (!newRowLabel.value.trim() || !activeSectionId.value) return
+  if (!newRowLabel.value.trim() || !activeSectionId.value || !formId.value) return
 
-  const form_id = 1
   const label = newRowLabel.value.trim()
   // Generate a key from the label (simple lowercase snake_case)
   const key = label.toLowerCase().replace(/\s+/g, '_') //maybe move to backend
 
-  await api.post(`/evaluations/templates/${form_id}/sections/${activeSectionId.value}/rows`, {
+  await api.post(`/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/rows`, {
     label,
     key,
     description: '',
@@ -463,9 +523,8 @@ async function confirmAddRow() {
 }
 
 async function confirmAddColumn() {
-  if (!newColumnLabel.value.trim() || !activeSectionId.value) return
+  if (!newColumnLabel.value.trim() || !activeSectionId.value || !formId.value) return
 
-  const form_id = 1
   const label = newColumnLabel.value.trim()
   // Generate a key from the label (simple lowercase snake_case)
   const key = label.toLowerCase().replace(/\s+/g, '_')
@@ -476,12 +535,15 @@ async function confirmAddColumn() {
     if (newColumnMax.value !== null && newColumnMax.value !== '') config.max = newColumnMax.value
   }
 
-  await api.post(`/evaluations/templates/${form_id}/sections/${activeSectionId.value}/columns`, {
-    label,
-    key,
-    value_type: newColumnType.value,
-    config,
-  })
+  await api.post(
+    `/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/columns`,
+    {
+      label,
+      key,
+      value_type: newColumnType.value,
+      config,
+    },
+  )
 
   await getForm()
   cancelAddColumn()
