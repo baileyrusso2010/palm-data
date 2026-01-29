@@ -15,6 +15,7 @@ import StudentMtssView from './views/mtss/StudentMtssView.vue'
 import Settings from './views/admin/Settings.vue'
 import CreateForm from './views/forms/CreateForm.vue'
 import SelectForm from './views/forms/SelectForm.vue'
+import CreateRubric from './views/forms/CreateRubric.vue'
 
 const routes = [
   // Public / guest routes
@@ -33,6 +34,11 @@ const routes = [
   {
     path: '/forms/select',
     component: SelectForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/forms/rubric',
+    component: CreateRubric,
     meta: { requiresAuth: true },
   },
   {

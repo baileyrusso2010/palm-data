@@ -27,22 +27,20 @@
             <div class="d-flex align-center gap-2">
               <v-btn
                 size="small"
-                prepend-icon="mdi-plus"
                 variant="tonal"
                 color="primary"
                 @click="openAddColumnDialog(section)"
               >
-                <PhColumnsPlusLeft />
+                <PhColumnsPlusLeft :size="20" class="mr-2" />
                 Add Column
               </v-btn>
               <v-btn
                 size="small"
-                prepend-icon="mdi-plus"
                 variant="tonal"
                 color="primary"
                 @click="openAddRowDialog(section)"
               >
-                <PhRowsPlusTop />
+                <PhRowsPlusTop :size="20" class="mr-2" />
                 Add Row
               </v-btn>
             </div>
@@ -67,38 +65,131 @@
     <!-- Add Section Card -->
     <v-card v-if="formId" class="add-section-card" @click="showAddSectionDialog = true">
       <div class="d-flex flex-column align-center justify-center py-8">
-        <v-avatar size="48" color="primary" variant="tonal" class="mb-3">
-          <v-icon size="24">mdi-plus</v-icon>
+        <v-avatar size="64" color="primary" variant="tonal" class="mb-4">
+          <v-icon size="32">mdi-plus</v-icon>
         </v-avatar>
         <span class="add-section-text">Add New Section</span>
         <span class="add-section-hint">Click to create a new evaluation section</span>
       </div>
     </v-card>
 
-    <!-- Create Form Modal -->
-    <v-dialog v-model="showCreateFormDialog" max-width="500" persistent>
-      <v-card class="dialog-card">
-        <v-card-title class="dialog-title">
-          <v-icon class="mr-2" color="primary">mdi-file-document-plus</v-icon>
-          Create New Form
-        </v-card-title>
-        <v-card-text class="pt-4">
-          <v-text-field
-            v-model="newFormName"
-            label="Form Name"
-            placeholder="Enter form name"
-            variant="outlined"
-            autofocus
-            hide-details="auto"
-            @keyup.enter="createForm"
-          />
+    <!-- Template Selection Modal -->
+    <v-dialog
+      v-model="showCreateFormDialog"
+      max-width="600"
+      persistent
+      attach=".create-form-page"
+      contained
+    >
+      <v-card class="dialog-card overflow-hidden">
+        <!-- Header Section -->
+        <div class="dialog-header pa-6 pb-2">
+          <div class="d-flex align-center gap-3 mb-2">
+            <v-avatar color="primary" variant="tonal" size="48">
+              <PhFilePlus :size="24" weight="bold" />
+            </v-avatar>
+            <div>
+              <h2 class="text-h5 font-weight-bold text-slate-900 mb-1">Evaluation Template</h2>
+              <p class="text-body-2 text-slate-500">
+                Start fresh or continue from an existing template
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Tabs -->
+        <div class="px-6">
+          <v-tabs v-model="activeTab" color="primary" align-tabs="start" class="dialog-tabs">
+            <v-tab value="new" class="text-capitalize" rounded="t-lg">
+              <v-icon start class="mr-2">mdi-plus-box-outline</v-icon>
+              Create New
+            </v-tab>
+            <v-tab value="existing" class="text-capitalize" rounded="t-lg">
+              <v-icon start class="mr-2">mdi-file-document-edit-outline</v-icon>
+              Edit Existing
+            </v-tab>
+          </v-tabs>
+          <v-divider />
+        </div>
+
+        <v-card-text class="pa-6 pt-6">
+          <v-window v-model="activeTab">
+            <!-- Create New Tab -->
+            <v-window-item value="new">
+              <div class="window-content">
+                <v-label class="mb-2 font-weight-medium text-slate-700">Template Name</v-label>
+                <v-text-field
+                  v-model="newFormName"
+                  placeholder="e.g., Q1 Performance Review"
+                  variant="outlined"
+                  bg-color="grey-lighten-5"
+                  color="primary"
+                  autofocus
+                  hide-details="auto"
+                  @keyup.enter="createForm"
+                >
+                  <template #prepend-inner>
+                    <v-icon color="slate-400" size="small">mdi-rename-box</v-icon>
+                  </template>
+                </v-text-field>
+
+                <div class="d-flex justify-end mt-8">
+                  <v-btn
+                    color="primary"
+                    size="large"
+                    variant="flat"
+                    elevation="2"
+                    :disabled="!newFormName.trim()"
+                    @click="createForm"
+                    class="px-6"
+                  >
+                    Start Building
+                    <v-icon end class="ml-2">mdi-arrow-right</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+            </v-window-item>
+
+            <!-- Edit Existing Tab -->
+            <v-window-item value="existing">
+              <div class="window-content">
+                <v-label class="mb-2 font-weight-medium text-slate-700">Select Template</v-label>
+                <v-select
+                  v-model="selectedTemplateId"
+                  :items="templates"
+                  item-title="name"
+                  item-value="id"
+                  placeholder="Search templates..."
+                  variant="outlined"
+                  bg-color="grey-lighten-5"
+                  color="primary"
+                  hide-details="auto"
+                  no-data-text="No templates found"
+                  menu-icon="mdi-chevron-down"
+                >
+                  <template #prepend-inner>
+                    <v-icon color="slate-400" size="small">mdi-format-list-bulleted</v-icon>
+                  </template>
+                </v-select>
+
+                <div class="d-flex justify-end mt-8">
+                  <v-btn
+                    color="primary"
+                    size="large"
+                    variant="flat"
+                    elevation="2"
+                    :disabled="!selectedTemplateId"
+                    @click="loadSelectedTemplate"
+                    class="px-6"
+                  >
+                    Load Template
+                    <v-icon end class="ml-2">mdi-arrow-right</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+            </v-window-item>
+          </v-window>
         </v-card-text>
-        <v-card-actions class="pa-4 pt-0">
-          <v-spacer />
-          <v-btn color="primary" variant="flat" :disabled="!newFormName.trim()" @click="createForm">
-            Start Building
-          </v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
 
@@ -224,136 +315,22 @@
       </v-card>
     </v-dialog>
   </v-container>
+
+  <v-snackbar v-model="snackbar" :color="snackbarColor">
+    {{ snackbarMessage }}
+    <template v-slot:actions>
+      <v-btn variant="text" @click="snackbar = false">Close</v-btn>
+    </template>
+  </v-snackbar>
 </template>
-
-<style scoped>
-.create-form-page {
-  background: #f5f7fa;
-  min-height: 100vh;
-}
-
-/* Page Header */
-.page-header {
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 1.5rem;
-}
-
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0;
-  letter-spacing: -0.02em;
-}
-
-.page-subtitle {
-  font-size: 0.875rem;
-  color: #64748b;
-  margin: 0.25rem 0 0 0;
-}
-
-/* Section Cards */
-.section-card {
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.2s ease-in-out;
-}
-
-.section-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-}
-
-.section-header {
-  background: #ffffff;
-}
-
-.section-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0;
-}
-
-.section-meta {
-  font-size: 0.75rem;
-  color: #94a3b8;
-}
-
-.grid-wrapper {
-  height: 320px;
-  width: 100%;
-  background: #ffffff;
-}
-
-/* Add Section Card */
-.add-section-card {
-  border: 2px dashed #cbd5e1;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  background: transparent;
-  box-shadow: none !important;
-}
-
-.add-section-card:hover {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.04);
-}
-
-.add-section-text {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.add-section-hint {
-  font-size: 0.813rem;
-  color: #94a3b8;
-  margin-top: 0.25rem;
-}
-
-/* Dialog Cards */
-.dialog-card {
-  border-radius: 12px;
-}
-
-.dialog-title {
-  font-size: 1.25rem !important;
-  font-weight: 600;
-  color: #0f172a;
-  display: flex;
-  align-items: center;
-  padding: 1.25rem 1.5rem 0.5rem !important;
-}
-
-/* Vuetify Overrides */
-:deep(.v-card) {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
-}
-
-:deep(.v-btn) {
-  text-transform: none;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
-:deep(.ag-theme-quartz) {
-  --ag-border-color: #e2e8f0;
-  --ag-header-background-color: #f8fafc;
-  --ag-odd-row-background-color: #ffffff;
-  --ag-row-hover-color: #f1f5f9;
-}
-</style>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import api from '../../api'
-import { PhColumnsPlusLeft, PhRowsPlusTop } from '@phosphor-icons/vue'
+import { PhColumnsPlusLeft, PhRowsPlusTop, PhFilePlus } from '@phosphor-icons/vue'
+import '../../styles/CreateTemplateForm.css'
 
 const route = useRoute()
 const router = useRouter()
@@ -366,6 +343,9 @@ const defaultColDef = { flex: 1, editable: true, sortable: true, filter: true }
 // Create Form Modal state
 const showCreateFormDialog = ref(false)
 const newFormName = ref('')
+const activeTab = ref('new')
+const templates = ref([])
+const selectedTemplateId = ref(null)
 
 // Add Section Modal state
 const showAddSectionDialog = ref(false)
@@ -382,14 +362,40 @@ const activeSectionId = ref(null)
 const showAddRowDialog = ref(false)
 const newRowLabel = ref('')
 
+const snackbar = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref('success')
+
 onMounted(async () => {
   if (route.query.id) {
     formId.value = route.query.id
     await getForm()
   } else {
+    // If no ID, fetch templates and show dialog
+    await fetchTemplates()
     showCreateFormDialog.value = true
   }
 })
+
+async function fetchTemplates() {
+  try {
+    const res = await api.get('/evaluations/templates')
+    templates.value = res.data
+  } catch (e) {
+    console.error('Error fetching templates', e)
+  }
+}
+
+async function loadSelectedTemplate() {
+  if (!selectedTemplateId.value) return
+  formId.value = selectedTemplateId.value
+  await getForm()
+
+  // Add id to url
+  router.replace({ query: { ...route.query, id: formId.value } })
+
+  showCreateFormDialog.value = false
+}
 
 async function createForm() {
   const name = newFormName.value.trim()
@@ -404,8 +410,15 @@ async function createForm() {
     router.replace({ query: { ...route.query, id: formId.value } })
 
     showCreateFormDialog.value = false
+
+    snackbarMessage.value = 'Form created successfully'
+    snackbarColor.value = 'success'
+    snackbar.value = true
   } catch (e) {
     console.error(e)
+    snackbarMessage.value = 'Error creating form'
+    snackbarColor.value = 'error'
+    snackbar.value = true
   }
 }
 
@@ -462,14 +475,24 @@ async function confirmAddSection() {
   const name = newSectionName.value.trim()
   if (!name || !formId.value) return
 
-  await api.post(`/evaluations/templates/${formId.value}/sections`, { label: name })
+  try {
+    await api.post(`/evaluations/templates/${formId.value}/sections`, { label: name })
 
-  // Refresh the form to get the new section
-  await getForm()
+    // Refresh the form to get the new section
+    await getForm()
 
-  // Reset and close dialog
-  newSectionName.value = ''
-  showAddSectionDialog.value = false
+    // Reset and close dialog
+    newSectionName.value = ''
+    showAddSectionDialog.value = false
+
+    snackbarMessage.value = 'Section created successfully'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error creating section'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
 }
 
 // COLUMN
@@ -507,45 +530,68 @@ function cancelAddRow() {
 async function confirmAddRow() {
   if (!newRowLabel.value.trim() || !activeSectionId.value || !formId.value) return
 
-  const label = newRowLabel.value.trim()
-  // Generate a key from the label (simple lowercase snake_case)
-  const key = label.toLowerCase().replace(/\s+/g, '_') //maybe move to backend
+  try {
+    const label = newRowLabel.value.trim()
+    // Generate a key from the label (simple lowercase snake_case)
+    const key = label.toLowerCase().replace(/\s+/g, '_') //maybe move to backend
 
-  await api.post(`/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/rows`, {
-    label,
-    key,
-    description: '',
-    row_type: 'text',
-  })
+    await api.post(
+      `/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/rows`,
+      {
+        label,
+        key,
+        description: '',
+        row_type: 'text',
+      },
+    )
 
-  await getForm()
-  cancelAddRow()
+    await getForm()
+    cancelAddRow()
+
+    snackbarMessage.value = 'Row created successfully'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error creating row'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
 }
 
 async function confirmAddColumn() {
   if (!newColumnLabel.value.trim() || !activeSectionId.value || !formId.value) return
 
-  const label = newColumnLabel.value.trim()
-  // Generate a key from the label (simple lowercase snake_case)
-  const key = label.toLowerCase().replace(/\s+/g, '_')
+  try {
+    const label = newColumnLabel.value.trim()
+    // Generate a key from the label (simple lowercase snake_case)
+    const key = label.toLowerCase().replace(/\s+/g, '_')
 
-  const config = {}
-  if (newColumnType.value === 'number') {
-    if (newColumnMin.value !== null && newColumnMin.value !== '') config.min = newColumnMin.value
-    if (newColumnMax.value !== null && newColumnMax.value !== '') config.max = newColumnMax.value
+    const config = {}
+    if (newColumnType.value === 'number') {
+      if (newColumnMin.value !== null && newColumnMin.value !== '') config.min = newColumnMin.value
+      if (newColumnMax.value !== null && newColumnMax.value !== '') config.max = newColumnMax.value
+    }
+
+    await api.post(
+      `/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/columns`,
+      {
+        label,
+        key,
+        value_type: newColumnType.value,
+        config,
+      },
+    )
+
+    await getForm()
+    cancelAddColumn()
+
+    snackbarMessage.value = 'Column created successfully'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error creating column'
+    snackbarColor.value = 'error'
+    snackbar.value = true
   }
-
-  await api.post(
-    `/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/columns`,
-    {
-      label,
-      key,
-      value_type: newColumnType.value,
-      config,
-    },
-  )
-
-  await getForm()
-  cancelAddColumn()
 }
 </script>

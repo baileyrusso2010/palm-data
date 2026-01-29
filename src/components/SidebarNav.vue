@@ -63,6 +63,27 @@
       </v-list-item>
     </v-list>
 
+    <v-divider class="my-2" />
+
+    <v-list density="comfortable" nav>
+      <v-list-subheader v-if="!rail">Admin</v-list-subheader>
+      <v-list-item
+        v-for="item in adminItems"
+        :key="item.to"
+        :to="item.to"
+        :title="rail ? undefined : item.title"
+        :active="isActive(item.to)"
+        rounded="lg"
+      >
+        <template #prepend>
+          <v-icon size="22" v-if="item.icon">{{ item.icon }}</v-icon>
+          <span v-else-if="item.iconComp" class="ph-icon-wrapper">
+            <component :is="item.iconComp" v-bind="item.iconCompProps" />
+          </span>
+        </template>
+      </v-list-item>
+    </v-list>
+
     <v-spacer />
 
     <v-divider class="my-2" />
@@ -74,6 +95,10 @@
         @click="emit('toggle-theme')"
       />
     </v-list>
+
+    <div v-if="!rail" class="px-4 py-2 text-center">
+      <div class="text-caption text-medium-emphasis">Beta {{ version }}</div>
+    </div>
   </v-navigation-drawer>
 </template>
 
@@ -91,7 +116,10 @@ import {
   PhChartBar,
   PhList,
   PhFileText,
+  PhGridNine,
 } from '@phosphor-icons/vue'
+
+const version = import.meta.env.version
 
 interface NavItem {
   to: string
@@ -158,24 +186,21 @@ const formItems = computed<NavItem[]>(() => [
     iconComp: PhFileText,
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
-  // {
-  //   to: '/assessments',
-  //   title: 'Assessments',
-  //   iconComp: PhExam,
-  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  // },
-  // {
-  //   to: '/rubric/create',
-  //   title: 'Create Rubric',
-  //   iconComp: PhTable,
-  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  // },
-  // {
-  //   to: '/settings',
-  //   title: 'Settings',
-  //   iconComp: PhGear,
-  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  // },
+])
+
+const adminItems = computed<NavItem[]>(() => [
+  {
+    to: '/forms/',
+    title: 'Create Template',
+    iconComp: PhFileText,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+  {
+    to: '/forms/rubric',
+    title: 'Create Rubric',
+    iconComp: PhGridNine,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
 ])
 
 function isActive(to: string) {
