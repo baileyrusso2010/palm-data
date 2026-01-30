@@ -16,6 +16,7 @@ import Settings from './views/admin/Settings.vue'
 import CreateForm from './views/forms/CreateForm.vue'
 import SelectForm from './views/forms/SelectForm.vue'
 import CreateRubric from './views/forms/CreateRubric.vue'
+import GradeForm from './views/forms/GradeForm.vue'
 
 const routes = [
   // Public / guest routes
@@ -29,6 +30,11 @@ const routes = [
   {
     path: '/forms',
     component: CreateForm,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/forms/grading/:classId/:formId',
+    component: GradeForm,
     meta: { requiresAuth: true },
   },
   {

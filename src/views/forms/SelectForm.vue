@@ -2,7 +2,7 @@
   <v-container fluid class="d-flex align-center justify-center fill-height bg-grey-lighten-5 pa-0">
     <v-card class="w-100 h-100 rounded-0 d-flex flex-column" flat>
       <!-- Header -->
-      <div class="px-8 py-6 bg-white border-b border-opacity-50">
+      <div class="px-8 py-6 bg-white border-b border-opacity-50 text-center">
         <h1 class="text-h4 font-weight-bold text-grey-darken-3">New Evaluation</h1>
         <p class="text-subtitle-1 text-grey-darken-1 mt-1">
           Select a form to begin the evaluation process
@@ -220,11 +220,24 @@
                   <v-icon size="64" color="primary">mdi-rocket-launch-outline</v-icon>
                 </v-avatar>
                 <h2 class="text-h4 font-weight-bold mb-4 text-grey-darken-3">Deploy Form</h2>
-                <p class="text-body-1 text-grey-darken-1 max-width-600 mb-8">
+                <p
+                  v-if="isArray || mockClasses.length > 1"
+                  class="text-body-1 text-grey-darken-1 max-width-600 mb-8"
+                >
                   Select a class to deploy this form to.
                 </p>
 
+                <div v-if="!isArray && mockClasses.length > 0" class="mb-6">
+                  <div
+                    class="text-h5 font-weight-medium text-primary d-flex align-center justify-center"
+                  >
+                    <v-icon icon="mdi-school" class="mr-2"></v-icon>
+                    {{ mockClasses[0].name }}
+                  </div>
+                </div>
+
                 <v-select
+                  v-else
                   v-model="selectedClass"
                   :items="mockClasses"
                   item-title="name"
@@ -333,10 +346,11 @@
 <script setup lang="ts">
 import api from '@/api'
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 
 const router = useRouter()
+const route = useRoute()
 const search = ref('')
 const selectedFormId = ref<number | null>(null)
 const currentStep = ref(1)
@@ -361,20 +375,43 @@ const activeSectionId = ref<number | null>(null)
 const selectedClass = ref<number | null>(null)
 const mockClasses = ref<any[]>([])
 
-onMounted(() => {
-  getForms()
-  getTeacherCourses()
+const isArray = ref(false)
+
+onMounted(async () => {
+  const classId = route.query.classId ? Number(route.query.classId) : null
+  await Promise.all([getForms(), getTeacherCourses(classId)])
 })
 
-async function getTeacherCourses() {
+async function getTeacherCourses(classId: number | null) {
   try {
-    const results = await api.get('/course-instances/teacher/1')
-    for (const course of results.data) {
+    let endPoint = '/course-instances/teacher/1'
+    if (classId !== null && !isNaN(classId)) {
+      endPoint = `/course-instances/${classId}`
+    }
+
+    const results = await api.get(endPoint)
+    mockClasses.value = []
+
+    if (Array.isArray(results.data)) {
+      isArray.value = true
+      for (const course of results.data) {
+        mockClasses.value.push({
+          id: course.id,
+          name: course.alias,
+        })
+      }
+    } else {
+      isArray.value = false
       mockClasses.value.push({
-        id: course.id,
-        name: course.alias,
+        id: results.data.id,
+        name: results.data.alias,
       })
     }
+
+    if (mockClasses.value.length === 1) {
+      selectedClass.value = mockClasses.value[0].id
+    }
+
     console.log(results)
   } catch (e) {
     console.error('Failed to fetch teacher courses', e)
@@ -475,12 +512,15 @@ async function deployForm() {
       }
     })
 
+    const classID = selectedClass.value || mockClasses.value[0].id
+
     const payload = {
-      classId: selectedClass.value,
+      classId: classID,
       updatedSections,
     }
 
-    await api.post(`/evaluations/1/convert`, payload)
+    //TODO
+    await api.post(`/evaluations/${form_id}/convert`, payload)
 
     // router.push({ name: 'form-list' })
     snackbar.value = true

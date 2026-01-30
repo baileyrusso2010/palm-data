@@ -189,7 +189,7 @@
             v-for="form in assignedForms"
             :key="form.id"
             active-color="primary"
-            :to="`/evaluation/${form.id}`"
+            :to="`/forms/grading/${route.params.id}/${form.id}`"
             class="evaluation-item"
           >
             <template #prepend>
@@ -550,7 +550,8 @@ const saveCategories = async () => {
 
 const openFormDialog = () => {
   //route to
-  router.push(`/forms/select`) //add id later
+
+  router.push(`/forms/select?classId=${route.params.id}`) //add id later
 }
 
 const assignForm = async () => {
