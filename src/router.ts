@@ -9,6 +9,7 @@ import ClassView from './views/classes/ClassView.vue'
 import GradeBook from './views/grading/GradeBook.vue'
 import WblStudent from './views/wbl/WblStudent.vue'
 import UploadData from './views/admin/UploadData.vue'
+import SyncPage from './views/admin/SyncPage.vue'
 import BreakDown from './views/data/BreakDown.vue'
 import Home from './views/home/Home.vue'
 import StudentMtssView from './views/mtss/StudentMtssView.vue'
@@ -85,6 +86,12 @@ const routes = [
   {
     path: '/upload',
     component: UploadData,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/admin/sync',
+    component: SyncPage,
+    name: 'sync-page',
     meta: { requiresAuth: true },
   },
   {
