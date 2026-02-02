@@ -648,7 +648,7 @@ onMounted(async () => {
   try {
     await fetchForms()
     const course_id = route.params.id
-    const response = await api.get(`/course-instances/${course_id}`)
+    const response = await api.get(`/course-instances/${course_id}?includeEnrollments=true`)
 
     const data = response.data
 

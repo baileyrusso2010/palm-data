@@ -45,27 +45,6 @@
     <v-divider class="my-2" />
 
     <v-list density="comfortable" nav>
-      <v-list-subheader v-if="!rail">Forms</v-list-subheader>
-      <v-list-item
-        v-for="item in formItems"
-        :key="item.to"
-        :to="item.to"
-        :title="rail ? undefined : item.title"
-        :active="isActive(item.to)"
-        rounded="lg"
-      >
-        <template #prepend>
-          <v-icon size="22" v-if="item.icon">{{ item.icon }}</v-icon>
-          <span v-else-if="item.iconComp" class="ph-icon-wrapper">
-            <component :is="item.iconComp" v-bind="item.iconCompProps" />
-          </span>
-        </template>
-      </v-list-item>
-    </v-list>
-
-    <v-divider class="my-2" />
-
-    <v-list density="comfortable" nav>
       <v-list-subheader v-if="!rail">Admin</v-list-subheader>
       <v-list-item
         v-for="item in adminItems"
@@ -180,12 +159,12 @@ const mainItems = computed<NavItem[]>(() => [
 ])
 
 const formItems = computed<NavItem[]>(() => [
-  {
-    to: '/forms/select',
-    title: 'Deploy Forms',
-    iconComp: PhFileText,
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
+  // {
+  //   to: '/forms/select',
+  //   title: 'Deploy Forms',
+  //   iconComp: PhFileText,
+  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  // },
 ])
 
 const adminItems = computed<NavItem[]>(() => [

@@ -233,6 +233,7 @@ async function getForm() {
   // const formId = 5
   try {
     const response = await api.get(`/evaluations/${formId}`)
+    console.log(response.data)
     form.value = response.data.form || { sections: [] }
     allCells.value = response.data.cells || {}
   } catch (e) {
@@ -297,6 +298,7 @@ function markChanged() {
 
 // Navigation
 async function nextStudent() {
+  console.log('nextStudent', hasChanges.value)
   if (hasChanges.value) {
     await saveCurrentStudent() // Auto-save on next
   }
@@ -330,12 +332,12 @@ async function saveCurrentStudent() {
           // Send data if it exists
           if (val !== null && val !== undefined && val !== '') {
             changes.push({
-              studentId: studentId,
-              sectionKey: section.key,
-              rowKey: row.key,
-              rowId: row.id,
-              columnKey: col.key,
-              columnId: col.id,
+              student_id: studentId,
+              section_key: section.key,
+              row_key: row.key,
+              row_id: row.id || row.row_id,
+              column_key: col.key,
+              column_id: col.id || col.column_id,
               value: val,
             })
           }
@@ -344,34 +346,34 @@ async function saveCurrentStudent() {
     })
 
     console.log(changes)
-    // if (changes.length > 0) {
-    //   // Changed to POST to match backend route
-    //   await api.post(`/evaluations/${formId}/cells`, { changes })
+    if (changes.length > 0) {
+      // Changed to POST to match backend route
+      await api.post(`/evaluations/${formId}/cells`, { changes })
 
-    //   // Update local cache
-    //   const studentStrId = String(studentId)
-    //   if (!allCells.value[studentStrId]) allCells.value[studentStrId] = {}
+      // Update local cache
+      const studentStrId = String(studentId)
+      if (!allCells.value[studentStrId]) allCells.value[studentStrId] = {}
 
-    //   form.value.sections.forEach((section) => {
-    //     if (!allCells.value[studentStrId][section.key])
-    //       allCells.value[studentStrId][section.key] = {}
-    //     section.rows.forEach((row) => {
-    //       if (!allCells.value[studentStrId][section.key][row.key])
-    //         allCells.value[studentStrId][section.key][row.key] = {}
-    //       section.columns.forEach((col) => {
-    //         const val = activeGrades.value[section.key][row.key][col.key]
-    //         allCells.value[studentStrId][section.key][row.key][col.key] = val
-    //       })
-    //     })
-    //   })
+      form.value.sections.forEach((section) => {
+        if (!allCells.value[studentStrId][section.key])
+          allCells.value[studentStrId][section.key] = {}
+        section.rows.forEach((row) => {
+          if (!allCells.value[studentStrId][section.key][row.key])
+            allCells.value[studentStrId][section.key][row.key] = {}
+          section.columns.forEach((col) => {
+            const val = activeGrades.value[section.key][row.key][col.key]
+            allCells.value[studentStrId][section.key][row.key][col.key] = val
+          })
+        })
+      })
 
-    //   showMessage('Saved successfully', 'success')
-    // }
+      showMessage('Saved successfully', 'success')
+    }
 
     hasChanges.value = false
   } catch (e) {
     console.error(e)
-    // showMessage('Failed to save grades', 'error')
+    showMessage('Failed to save grades', 'error')
   } finally {
     saving.value = false
   }
