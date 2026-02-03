@@ -259,13 +259,32 @@ function getInitials(student) {
 }
 
 // Selection & Data Binding
-function selectStudent(id) {
+async function selectStudent(id) {
   // If unsaved changes, we could prompt, but we'll assume seamless switch for now
   // In a real app, maybe auto-save?
   // Let's just switch.
-
+  loadingForm.value = true
   selectedStudentId.value = id
   hasChanges.value = false
+
+  try {
+    const formId = route.params.formId
+    const response = await api.get(`/evaluations/${formId}?student_id=${id}`)
+    form.value = response.data.form || { sections: [] }
+    console.log(form.value)
+
+    // Update cells (this includes the injected WBL data)
+    if (response.data.cells) {
+      // We merge instead of overwriting to keep other students' data if needed,
+      // though for WBL rows which are dynamic, the structure changes anyway.
+      // Actually, response.data.cells contains ALL cells for the document from findAll,
+      // PLUS the injected WBL cells for this student.
+      // So overwriting active cell cache is safe/correct.
+      allCells.value = response.data.cells
+    }
+  } catch (e) {
+    console.error('Error fetching student form', e)
+  }
 
   // Initialize activeGrades for this student
   const studentStrId = String(id)
@@ -290,6 +309,7 @@ function selectStudent(id) {
   })
 
   activeGrades.value = newGrades
+  loadingForm.value = false
 }
 
 function markChanged() {
@@ -321,34 +341,39 @@ async function saveCurrentStudent() {
   saving.value = true
 
   try {
-    const changes = []
+    const changesMap = new Map() // Deduplicate by cell key
     const studentId = selectedStudentId.value
     const formId = route.params.formId
 
     form.value.sections.forEach((section) => {
       section.rows.forEach((row) => {
         section.columns.forEach((col) => {
-          const val = activeGrades.value[section.key][row.key][col.key]
+          const val = activeGrades.value[section.key]?.[row.key]?.[col.key]
           // Send data if it exists
           if (val !== null && val !== undefined && val !== '') {
-            changes.push({
-              student_id: studentId,
-              section_key: section.key,
-              row_key: row.key,
-              row_id: row.id || row.row_id,
-              column_key: col.key,
-              column_id: col.id || col.column_id,
-              value: val,
-            })
+            const cellKey = `${section.key}-${row.key}-${col.key}`
+            // Only keep first occurrence (or could keep last with overwrite)
+            if (!changesMap.has(cellKey)) {
+              changesMap.set(cellKey, {
+                studentId: studentId,
+                sectionKey: section.key,
+                rowKey: row.key,
+                rowId: row.id || row.row_id,
+                columnKey: col.key,
+                columnId: col.id || col.column_id,
+                value: val,
+              })
+            }
           }
         })
       })
     })
 
-    console.log(changes)
+    const changes = Array.from(changesMap.values())
+    console.log('Saving changes:', changes)
     if (changes.length > 0) {
       // Changed to POST to match backend route
-      await api.post(`/evaluations/${formId}/cells`, { changes })
+      await api.post(`/evaluations/${formId}/students/${studentId}/cells`, { changes })
 
       // Update local cache
       const studentStrId = String(studentId)
@@ -447,7 +472,7 @@ function getColumnDefs(section) {
     const colDef = {
       field: col.key,
       headerName: col.label,
-      editable: true,
+      editable: col.config?.editable !== false, // Default to true if not specified
     }
 
     if (col.valueType === 'number') {

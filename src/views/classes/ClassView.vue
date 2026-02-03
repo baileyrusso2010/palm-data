@@ -151,14 +151,30 @@
             </div>
           </template>
 
-          <template #item.gradePulse="{ item }">
-            <div class="font-weight-medium">{{ formatScore(item.gradePulse.score) }}</div>
+          <template #item.wblHours="{ item }">
+            <div class="d-flex align-center">
+              <v-progress-circular
+                :model-value="(item.wblHours / 60) * 100"
+                color="primary"
+                size="32"
+                width="4"
+                class="mr-3"
+              >
+                <span class="text-caption font-weight-bold">{{ item.wblHours }}</span>
+              </v-progress-circular>
+            </div>
           </template>
 
-          <template #item.status="{ item }">
-            <v-chip :color="statusColor(item.status)" variant="tonal" size="small" label>
-              {{ item.status }}
-            </v-chip>
+          <template #item.wblActions="{ item }">
+            <v-btn
+              icon
+              variant="text"
+              color="primary"
+              density="compact"
+              @click.stop="openWblModal(item)"
+            >
+              <PhListBullets :size="20" weight="bold" />
+            </v-btn>
           </template>
           <template #item.actions>
             <v-btn icon variant="text" density="compact" color="medium-emphasis">
@@ -315,19 +331,6 @@
             text="Weights must add up to exactly 100% to save."
           ></v-alert>
         </v-card-text>
-
-        <v-card-actions class="pa-4">
-          <v-spacer></v-spacer>
-          <v-btn variant="text" @click="closeDialog">Cancel</v-btn>
-          <v-btn
-            color="primary"
-            size="large"
-            :disabled="totalWeight !== 100"
-            @click="saveCategories"
-          >
-            Save & Continue
-          </v-btn>
-        </v-card-actions>
       </v-card>
     </v-dialog>
 
@@ -439,6 +442,256 @@
       </v-card>
     </v-dialog>
 
+    <!-- WBL Modal -->
+    <v-dialog v-model="wblDialog" max-width="700">
+      <v-card v-if="selectedStudentForWbl" class="pa-0 overflow-hidden">
+        <div class="pa-4 bg-primary d-flex align-center justify-space-between">
+          <div class="d-flex align-center">
+            <v-avatar size="40" color="white" class="mr-3">
+              <span class="text-primary font-weight-bold text-h6">{{
+                selectedStudentForWbl.initials
+              }}</span>
+            </v-avatar>
+            <div>
+              <div class="text-h6 font-weight-bold text-white">
+                {{ selectedStudentForWbl.name }}
+              </div>
+              <div class="text-caption text-white opacity-80">WBL Overview</div>
+            </div>
+          </div>
+          <v-btn icon variant="text" color="white" @click="wblDialog = false">
+            <PhX :size="24" weight="bold" />
+          </v-btn>
+        </div>
+
+        <v-card-text class="pa-4 bg-background" style="max-height: 60vh; overflow-y: auto">
+          <div class="d-grid gap-4">
+            <!-- Stats Row -->
+            <v-row class="mb-2">
+              <v-col cols="12">
+                <v-card variant="flat" border class="pa-3 h-100">
+                  <div class="d-flex align-center justify-space-between">
+                    <div class="d-flex align-center">
+                      <v-avatar color="primary" variant="tonal" class="mr-3 rounded-lg">
+                        <PhClock :size="24" weight="duotone" />
+                      </v-avatar>
+                      <div>
+                        <div class="text-overline text-medium-emphasis">Total Hours</div>
+                        <div class="text-h5 font-weight-bold">
+                          {{ selectedStudentWblTotal }} / 60
+                        </div>
+                      </div>
+                    </div>
+                    <v-btn
+                      color="primary"
+                      variant="tonal"
+                      size="small"
+                      @click="showAddHoursForm = !showAddHoursForm"
+                    >
+                      <PhPlus :size="18" weight="bold" class="mr-1" />
+                      {{ showAddHoursForm ? 'Cancel' : 'Add Hours' }}
+                    </v-btn>
+                  </div>
+                </v-card>
+              </v-col>
+            </v-row>
+
+            <!-- Add Hours Form -->
+            <v-expand-transition>
+              <v-card v-if="showAddHoursForm" variant="outlined" class="pa-4 mb-2">
+                <div class="text-subtitle-1 font-weight-bold mb-3">Log New Hours</div>
+                <v-form @submit.prevent="submitWblHours">
+                  <v-select
+                    v-model="wblFormData.categoryId"
+                    :items="wblCategories"
+                    item-title="name"
+                    item-value="id"
+                    label="Category"
+                    variant="outlined"
+                    density="comfortable"
+                    :rules="[(v) => !!v || 'Category is required']"
+                    class="mb-2"
+                  ></v-select>
+                  <v-row>
+                    <v-col cols="6">
+                      <v-text-field
+                        v-model.number="wblFormData.hours"
+                        label="Hours"
+                        type="number"
+                        min="0.5"
+                        step="0.5"
+                        variant="outlined"
+                        density="comfortable"
+                        :rules="[(v) => v > 0 || 'Hours required']"
+                      ></v-text-field>
+                    </v-col>
+                    <v-col cols="6">
+                      <v-text-field
+                        v-model="wblFormData.date"
+                        label="Date"
+                        type="date"
+                        variant="outlined"
+                        density="comfortable"
+                        :rules="[(v) => !!v || 'Date required']"
+                      ></v-text-field>
+                    </v-col>
+                  </v-row>
+                  <v-textarea
+                    v-model="wblFormData.comments"
+                    label="Description"
+                    variant="outlined"
+                    rows="2"
+                    density="comfortable"
+                    class="mb-2"
+                  ></v-textarea>
+                  <div class="d-flex justify-end">
+                    <v-btn color="primary" type="submit" :loading="savingWblHours">
+                      Save Hours
+                    </v-btn>
+                  </div>
+                </v-form>
+              </v-card>
+            </v-expand-transition>
+
+            <!-- Log List -->
+            <div>
+              <div class="text-subtitle-1 font-weight-bold mb-3">Activity Log</div>
+              <v-list class="bg-transparent pa-0" lines="two">
+                <template v-if="loadingWbl">
+                  <v-skeleton-loader type="list-item-three-line" count="3"></v-skeleton-loader>
+                </template>
+                <template v-else-if="wblLogs.length">
+                  <v-card
+                    v-for="(log, i) in wblLogs"
+                    :key="log.id || i"
+                    class="mb-3"
+                    elevation="0"
+                    border
+                  >
+                    <!-- Edit Mode -->
+                    <template v-if="editingLogId === log.id">
+                      <div class="pa-3">
+                        <v-select
+                          v-model="editFormData.categoryId"
+                          :items="wblCategories"
+                          item-title="name"
+                          item-value="id"
+                          label="Category"
+                          variant="outlined"
+                          density="compact"
+                          class="mb-2"
+                        ></v-select>
+                        <v-row dense>
+                          <v-col cols="6">
+                            <v-text-field
+                              v-model.number="editFormData.hours"
+                              label="Hours"
+                              type="number"
+                              min="0.5"
+                              step="0.5"
+                              variant="outlined"
+                              density="compact"
+                            ></v-text-field>
+                          </v-col>
+                          <v-col cols="6">
+                            <v-text-field
+                              v-model="editFormData.date"
+                              label="Date"
+                              type="date"
+                              variant="outlined"
+                              density="compact"
+                            ></v-text-field>
+                          </v-col>
+                        </v-row>
+                        <v-textarea
+                          v-model="editFormData.comments"
+                          label="Description"
+                          variant="outlined"
+                          rows="2"
+                          density="compact"
+                          class="mb-2"
+                        ></v-textarea>
+                        <div class="d-flex justify-end gap-2">
+                          <v-btn size="small" variant="text" @click="cancelEdit">Cancel</v-btn>
+                          <v-btn
+                            size="small"
+                            color="primary"
+                            :loading="updatingWbl"
+                            @click="saveEditedLog"
+                          >
+                            Save
+                          </v-btn>
+                        </div>
+                      </div>
+                    </template>
+                    <!-- View Mode -->
+                    <template v-else>
+                      <div class="pa-3">
+                        <div class="d-flex justify-space-between mb-1">
+                          <div class="text-subtitle-2 font-weight-bold text-primary">
+                            {{ log.category }}
+                          </div>
+                          <div class="d-flex align-center gap-1">
+                            <div class="text-caption text-medium-emphasis mr-2">{{ log.date }}</div>
+                            <v-btn
+                              icon
+                              variant="text"
+                              size="x-small"
+                              color="primary"
+                              @click="startEditLog(log)"
+                            >
+                              <PhPencilSimple :size="16" weight="bold" />
+                            </v-btn>
+                            <v-btn
+                              icon
+                              variant="text"
+                              size="x-small"
+                              color="error"
+                              @click="confirmDeleteLog(log)"
+                            >
+                              <PhTrash :size="16" weight="bold" />
+                            </v-btn>
+                          </div>
+                        </div>
+                        <div class="text-body-2 mb-2">{{ log.description }}</div>
+                        <div class="d-flex align-center">
+                          <v-chip size="x-small" variant="tonal" color="primary"
+                            >{{ log.hours }} Hours</v-chip
+                          >
+                          <span class="mx-2 text-caption text-disabled">•</span>
+                          <span class="text-caption text-medium-emphasis">{{
+                            log.supervisor
+                          }}</span>
+                        </div>
+                      </div>
+                    </template>
+                  </v-card>
+                </template>
+                <div v-else class="text-center py-6 text-medium-emphasis">
+                  No WBL hours logged yet.
+                </div>
+              </v-list>
+            </div>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="deleteDialog" max-width="400">
+      <v-card>
+        <v-card-title class="text-h6">Confirm Delete</v-card-title>
+        <v-card-text>
+          Are you sure you want to delete this WBL entry? This action cannot be undone.
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="deleteDialog = false">Cancel</v-btn>
+          <v-btn color="error" :loading="deletingWbl" @click="deleteLog">Delete</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="assignmentSnackbar.open" :color="assignmentSnackbar.color" timeout="3000">
       {{ assignmentSnackbar.message }}
     </v-snackbar>
@@ -449,6 +702,15 @@
 import { computed, onMounted, ref } from 'vue'
 import api from '@/api'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  PhListBullets,
+  PhCheckCircle,
+  PhClock,
+  PhPencilSimple,
+  PhTrash,
+  PhX,
+  PhPlus,
+} from '@phosphor-icons/vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -515,36 +777,6 @@ const removeCategory = (index) => {
     editingIndex.value = null
   } else if (editingIndex.value !== null && editingIndex.value > index) {
     editingIndex.value -= 1
-  }
-}
-
-const saveCategories = async () => {
-  try {
-    if (totalWeight.value === 100) {
-      const payload = {
-        course_id: route.params.id,
-        categories: categories.value,
-      }
-      let response = null
-      if (needsSetup.value == true) {
-        response = await api.post('/gradebook', payload)
-        needsSetup.value = false
-        const cat = response.data.data
-
-        categories.value = []
-        cat.forEach((item) => {
-          categories.value.push({
-            id: item.id,
-            name: item.name,
-            weight: Math.round(item.weight), // Cast decimal to integer
-          })
-        })
-      } else response = await api.patch('/gradebook', payload)
-    }
-    closeDialog()
-  } catch (err) {
-    //put snackbar
-    console.error(err)
   }
 }
 
@@ -617,6 +849,250 @@ const fetchForms = async () => {
   }
 }
 
+const wblDialog = ref(false)
+const selectedStudentForWbl = ref(null)
+const wblLogs = ref([])
+const loadingWbl = ref(false)
+const selectedStudentWblTotal = computed(() => {
+  return wblLogs.value.reduce((acc, curr) => acc + curr.hours, 0)
+})
+
+const showAddHoursForm = ref(false)
+const savingWblHours = ref(false)
+const wblCategories = ref([])
+const wblFormData = ref({
+  categoryId: null,
+  hours: 0,
+  date: new Date().toISOString().split('T')[0],
+  comments: '',
+})
+
+// Edit/Delete state
+const editingLogId = ref(null)
+const editFormData = ref({
+  categoryId: null,
+  hours: 0,
+  date: '',
+  comments: '',
+})
+const updatingWbl = ref(false)
+const deleteDialog = ref(false)
+const deletingWbl = ref(false)
+const logToDelete = ref(null)
+
+const fetchWblCategories = async () => {
+  try {
+    const { data } = await api.get('/wbl-categories')
+    wblCategories.value = data
+  } catch (e) {
+    console.error('Failed to fetch WBL categories', e)
+  }
+}
+
+const submitWblHours = async () => {
+  if (!wblFormData.value.categoryId || !wblFormData.value.hours || !wblFormData.value.date) return
+
+  savingWblHours.value = true
+  try {
+    await api.post('/wbl-students', {
+      student_id: selectedStudentForWbl.value.id,
+      catagory_id: wblFormData.value.categoryId,
+      hours: wblFormData.value.hours,
+      date: wblFormData.value.date,
+      comments: wblFormData.value.comments,
+    })
+
+    // Reset form and hide it
+    showAddHoursForm.value = false
+    wblFormData.value = {
+      categoryId: null,
+      hours: 0,
+      date: new Date().toISOString().split('T')[0],
+      comments: '',
+    }
+
+    // Refresh the logs
+    await refreshWblLogs()
+  } catch (e) {
+    console.error('Error adding WBL hours', e)
+  } finally {
+    savingWblHours.value = false
+  }
+}
+
+const refreshWblLogs = async () => {
+  if (!selectedStudentForWbl.value) return
+
+  loadingWbl.value = true
+  try {
+    const { data } = await api
+      .get(`/wbl-students/${selectedStudentForWbl.value.id}`)
+      .catch(() => ({ data: [] }))
+
+    if (data && data.length > 0) {
+      const allLogs = []
+      data.forEach((cat) => {
+        if (cat.wbl_hours && Array.isArray(cat.wbl_hours)) {
+          cat.wbl_hours.forEach((log) => {
+            allLogs.push({
+              id: log.id,
+              categoryId: cat.id,
+              category: cat.name,
+              hours: log.hours,
+              rawDate: log.date,
+              date: new Date(log.date).toLocaleDateString(),
+              description: log.comments || 'No description provided',
+              supervisor: log.supervisor || 'N/A',
+            })
+          })
+        }
+      })
+      wblLogs.value = allLogs
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loadingWbl.value = false
+  }
+}
+
+// Edit functions
+const startEditLog = (log) => {
+  editingLogId.value = log.id
+  editFormData.value = {
+    categoryId: log.categoryId,
+    hours: log.hours,
+    date: log.rawDate ? log.rawDate.split('T')[0] : '',
+    comments: log.description === 'No description provided' ? '' : log.description,
+  }
+}
+
+const cancelEdit = () => {
+  editingLogId.value = null
+  editFormData.value = { categoryId: null, hours: 0, date: '', comments: '' }
+}
+
+const saveEditedLog = async () => {
+  if (!editingLogId.value) return
+
+  updatingWbl.value = true
+  try {
+    await api.put(`/wbl-students/${editingLogId.value}`, {
+      catagory_id: editFormData.value.categoryId,
+      hours: editFormData.value.hours,
+      date: editFormData.value.date,
+      comments: editFormData.value.comments,
+    })
+    cancelEdit()
+    await refreshWblLogs()
+  } catch (e) {
+    console.error('Error updating WBL entry', e)
+  } finally {
+    updatingWbl.value = false
+  }
+}
+
+// Delete functions
+const confirmDeleteLog = (log) => {
+  logToDelete.value = log
+  deleteDialog.value = true
+}
+
+const deleteLog = async () => {
+  if (!logToDelete.value) return
+
+  deletingWbl.value = true
+  try {
+    await api.delete(`/wbl-students/${logToDelete.value.id}`)
+    deleteDialog.value = false
+    logToDelete.value = null
+    await refreshWblLogs()
+  } catch (e) {
+    console.error('Error deleting WBL entry', e)
+  } finally {
+    deletingWbl.value = false
+  }
+}
+
+const openWblModal = async (student) => {
+  selectedStudentForWbl.value = student
+  wblDialog.value = true
+  loadingWbl.value = true
+  wblLogs.value = []
+  showAddHoursForm.value = false
+  editingLogId.value = null
+
+  // Fetch categories for the dropdown
+  if (!wblCategories.value.length) {
+    fetchWblCategories()
+  }
+
+  try {
+    // Attempt to fetch real data
+    const { data } = await api.get(`/wbl-students/${student.id}`).catch(() => ({ data: [] }))
+
+    if (data && data.length > 0) {
+      const allLogs = []
+      data.forEach((cat) => {
+        if (cat.wbl_hours && Array.isArray(cat.wbl_hours)) {
+          cat.wbl_hours.forEach((log) => {
+            allLogs.push({
+              id: log.id,
+              categoryId: cat.id,
+              category: cat.name,
+              hours: log.hours,
+              rawDate: log.date,
+              date: new Date(log.date).toLocaleDateString(),
+              description: log.comments || 'No description provided',
+              supervisor: log.supervisor || 'N/A',
+            })
+          })
+        }
+      })
+      wblLogs.value = allLogs
+    } else {
+      // Fallback mock data if API is empty/fails
+      await new Promise((r) => setTimeout(r, 800))
+      wblLogs.value = [
+        {
+          id: 'mock-1',
+          categoryId: 1,
+          category: 'Internship',
+          hours: 4,
+          rawDate: '2025-10-12',
+          date: 'Oct 12, 2025',
+          description: 'Assisted with database migration planning.',
+          supervisor: 'Mr. Johnson',
+        },
+        {
+          id: 'mock-2',
+          categoryId: 2,
+          category: 'Job Shadowing',
+          hours: 2,
+          rawDate: '2025-10-10',
+          date: 'Oct 10, 2025',
+          description: 'Shadowed senior developer during code review session.',
+          supervisor: 'Sarah Lee',
+        },
+        {
+          id: 'mock-3',
+          categoryId: 3,
+          category: 'Community Service',
+          hours: 3,
+          rawDate: '2025-10-05',
+          date: 'Oct 05, 2025',
+          description: 'Helped set up local tech meet-up event.',
+          supervisor: 'Community Org',
+        },
+      ]
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loadingWbl.value = false
+  }
+}
+
 const goToStudentProfile = (event, { item }) => {
   router.push(`/student/${item.id}`)
 }
@@ -649,6 +1125,7 @@ onMounted(async () => {
     await fetchForms()
     const course_id = route.params.id
     const response = await api.get(`/course-instances/${course_id}?includeEnrollments=true`)
+    console.log(response)
 
     const data = response.data
 
@@ -663,6 +1140,10 @@ onMounted(async () => {
     const enrollments = response.data.enrollments
 
     enrollments.forEach((element) => {
+      // Calculate total WBL hours from real data
+      const wblHoursArray = element.student.wbl_hours || []
+      const totalWblHours = wblHoursArray.reduce((sum, log) => sum + (log.hours || 0), 0)
+
       students.value.push({
         id: element.student.id,
         name: `${element.student.first_name} ${element.student.last_name}`,
@@ -670,6 +1151,7 @@ onMounted(async () => {
         grade: element.student.grade,
         status: 'active',
         gradePulse: { score: 94 },
+        wblHours: totalWblHours,
       })
     })
 
@@ -741,8 +1223,8 @@ const normalizeGradePulse = (gradePulse) => ({
 const studentHeaders = [
   { title: 'Student', value: 'name' },
   { title: 'Grade Level', value: 'grade' },
-  { title: 'Grade', value: 'gradePulse' },
-  { title: 'Status', value: 'status' },
+  { title: 'WBL Hours', value: 'wblHours', align: 'start' },
+  { title: '', value: 'wblActions', align: 'end', sortable: false },
   { title: '', value: 'actions', sortable: false },
 ]
 

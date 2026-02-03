@@ -145,7 +145,7 @@ const schoolOptions = ref([{ value: 'all', label: 'All Schools' }])
 
 async function getSchools() {
   try {
-    const results = await api.get('/cte-schools')
+    const results = await api.get('/schools/district/1')
     results.data.forEach((e: any) => {
       schoolOptions.value.push({ value: e.id, label: e.name })
     })
@@ -154,82 +154,161 @@ async function getSchools() {
   }
 }
 
-async function getAttendanceMetrics() {
-  // Fake data simulation
-  const months = [
-    '2024-09-01',
-    '2024-10-01',
-    '2024-11-01',
-    '2024-12-01',
-    '2025-01-01',
-    '2025-02-01',
-    '2025-03-01',
-    '2025-04-01',
-    '2025-05-01',
-    '2025-06-01',
-  ]
-
-  const fakeData = months.map((date) => {
-    // Random percentage between 82 and 98
-    const percentage = Math.floor(Math.random() * (98 - 82 + 1) + 82)
-    return {
-      date,
-      percentage,
-    }
-  })
-
-  // 1. Process for Chart
-  chartData.value = {
-    labels: fakeData.map((d) =>
-      new Date(d.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-    ),
-    datasets: [
-      {
-        label: 'Attendance Rate',
-        data: fakeData.map((d) => d.percentage),
-        borderColor: '#10b981', // green
-        backgroundColor: '#10b981',
-        borderWidth: 2,
-        tension: 0.3,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-      },
-    ],
-  }
-
-  // 2. Process for Grid
-  rowData.value = fakeData.map((d) => ({
-    month: new Date(d.date).toLocaleDateString('en-US', {
-      month: 'short',
-      year: 'numeric',
-    }),
-    attendance_rate: d.percentage,
-  })) as any
-
-  // Update columns to match
-  colDefs.value = [
-    { field: 'month', headerName: 'Month', flex: 1 },
-    {
-      field: 'attendance_rate',
-      headerName: 'Attendance Rate',
-      flex: 1,
-      valueFormatter: (p: any) => p.value + '%',
-    },
-  ]
-}
-
 function downloadChart() {
   if (chartRef.value && chartRef.value.chart) {
     const url = chartRef.value.chart.toBase64Image()
     const link = document.createElement('a')
-    link.download = 'attendance-chart.png'
+    link.download = 'chart.png'
     link.href = url
     link.click()
   }
 }
 
 async function getFilteredData() {
-  await getAttendanceMetrics()
+  if (selectedMetric.value === 'attendance') {
+    await fetchAttendanceData()
+  } else if (selectedMetric.value === 'behavior') {
+    await fetchBehaviorData()
+  }
+}
+
+async function fetchAttendanceData() {
+  try {
+    const params: any = {
+      groupBy: 'month',
+      startDate: startDate.value,
+      endDate: endDate.value,
+    }
+
+    if (selectedSchool.value !== 'all') params.schoolId = selectedSchool.value
+    if (selectedGrade.value !== 'all') params.grade = selectedGrade.value
+
+    const results = await api.get('/attendance/analytics', { params })
+    const data = results.data
+
+    // Group by month and calculate stats
+    // We get rows like: { time_period: '...', count: 10, attendance_status: { code: 'P' } }
+    const groupedByMonth: Record<string, { total: number; present: number }> = {}
+
+    data.forEach((row: any) => {
+      const month = row.time_period
+      if (!groupedByMonth[month]) groupedByMonth[month] = { total: 0, present: 0 }
+
+      const count = parseInt(row.count)
+      groupedByMonth[month].total += count
+
+      // 'P' = Present, 'T' = Tardy. Both count towards positive attendance here.
+      if (['P', 'T'].includes(row.attendance_status?.code)) {
+        groupedByMonth[month].present += count
+      }
+    })
+
+    const processedData = Object.keys(groupedByMonth)
+      .sort()
+      .map((month) => {
+        const stats = groupedByMonth[month]
+        const rate = stats.total > 0 ? Math.round((stats.present / stats.total) * 100) : 0
+        return {
+          month,
+          rate,
+        }
+      })
+
+    // Update chart with processed data
+    chartData.value = {
+      labels: processedData.map((d) =>
+        new Date(d.month).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      ),
+      datasets: [
+        {
+          label: 'Attendance Rate',
+          data: processedData.map((d) => d.rate),
+          borderColor: '#10b981',
+          backgroundColor: '#10b981',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    }
+
+    // Update Grid
+    rowData.value = processedData.map((d) => ({
+      month: new Date(d.month).toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+      }),
+      attendance_rate: d.rate,
+    })) as any
+
+    colDefs.value = [
+      { field: 'month', headerName: 'Month', flex: 1 },
+      {
+        field: 'attendance_rate',
+        headerName: 'Attendance Rate',
+        flex: 1,
+        valueFormatter: (p: any) => p.value + '%',
+      },
+    ]
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+async function fetchBehaviorData() {
+  try {
+    const params: any = {
+      groupBy: 'month',
+      startDate: startDate.value,
+      endDate: endDate.value,
+    }
+
+    if (selectedSchool.value !== 'all') params.schoolId = selectedSchool.value
+    if (selectedGrade.value !== 'all') params.grade = selectedGrade.value
+
+    const results = await api.get('/behavior/analytics', { params })
+    const data = results.data
+
+    // Behavior data comes as { time_period, count }.
+    // It might also be broken down by type if we don't group by it?
+    // The query groups by Month. 'groups.forEach'.
+    // If only 'month' is passed, it counts all behaviors per month.
+    console.log(data)
+
+    chartData.value = {
+      labels: data.map((d: any) =>
+        new Date(d.time_period).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+      ),
+      datasets: [
+        {
+          label: 'Incidents',
+          data: data.map((d: any) => d.count),
+          borderColor: '#f59e0b', // amber
+          backgroundColor: '#f59e0b',
+          borderWidth: 2,
+          tension: 0.3,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        },
+      ],
+    }
+
+    rowData.value = data.map((d: any) => ({
+      month: new Date(d.time_period).toLocaleDateString('en-US', {
+        month: 'short',
+        year: 'numeric',
+      }),
+      count: d.count,
+    })) as any
+
+    colDefs.value = [
+      { field: 'month', headerName: 'Month', flex: 1 },
+      { field: 'count', headerName: 'Total Incidents', flex: 1 },
+    ]
+  } catch (err) {
+    console.error(err)
+  }
 }
 
 type FilterPayload = {
@@ -241,7 +320,10 @@ type FilterPayload = {
 
 const emit = defineEmits<{ (e: 'change', value: FilterPayload): void }>()
 
-const metrics = [{ value: 'attendance', label: 'Attendance' }]
+const metrics = [
+  { value: 'attendance', label: 'Attendance' },
+  { value: 'behavior', label: 'Behavior' },
+]
 
 const gradeOptions = [
   { value: 'all', label: 'All Grades / Classes' },

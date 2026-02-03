@@ -26,6 +26,7 @@
             </div>
             <div class="d-flex align-center gap-2">
               <v-btn
+                v-if="section.section_type !== 'linked'"
                 size="small"
                 variant="tonal"
                 color="primary"
@@ -35,6 +36,7 @@
                 Add Column
               </v-btn>
               <v-btn
+                v-if="section.section_type !== 'linked'"
                 size="small"
                 variant="tonal"
                 color="primary"
@@ -208,8 +210,61 @@
             variant="outlined"
             autofocus
             hide-details="auto"
+            class="mb-6"
             @keyup.enter="confirmAddSection"
           />
+
+          <v-label class="mb-2 font-weight-medium">Data Mode</v-label>
+
+          <div class="d-flex gap-4 mb-6">
+            <v-card
+              @click="newSectionDataMode = 'manual'"
+              :variant="newSectionDataMode === 'manual' ? 'tonal' : 'outlined'"
+              :color="newSectionDataMode === 'manual' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: newSectionDataMode === 'manual' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhKeyboard
+                  :size="32"
+                  :weight="newSectionDataMode === 'manual' ? 'fill' : 'regular'"
+                />
+                <span class="font-weight-medium">Manual Input</span>
+              </div>
+            </v-card>
+
+            <v-card
+              @click="newSectionDataMode = 'linked'"
+              :variant="newSectionDataMode === 'linked' ? 'tonal' : 'outlined'"
+              :color="newSectionDataMode === 'linked' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: newSectionDataMode === 'linked' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhLink :size="32" :weight="newSectionDataMode === 'linked' ? 'fill' : 'regular'" />
+                <span class="font-weight-medium">Linked Data</span>
+              </div>
+            </v-card>
+          </div>
+
+          <v-slide-y-transition>
+            <div v-if="newSectionDataMode === 'linked'">
+              <v-select
+                v-model="newSectionLinkedSource"
+                :items="[{ title: 'WBL', value: 'wbl_hours' }]"
+                item-title="title"
+                item-value="value"
+                label="Source"
+                placeholder="Select data source"
+                variant="outlined"
+                hide-details="auto"
+              >
+                <template #prepend-inner>
+                  <PhDatabase :size="20" class="text-medium-emphasis mr-1" />
+                </template>
+              </v-select>
+            </div>
+          </v-slide-y-transition>
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
           <v-spacer />
@@ -314,6 +369,77 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Edit Section Dialog -->
+    <v-dialog v-model="showEditSectionDialog" max-width="500" persistent>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <PhGear :size="24" class="mr-2 text-secondary" weight="fill" />
+          Section Settings
+        </v-card-title>
+        <v-card-text class="pt-4">
+          <v-label class="mb-2 font-weight-medium">Data Mode</v-label>
+
+          <div class="d-flex gap-4 mb-6">
+            <v-card
+              @click="editSectionData.dataMode = 'manual'"
+              :variant="editSectionData.dataMode === 'manual' ? 'tonal' : 'outlined'"
+              :color="editSectionData.dataMode === 'manual' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: editSectionData.dataMode === 'manual' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhKeyboard
+                  :size="32"
+                  :weight="editSectionData.dataMode === 'manual' ? 'fill' : 'regular'"
+                />
+                <span class="font-weight-medium">Manual Input</span>
+              </div>
+            </v-card>
+
+            <v-card
+              @click="editSectionData.dataMode = 'linked'"
+              :variant="editSectionData.dataMode === 'linked' ? 'tonal' : 'outlined'"
+              :color="editSectionData.dataMode === 'linked' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: editSectionData.dataMode === 'linked' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhLink
+                  :size="32"
+                  :weight="editSectionData.dataMode === 'linked' ? 'fill' : 'regular'"
+                />
+                <span class="font-weight-medium">Linked Data</span>
+              </div>
+            </v-card>
+          </div>
+
+          <v-slide-y-transition>
+            <div v-if="editSectionData.dataMode === 'linked'">
+              <v-select
+                v-model="editSectionData.linkedSource"
+                :items="[{ title: 'WBL', value: 'wbl_hours' }]"
+                item-title="title"
+                item-value="value"
+                label="Source"
+                placeholder="Select data source"
+                variant="outlined"
+                hide-details="auto"
+              >
+                <template #prepend-inner>
+                  <PhDatabase :size="20" class="text-medium-emphasis mr-1" />
+                </template>
+              </v-select>
+            </div>
+          </v-slide-y-transition>
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-2">
+          <v-spacer />
+          <v-btn variant="text" @click="showEditSectionDialog = false">Cancel</v-btn>
+          <v-btn color="primary" variant="flat" @click="saveSectionSettings"> Save Changes </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 
   <v-snackbar v-model="snackbar" :color="snackbarColor">
@@ -329,7 +455,15 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { AgGridVue } from 'ag-grid-vue3'
 import api from '../../api'
-import { PhColumnsPlusLeft, PhRowsPlusTop, PhFilePlus } from '@phosphor-icons/vue'
+import {
+  PhColumnsPlusLeft,
+  PhRowsPlusTop,
+  PhFilePlus,
+  PhGear,
+  PhKeyboard,
+  PhLink,
+  PhDatabase,
+} from '@phosphor-icons/vue'
 import '../../styles/CreateTemplateForm.css'
 
 const route = useRoute()
@@ -350,6 +484,8 @@ const selectedTemplateId = ref(null)
 // Add Section Modal state
 const showAddSectionDialog = ref(false)
 const newSectionName = ref('')
+const newSectionDataMode = ref('manual')
+const newSectionLinkedSource = ref(null)
 
 // Add Column Modal state
 const showAddColumnDialog = ref(false)
@@ -361,6 +497,14 @@ const activeSectionId = ref(null)
 
 const showAddRowDialog = ref(false)
 const newRowLabel = ref('')
+
+// Edit Section Modal state
+const showEditSectionDialog = ref(false)
+const sectionToEdit = ref(null)
+const editSectionData = reactive({
+  dataMode: 'manual',
+  linkedSource: null,
+})
 
 const snackbar = ref(false)
 const snackbarMessage = ref('')
@@ -426,6 +570,7 @@ async function getForm() {
   if (!formId.value) return
   const result = await api.get(`/evaluations/templates/${formId.value}`)
   const _form = result.data.form
+  console.log(_form)
 
   formName.value = _form.name
   form.sections = _form.sections
@@ -469,6 +614,8 @@ function getRowData(section) {
 function cancelAddSection() {
   showAddSectionDialog.value = false
   newSectionName.value = ''
+  newSectionDataMode.value = 'manual'
+  newSectionLinkedSource.value = null
 }
 
 async function confirmAddSection() {
@@ -476,13 +623,38 @@ async function confirmAddSection() {
   if (!name || !formId.value) return
 
   try {
-    await api.post(`/evaluations/templates/${formId.value}/sections`, { label: name })
+    const res = await api.post(`/evaluations/templates/${formId.value}/sections`, {
+      label: name,
+      section_type: newSectionDataMode.value,
+      source_table: newSectionLinkedSource.value,
+    })
+
+    if (newSectionDataMode.value === 'linked' && newSectionLinkedSource.value === 'wbl_hours') {
+      const newSection = res.data
+      const columns = [
+        { label: 'Date', key: 'date', value_type: 'text' },
+        { label: 'Category', key: 'category', value_type: 'text' },
+        { label: 'Hours', key: 'hours', value_type: 'number' },
+        { label: 'Comments', key: 'comments', value_type: 'text' },
+      ]
+
+      for (const col of columns) {
+        await api.post(`/evaluations/templates/${formId.value}/sections/${newSection.id}/columns`, {
+          label: col.label,
+          key: col.key,
+          value_type: col.value_type,
+          config: { editable: false },
+        })
+      }
+    }
 
     // Refresh the form to get the new section
     await getForm()
 
     // Reset and close dialog
     newSectionName.value = ''
+    newSectionDataMode.value = 'manual'
+    newSectionLinkedSource.value = null
     showAddSectionDialog.value = false
 
     snackbarMessage.value = 'Section created successfully'
@@ -493,6 +665,26 @@ async function confirmAddSection() {
     snackbarColor.value = 'error'
     snackbar.value = true
   }
+}
+
+function openEditSectionDialog(section) {
+  sectionToEdit.value = section
+  editSectionData.dataMode = section.dataMode || 'manual'
+  editSectionData.linkedSource = section.linkedSource || null
+  showEditSectionDialog.value = true
+}
+
+function saveSectionSettings() {
+  if (!sectionToEdit.value) return
+
+  // Update local state
+  sectionToEdit.value.dataMode = editSectionData.dataMode
+  sectionToEdit.value.linkedSource = editSectionData.linkedSource
+
+  showEditSectionDialog.value = false
+  snackbarMessage.value = 'Section settings updated'
+  snackbarColor.value = 'success'
+  snackbar.value = true
 }
 
 // COLUMN
