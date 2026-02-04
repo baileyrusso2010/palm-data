@@ -25,7 +25,7 @@ const fetchData = async () => {
   isLoading.value = true
   error.value = null
   try {
-    const timelineRes = await api.get(`/students/${studentId}/mtss-timeline`)
+    const timelineRes = await api.get(`/mtss/students/${studentId}/timeline`)
     rawTimelineData.value = timelineRes.data
 
     const studentData = await api.get(`/students/${studentId}`)
@@ -259,15 +259,18 @@ const tracks = computed(() => {
       id: 'tier',
       title: 'Tier History',
       height: 60,
-      events: tiers.map((item: any) => ({
-        id: item.id,
-        type: 'tier',
-        title: item.tierName || `Tier ${item.tier_id}`, // Adjust based on actual DTO
-        startDate: item.start_date,
-        endDate: item.end_date,
-        color: getTierColor(item.tier_id),
-        data: item,
-      })),
+      events: tiers.map((item: any) => {
+        const tierDef = definitions.value.tiers.find((d: any) => d.id === item.tier_id)
+        return {
+          id: item.id,
+          type: 'tier',
+          title: tierDef ? tierDef.name : `Tier ${item.tier_id}`,
+          startDate: item.start_date,
+          endDate: item.end_date,
+          color: getTierColor(item.tier_id),
+          data: item,
+        }
+      }),
     })
   } else {
     // Always show track even if empty?
@@ -283,8 +286,8 @@ const tracks = computed(() => {
       events: interventions.map((item: any) => ({
         id: item.id,
         type: 'intervention',
-        title: item.intervention_name || 'Intervention',
-        subtitle: item.provider || '',
+        title: item.Intervention?.name || item.intervention_name || 'Intervention',
+        subtitle: item.Intervention?.provider || item.provider || '',
         startDate: item.start_date,
         endDate: item.end_date,
         color: '#2196F3',

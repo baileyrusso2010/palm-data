@@ -196,7 +196,7 @@ async function load21Century() {
 
     // Get the actual row data
     const { data: rows } = await api.get(`/rubric/section/2/rows`)
-    let row = {}
+    const row = {}
     const firstRow = Array.isArray(rows) && rows.length > 0 ? rows[0] : null
     centuryRowMeta.value.rowId = firstRow?.id ?? null
     const storedValues = firstRow?.row_data || firstRow?.rowData || {}
@@ -299,7 +299,7 @@ async function buildColumns() {
   // Example columns: Junior / Senior
   const rubricColumns = []
 
-  let dt = await api.get('/rubric/section/1/columns')
+  const dt = await api.get('/rubric/section/1/columns')
 
   dt.data.forEach((item) => {
     rubricColumns.push({

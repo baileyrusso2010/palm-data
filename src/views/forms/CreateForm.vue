@@ -1,243 +1,839 @@
 <template>
-  <div class="page-container">
-    <v-container fluid class="pa-4">
-      <!-- Header Section -->
-      <header class="mb-6">
-        <div class="d-flex align-center justify-space-between mb-2">
-          <div>
-            <p class="eyebrow mb-1">Forms & Assessments</p>
-            <h1 class="text-h4 font-weight-bold text-slate-900">Create New Form</h1>
-            <p class="meta mt-1">Configure a new assessment form using an existing rubric</p>
-          </div>
-          <div>
-            <v-btn
-              color="white"
-              variant="outlined"
-              prepend-icon="mdi-arrow-left"
-              @click="router.back()"
-            >
-              Cancel
-            </v-btn>
-          </div>
+  <v-container fluid class="create-form-page pa-6">
+    <!-- Page Header -->
+    <div class="page-header mb-6">
+      <div class="d-flex align-center justify-space-between">
+        <div>
+          <h1 class="page-title">{{ formName }}</h1>
+          <p class="page-subtitle">Manage sections and columns for this evaluation form</p>
         </div>
-      </header>
+      </div>
+    </div>
 
-      <!-- Main Content -->
-      <v-row justify="center">
-        <v-col cols="12" md="8" lg="6">
-          <v-card class="app-card">
-            <div class="card-header mb-6">
-              <h2 class="text-h6 font-weight-bold mb-1">Form Details</h2>
-              <p class="text-caption text-medium-emphasis">
-                Name your form and select a rubric to base it on.
-              </p>
-            </div>
-
-            <v-text-field
-              v-model="formName"
-              label="Form Name"
-              placeholder="e.g., Q1 Presentation Evaluation"
-              variant="outlined"
-              class="mb-6"
-              bg-color="grey-lighten-5"
-            ></v-text-field>
-
-            <v-divider class="mb-6"></v-divider>
-
-            <div class="mb-4">
-              <h3 class="text-subtitle-1 font-weight-bold mb-3">Select Rubric</h3>
-
-              <div v-if="loading" class="d-flex justify-center py-4">
-                <v-progress-circular indeterminate color="primary"></v-progress-circular>
-              </div>
-
-              <div v-else-if="rubrics.length === 0" class="text-center py-4 text-grey">
-                No rubrics found. Please create a rubric first.
-              </div>
-
-              <v-list v-else lines="two" bg-color="transparent" class="rubric-list">
-                <v-list-item
-                  v-for="rubric in rubrics"
-                  :key="rubric.id"
-                  :value="rubric"
-                  @click="selectedRubric = rubric"
-                  rounded="lg"
-                  class="mb-2 rubric-item"
-                  :class="{ 'rubric-selected': selectedRubric?.id === rubric.id }"
-                  border
+    <!-- Sections -->
+    <div v-for="section in form.sections" :key="section.key" class="mb-6">
+      <v-card elevation="2" class="section-card">
+        <div class="section-header pa-4">
+          <div class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center">
+              <div>
+                <h2 class="section-title">{{ section.label }}</h2>
+                <span class="section-meta"
+                  >{{ section.columns?.length || 0 }} columns ·
+                  {{ section.rows?.length || 0 }} rows</span
                 >
-                  <template v-slot:prepend>
-                    <v-icon
-                      :icon="
-                        selectedRubric?.id === rubric.id
-                          ? 'mdi-radiobox-marked'
-                          : 'mdi-radiobox-blank'
-                      "
-                      :color="selectedRubric?.id === rubric.id ? 'primary' : 'grey'"
-                      class="mr-3"
-                    ></v-icon>
-                  </template>
-
-                  <v-list-item-title class="font-weight-medium">
-                    {{ rubric.name }}
-                  </v-list-item-title>
-
-                  <v-list-item-subtitle>
-                    {{ rubric.entries?.length || 0 }} criteria defined
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
+              </div>
             </div>
-
-            <div class="d-flex justify-end mt-6">
+            <div class="d-flex align-center gap-2">
               <v-btn
+                v-if="section.section_type !== 'linked'"
+                size="small"
+                variant="tonal"
                 color="primary"
-                size="large"
-                width="100%"
-                variant="elevated"
-                @click="createForm"
-                :disabled="!isValid"
-                :loading="creating"
+                @click="openAddColumnDialog(section)"
               >
-                Create Form
+                <PhColumnsPlusLeft :size="20" class="mr-2" />
+                Add Column
+              </v-btn>
+              <v-btn
+                v-if="section.section_type !== 'linked'"
+                size="small"
+                variant="tonal"
+                color="primary"
+                @click="openAddRowDialog(section)"
+              >
+                <PhRowsPlusTop :size="20" class="mr-2" />
+                Add Row
               </v-btn>
             </div>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
+          </div>
+        </div>
 
-    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="3000">
-      {{ snackbar.text }}
-    </v-snackbar>
-  </div>
+        <v-divider />
+
+        <div class="grid-wrapper">
+          <AgGridVue
+            class="ag-theme-quartz"
+            style="height: 100%; width: 100%"
+            :columnDefs="getColumnDefs(section)"
+            :rowData="getRowData(section)"
+            :defaultColDef="defaultColDef"
+            :animateRows="true"
+          />
+        </div>
+      </v-card>
+    </div>
+
+    <!-- Add Section Card -->
+    <v-card v-if="formId" class="add-section-card" @click="showAddSectionDialog = true">
+      <div class="d-flex flex-column align-center justify-center py-8">
+        <v-avatar size="64" color="primary" variant="tonal" class="mb-4">
+          <v-icon size="32">mdi-plus</v-icon>
+        </v-avatar>
+        <span class="add-section-text">Add New Section</span>
+        <span class="add-section-hint">Click to create a new evaluation section</span>
+      </div>
+    </v-card>
+
+    <!-- Template Selection Modal -->
+    <v-dialog
+      v-model="showCreateFormDialog"
+      max-width="600"
+      persistent
+      attach=".create-form-page"
+      contained
+    >
+      <v-card class="dialog-card overflow-hidden">
+        <!-- Header Section -->
+        <div class="dialog-header pa-6 pb-2">
+          <div class="d-flex align-center gap-3 mb-2">
+            <v-avatar color="primary" variant="tonal" size="48">
+              <PhFilePlus :size="24" weight="bold" />
+            </v-avatar>
+            <div>
+              <h2 class="text-h5 font-weight-bold text-slate-900 mb-1">Evaluation Template</h2>
+              <p class="text-body-2 text-slate-500">
+                Start fresh or continue from an existing template
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Custom Tabs -->
+        <div class="px-6">
+          <v-tabs v-model="activeTab" color="primary" align-tabs="start" class="dialog-tabs">
+            <v-tab value="new" class="text-capitalize" rounded="t-lg">
+              <v-icon start class="mr-2">mdi-plus-box-outline</v-icon>
+              Create New
+            </v-tab>
+            <v-tab value="existing" class="text-capitalize" rounded="t-lg">
+              <v-icon start class="mr-2">mdi-file-document-edit-outline</v-icon>
+              Edit Existing
+            </v-tab>
+          </v-tabs>
+          <v-divider />
+        </div>
+
+        <v-card-text class="pa-6 pt-6">
+          <v-window v-model="activeTab">
+            <!-- Create New Tab -->
+            <v-window-item value="new">
+              <div class="window-content">
+                <v-label class="mb-2 font-weight-medium text-slate-700">Template Name</v-label>
+                <v-text-field
+                  v-model="newFormName"
+                  placeholder="e.g., Q1 Performance Review"
+                  variant="outlined"
+                  bg-color="grey-lighten-5"
+                  color="primary"
+                  autofocus
+                  hide-details="auto"
+                  @keyup.enter="createForm"
+                >
+                  <template #prepend-inner>
+                    <v-icon color="slate-400" size="small">mdi-rename-box</v-icon>
+                  </template>
+                </v-text-field>
+
+                <div class="d-flex justify-end mt-8">
+                  <v-btn
+                    color="primary"
+                    size="large"
+                    variant="flat"
+                    elevation="2"
+                    :disabled="!newFormName.trim()"
+                    @click="createForm"
+                    class="px-6"
+                  >
+                    Start Building
+                    <v-icon end class="ml-2">mdi-arrow-right</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+            </v-window-item>
+
+            <!-- Edit Existing Tab -->
+            <v-window-item value="existing">
+              <div class="window-content">
+                <v-label class="mb-2 font-weight-medium text-slate-700">Select Template</v-label>
+                <v-select
+                  v-model="selectedTemplateId"
+                  :items="templates"
+                  item-title="name"
+                  item-value="id"
+                  placeholder="Search templates..."
+                  variant="outlined"
+                  bg-color="grey-lighten-5"
+                  color="primary"
+                  hide-details="auto"
+                  no-data-text="No templates found"
+                  menu-icon="mdi-chevron-down"
+                >
+                  <template #prepend-inner>
+                    <v-icon color="slate-400" size="small">mdi-format-list-bulleted</v-icon>
+                  </template>
+                </v-select>
+
+                <div class="d-flex justify-end mt-8">
+                  <v-btn
+                    color="primary"
+                    size="large"
+                    variant="flat"
+                    elevation="2"
+                    :disabled="!selectedTemplateId"
+                    @click="loadSelectedTemplate"
+                    class="px-6"
+                  >
+                    Load Template
+                    <v-icon end class="ml-2">mdi-arrow-right</v-icon>
+                  </v-btn>
+                </div>
+              </div>
+            </v-window-item>
+          </v-window>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <!-- Add Section Modal -->
+    <v-dialog v-model="showAddSectionDialog" max-width="500" persistent>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <v-icon class="mr-2" color="primary">mdi-folder-plus</v-icon>
+          Add New Section
+        </v-card-title>
+        <v-card-text class="pt-4">
+          <v-text-field
+            v-model="newSectionName"
+            label="Section Name"
+            placeholder="Enter section name"
+            variant="outlined"
+            autofocus
+            hide-details="auto"
+            class="mb-6"
+            @keyup.enter="confirmAddSection"
+          />
+
+          <v-label class="mb-2 font-weight-medium">Data Mode</v-label>
+
+          <div class="d-flex gap-4 mb-6">
+            <v-card
+              @click="newSectionDataMode = 'manual'"
+              :variant="newSectionDataMode === 'manual' ? 'tonal' : 'outlined'"
+              :color="newSectionDataMode === 'manual' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: newSectionDataMode === 'manual' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhKeyboard
+                  :size="32"
+                  :weight="newSectionDataMode === 'manual' ? 'fill' : 'regular'"
+                />
+                <span class="font-weight-medium">Manual Input</span>
+              </div>
+            </v-card>
+
+            <v-card
+              @click="newSectionDataMode = 'linked'"
+              :variant="newSectionDataMode === 'linked' ? 'tonal' : 'outlined'"
+              :color="newSectionDataMode === 'linked' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: newSectionDataMode === 'linked' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhLink :size="32" :weight="newSectionDataMode === 'linked' ? 'fill' : 'regular'" />
+                <span class="font-weight-medium">Linked Data</span>
+              </div>
+            </v-card>
+          </div>
+
+          <v-slide-y-transition>
+            <div v-if="newSectionDataMode === 'linked'">
+              <v-select
+                v-model="newSectionLinkedSource"
+                :items="[{ title: 'WBL', value: 'wbl_hours' }]"
+                item-title="title"
+                item-value="value"
+                label="Source"
+                placeholder="Select data source"
+                variant="outlined"
+                hide-details="auto"
+              >
+                <template #prepend-inner>
+                  <PhDatabase :size="20" class="text-medium-emphasis mr-1" />
+                </template>
+              </v-select>
+            </div>
+          </v-slide-y-transition>
+
+          <v-divider class="my-4" />
+
+          <v-switch
+            v-model="newSectionUsesRubric"
+            label="Uses Rubric"
+            hint="Enable if this section should be graded using a rubric"
+            persistent-hint
+            color="primary"
+            hide-details="auto"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-0">
+          <v-spacer />
+          <v-btn variant="text" @click="cancelAddSection">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :disabled="!newSectionName.trim()"
+            @click="confirmAddSection"
+          >
+            Create Section
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Add Column Modal -->
+    <v-dialog v-model="showAddColumnDialog" max-width="500" persistent>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <v-icon class="mr-2" color="primary">mdi-table-column-plus-after</v-icon>
+          Add New Column
+        </v-card-title>
+        <v-card-text class="pt-4">
+          <v-text-field
+            v-model="newColumnLabel"
+            label="Column Label"
+            placeholder="Enter column label"
+            variant="outlined"
+            class="mb-4"
+            autofocus
+            hide-details="auto"
+          />
+          <v-select
+            v-model="newColumnType"
+            :items="['number', 'boolean', 'text']"
+            label="Column Type"
+            variant="outlined"
+            hide-details="auto"
+          />
+
+          <div v-if="newColumnType === 'number'" class="d-flex gap-4 mt-4">
+            <v-text-field
+              v-model.number="newColumnMin"
+              label="Min Value"
+              type="number"
+              variant="outlined"
+              hide-details="auto"
+              :disabled="activeSection?.uses_rubric"
+              :hint="activeSection?.uses_rubric ? 'Determined by rubric' : ''"
+              :persistent-hint="activeSection?.uses_rubric"
+            />
+            <v-text-field
+              v-model.number="newColumnMax"
+              label="Max Value"
+              type="number"
+              variant="outlined"
+              hide-details="auto"
+              :disabled="activeSection?.uses_rubric"
+              :hint="activeSection?.uses_rubric ? 'Determined by rubric' : ''"
+              :persistent-hint="activeSection?.uses_rubric"
+            />
+          </div>
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-2">
+          <v-spacer />
+          <v-btn variant="text" @click="cancelAddColumn">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :disabled="!newColumnLabel.trim() || !newColumnType"
+            @click="confirmAddColumn"
+          >
+            Create Column
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-dialog v-model="showAddRowDialog" max-width="500" persistent>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <v-icon class="mr-2" color="primary">mdi-table-row-plus-after</v-icon>
+          Add New Row
+        </v-card-title>
+        <v-card-text class="pt-4">
+          <v-text-field
+            v-model="newRowLabel"
+            label="Row Label"
+            placeholder="Enter Row label"
+            variant="outlined"
+            class="mb-4"
+            autofocus
+            hide-details="auto"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-2">
+          <v-spacer />
+          <v-btn variant="text" @click="cancelAddRow">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :disabled="!newRowLabel.trim()"
+            @click="confirmAddRow"
+          >
+            Create Row
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Edit Section Dialog -->
+    <v-dialog v-model="showEditSectionDialog" max-width="500" persistent>
+      <v-card class="dialog-card">
+        <v-card-title class="dialog-title">
+          <PhGear :size="24" class="mr-2 text-secondary" weight="fill" />
+          Section Settings
+        </v-card-title>
+        <v-card-text class="pt-4">
+          <v-label class="mb-2 font-weight-medium">Data Mode</v-label>
+
+          <div class="d-flex gap-4 mb-6">
+            <v-card
+              @click="editSectionData.dataMode = 'manual'"
+              :variant="editSectionData.dataMode === 'manual' ? 'tonal' : 'outlined'"
+              :color="editSectionData.dataMode === 'manual' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: editSectionData.dataMode === 'manual' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhKeyboard
+                  :size="32"
+                  :weight="editSectionData.dataMode === 'manual' ? 'fill' : 'regular'"
+                />
+                <span class="font-weight-medium">Manual Input</span>
+              </div>
+            </v-card>
+
+            <v-card
+              @click="editSectionData.dataMode = 'linked'"
+              :variant="editSectionData.dataMode === 'linked' ? 'tonal' : 'outlined'"
+              :color="editSectionData.dataMode === 'linked' ? 'primary' : 'slate-300'"
+              class="flex-1-1 pa-4 cursor-pointer selection-card"
+              :class="{ selected: editSectionData.dataMode === 'linked' }"
+            >
+              <div class="d-flex flex-column align-center gap-2">
+                <PhLink
+                  :size="32"
+                  :weight="editSectionData.dataMode === 'linked' ? 'fill' : 'regular'"
+                />
+                <span class="font-weight-medium">Linked Data</span>
+              </div>
+            </v-card>
+          </div>
+
+          <v-slide-y-transition>
+            <div v-if="editSectionData.dataMode === 'linked'">
+              <v-select
+                v-model="editSectionData.linkedSource"
+                :items="[{ title: 'WBL', value: 'wbl_hours' }]"
+                item-title="title"
+                item-value="value"
+                label="Source"
+                placeholder="Select data source"
+                variant="outlined"
+                hide-details="auto"
+              >
+                <template #prepend-inner>
+                  <PhDatabase :size="20" class="text-medium-emphasis mr-1" />
+                </template>
+              </v-select>
+            </div>
+          </v-slide-y-transition>
+
+          <v-divider class="my-4" />
+
+          <v-switch
+            v-model="editSectionData.usesRubric"
+            label="Uses Rubric"
+            hint="Enable if this section should be graded using a rubric"
+            persistent-hint
+            color="primary"
+            hide-details="auto"
+          />
+        </v-card-text>
+        <v-card-actions class="pa-4 pt-2">
+          <v-spacer />
+          <v-btn variant="text" @click="showEditSectionDialog = false">Cancel</v-btn>
+          <v-btn color="primary" variant="flat" @click="saveSectionSettings"> Save Changes </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
+
+  <v-snackbar v-model="snackbar" :color="snackbarColor">
+    {{ snackbarMessage }}
+    <template v-slot:actions>
+      <v-btn variant="text" @click="snackbar = false">Close</v-btn>
+    </template>
+  </v-snackbar>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+<script setup>
+import { ref, reactive, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { AgGridVue } from 'ag-grid-vue3'
 import api from '../../api'
+import {
+  PhColumnsPlusLeft,
+  PhRowsPlusTop,
+  PhFilePlus,
+  PhGear,
+  PhKeyboard,
+  PhLink,
+  PhDatabase,
+} from '@phosphor-icons/vue'
+import '../../styles/CreateTemplateForm.css'
 
+const route = useRoute()
 const router = useRouter()
-const formName = ref('')
-const rubrics = ref<any[]>([])
-const selectedRubric = ref<any>(null)
-const loading = ref(false)
-const creating = ref(false)
-const snackbar = ref({ show: false, text: '', color: 'success' })
 
-const isValid = computed(() => {
-  return formName.value.trim().length > 0 && selectedRubric.value !== null
+const formId = ref(null)
+const formName = ref('')
+const form = reactive({ sections: [] })
+const defaultColDef = { flex: 1, editable: true, sortable: true, filter: true }
+
+// Create Form Modal state
+const showCreateFormDialog = ref(false)
+const newFormName = ref('')
+const activeTab = ref('new')
+const templates = ref([])
+const selectedTemplateId = ref(null)
+
+// Add Section Modal state
+const showAddSectionDialog = ref(false)
+const newSectionName = ref('')
+const newSectionDataMode = ref('manual')
+const newSectionLinkedSource = ref(null)
+const newSectionUsesRubric = ref(false)
+
+// Add Column Modal state
+const showAddColumnDialog = ref(false)
+const newColumnLabel = ref('')
+const newColumnType = ref('text')
+const newColumnMin = ref(null)
+const newColumnMax = ref(null)
+const activeSectionId = ref(null)
+const activeSection = ref(null)
+
+const showAddRowDialog = ref(false)
+const newRowLabel = ref('')
+
+// Edit Section Modal state
+const showEditSectionDialog = ref(false)
+const sectionToEdit = ref(null)
+const editSectionData = reactive({
+  dataMode: 'manual',
+  linkedSource: null,
+  usesRubric: false,
 })
 
-const fetchRubrics = async () => {
-  loading.value = true
+const snackbar = ref(false)
+const snackbarMessage = ref('')
+const snackbarColor = ref('success')
+
+onMounted(async () => {
+  if (route.query.id) {
+    formId.value = route.query.id
+    await getForm()
+  } else {
+    // If no ID, fetch templates and show dialog
+    await fetchTemplates()
+    showCreateFormDialog.value = true
+  }
+})
+
+async function fetchTemplates() {
   try {
-    const res = await api.get('/rubrics')
-    rubrics.value = res.data
-  } catch (error) {
-    console.error('Error fetching rubrics:', error)
-    snackbar.value = { show: true, text: 'Failed to load rubrics', color: 'error' }
-  } finally {
-    loading.value = false
+    const res = await api.get('/evaluations/templates')
+    templates.value = res.data
+  } catch (e) {
+    console.error('Error fetching templates', e)
   }
 }
 
-const createForm = async () => {
-  if (!isValid.value) return
+async function loadSelectedTemplate() {
+  if (!selectedTemplateId.value) return
+  formId.value = selectedTemplateId.value
+  await getForm()
 
-  creating.value = true
+  // Add id to url
+  router.replace({ query: { ...route.query, id: formId.value } })
+
+  showCreateFormDialog.value = false
+}
+
+async function createForm() {
+  const name = newFormName.value.trim()
+  if (!name) return
+
   try {
-    // CURRENTLY: We are just creating the form shell.
-    // The backend might not support linking rubric_id directly in the create call yet
-    // based on my check of the form controller, but I will send it anyway in case it's added
-    // or handled via a separate step later.
-    // Ideally, we would create the form, then copy the rubric structure to it.
+    const result = await api.post('/evaluations/templates', { name })
+    formId.value = result.data.id
+    formName.value = result.data.name
 
-    // For now, I'll simulate a successful "Go from there" by creating the form
-    // and presumably navigating to its config/view page.
+    // Add id to url
+    router.replace({ query: { ...route.query, id: formId.value } })
 
-    const payload = {
-      name: formName.value,
-      rubric_id: selectedRubric.value.id, // Passing it, backend might ignore it for now
+    showCreateFormDialog.value = false
+
+    snackbarMessage.value = 'Form created successfully'
+    snackbarColor.value = 'success'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error creating form'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
+}
+
+async function getForm() {
+  if (!formId.value) return
+  const result = await api.get(`/evaluations/templates/${formId.value}`)
+  const _form = result.data.form
+  console.log(_form)
+
+  formName.value = _form.name
+  form.sections = _form.sections
+}
+
+// Generate columns for a section
+function getColumnDefs(section) {
+  const cols = [{ field: 'rowLabel', headerName: 'Skill / Assessment', pinned: 'left' }]
+
+  section.columns.forEach((col) => {
+    cols.push({
+      field: col.key,
+      headerName: col.label,
+      editable: col.config?.editable !== false, // Default to editable unless explicitly disabled
+      headerTooltip: col.label,
+    })
+  })
+
+  return cols
+}
+
+// Generate rowData for a section
+function getRowData(section) {
+  return section.rows.map((row) => {
+    const rowObj = {
+      rowLabel: row.label,
+      sectionKey: section.key,
+      rowKey: row.key,
     }
 
-    const res = await api.post('/forms', payload) // Endpoint might be /forms based on routes/index.ts
+    // section.columns.forEach((col) => {
+    //   rowObj[col.key] = null
+    // })
 
-    snackbar.value = { show: true, text: 'Form created successfully', color: 'success' }
+    return rowObj
+  })
+}
 
-    // Navigate to the form view or config
-    // Assuming /form-view or similar. I'll stick to going back or to a list for now,
-    // or if I knew the edit route, I'd go there.
-    setTimeout(() => {
-      // router.push({ name: 'form-config', params: { id: res.data.id } })
-      // fallback since I don't recall exact route name for config
-      router.push({
-        path: '/forms/builder',
-        query: {
-          rubricId: selectedRubric.value.id,
-          formId: res.data.id,
-          formName: formName.value,
-        },
-      })
-    }, 1000)
-  } catch (error) {
-    console.error('Error creating form:', error)
-    snackbar.value = { show: true, text: 'Failed to create form', color: 'error' }
-  } finally {
-    creating.value = false
+// SECTION
+function cancelAddSection() {
+  showAddSectionDialog.value = false
+  newSectionName.value = ''
+  newSectionDataMode.value = 'manual'
+  newSectionLinkedSource.value = null
+  newSectionUsesRubric.value = false
+}
+
+async function confirmAddSection() {
+  const name = newSectionName.value.trim()
+  if (!name || !formId.value) return
+
+  try {
+    const res = await api.post(`/evaluations/templates/${formId.value}/sections`, {
+      label: name,
+      section_type: newSectionDataMode.value,
+      source_table: newSectionLinkedSource.value,
+      uses_rubric: newSectionUsesRubric.value,
+    })
+
+    if (newSectionDataMode.value === 'linked' && newSectionLinkedSource.value === 'wbl_hours') {
+      const newSection = res.data
+      const columns = [
+        { label: 'Date', key: 'date', value_type: 'text' },
+        { label: 'Category', key: 'category', value_type: 'text' },
+        { label: 'Hours', key: 'hours', value_type: 'number' },
+        { label: 'Comments', key: 'comments', value_type: 'text' },
+      ]
+
+      for (const col of columns) {
+        await api.post(`/evaluations/templates/${formId.value}/sections/${newSection.id}/columns`, {
+          label: col.label,
+          key: col.key,
+          value_type: col.value_type,
+          config: { editable: false },
+        })
+      }
+    }
+
+    // Refresh the form to get the new section
+    await getForm()
+
+    // Reset and close dialog
+    newSectionName.value = ''
+    newSectionDataMode.value = 'manual'
+    newSectionLinkedSource.value = null
+    newSectionUsesRubric.value = false
+    showAddSectionDialog.value = false
+
+    snackbarMessage.value = 'Section created successfully'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error creating section'
+    snackbarColor.value = 'error'
+    snackbar.value = true
   }
 }
 
-onMounted(() => {
-  fetchRubrics()
-})
+function openEditSectionDialog(section) {
+  sectionToEdit.value = section
+  editSectionData.dataMode = section.section_type || 'manual'
+  editSectionData.linkedSource = section.source_table || null
+  editSectionData.usesRubric = section.uses_rubric || false
+  showEditSectionDialog.value = true
+}
+
+async function saveSectionSettings() {
+  if (!sectionToEdit.value || !formId.value) return
+
+  try {
+    await api.patch(`/evaluations/templates/${formId.value}/sections/${sectionToEdit.value.id}`, {
+      section_type: editSectionData.dataMode,
+      source_table: editSectionData.linkedSource,
+      uses_rubric: editSectionData.usesRubric,
+    })
+
+    // Update local state
+    sectionToEdit.value.section_type = editSectionData.dataMode
+    sectionToEdit.value.source_table = editSectionData.linkedSource
+    sectionToEdit.value.uses_rubric = editSectionData.usesRubric
+
+    showEditSectionDialog.value = false
+    snackbarMessage.value = 'Section settings updated'
+    snackbarColor.value = 'success'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error updating section settings'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
+}
+
+// COLUMN
+function openAddColumnDialog(section) {
+  activeSectionId.value = section.id
+  activeSection.value = section
+  newColumnLabel.value = ''
+  newColumnType.value = 'text'
+  newColumnMin.value = null
+  newColumnMax.value = null
+  showAddColumnDialog.value = true
+}
+
+function cancelAddColumn() {
+  showAddColumnDialog.value = false
+  newColumnLabel.value = ''
+  newColumnType.value = 'text'
+  newColumnMin.value = null
+  newColumnMax.value = null
+  activeSectionId.value = null
+  activeSection.value = null
+}
+
+// ROW
+function openAddRowDialog(section) {
+  activeSectionId.value = section.id
+  newRowLabel.value = ''
+  showAddRowDialog.value = true
+}
+
+function cancelAddRow() {
+  newRowLabel.value = ''
+  activeSectionId.value = null
+  showAddRowDialog.value = false
+}
+
+async function confirmAddRow() {
+  if (!newRowLabel.value.trim() || !activeSectionId.value || !formId.value) return
+
+  try {
+    const label = newRowLabel.value.trim()
+    // Generate a key from the label (simple lowercase snake_case)
+    const key = label.toLowerCase().replace(/\s+/g, '_') //maybe move to backend
+
+    await api.post(
+      `/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/rows`,
+      {
+        label,
+        key,
+        description: '',
+        row_type: 'text',
+      },
+    )
+
+    await getForm()
+    cancelAddRow()
+
+    snackbarMessage.value = 'Row created successfully'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error creating row'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
+}
+
+async function confirmAddColumn() {
+  if (!newColumnLabel.value.trim() || !activeSectionId.value || !formId.value) return
+
+  try {
+    const label = newColumnLabel.value.trim()
+    // Generate a key from the label (simple lowercase snake_case)
+    const key = label.toLowerCase().replace(/\s+/g, '_')
+
+    const config = { editable: true }
+    if (newColumnType.value === 'number') {
+      if (newColumnMin.value !== null && newColumnMin.value !== '') config.min = newColumnMin.value
+      if (newColumnMax.value !== null && newColumnMax.value !== '') config.max = newColumnMax.value
+    }
+
+    await api.post(
+      `/evaluations/templates/${formId.value}/sections/${activeSectionId.value}/columns`,
+      {
+        label,
+        key,
+        value_type: newColumnType.value,
+        config,
+      },
+    )
+
+    await getForm()
+    cancelAddColumn()
+
+    snackbarMessage.value = 'Column created successfully'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error creating column'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
+}
 </script>
-
-<style scoped>
-.page-container {
-  min-height: 100vh;
-  background-color: #f5f7fa;
-  font-family: 'Inter', sans-serif;
-}
-
-.eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748b;
-}
-
-.meta {
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.text-slate-900 {
-  color: #0f172a !important;
-}
-
-.app-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  padding: 32px;
-}
-
-.rubric-item {
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.rubric-selected {
-  background-color: #eff6ff !important; /* light primary */
-  border-color: #3b82f6 !important; /* primary */
-}
-
-.rubric-selected :deep(.v-list-item-title) {
-  color: #1d4ed8;
-}
-</style>

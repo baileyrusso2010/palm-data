@@ -1,0 +1,191 @@
+.create-rubric-page {
+  background: #f5f7fa;
+  min-height: 100vh;
+}
+
+.page-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+.rubric-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+/* Matrix Table Styles */
+.matrix-wrapper {
+  overflow-x: auto;
+  background: white;
+  padding-bottom: 8px; /* Scrollbar space */
+}
+
+.rubric-matrix {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+}
+
+.rubric-matrix th,
+.rubric-matrix td {
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+/* Headers (Left Column) */
+.matrix-header {
+  width: 200px;
+  min-width: 200px;
+  padding: 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: #f8fafc !important;
+  color: #64748b;
+  font-weight: 600;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  box-shadow: 2px 0 5px -2px rgba(0, 0, 0, 0.05);
+}
+
+.bottom-header {
+  border-bottom: none !important;
+}
+
+.bottom-cell {
+  border-bottom: none !important;
+}
+
+/* Cells */
+.matrix-cell {
+  min-width: 280px;
+  width: 280px;
+  vertical-align: top;
+  padding: 0;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.matrix-cell:hover {
+  background-color: #f8fafc;
+}
+
+.cell-content {
+  position: relative;
+  padding: 1rem;
+}
+
+/* Inputs */
+.ghost-input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  color: #0f172a;
+}
+
+.title-input {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.points-input {
+  width: 60px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: #3b82f6;
+}
+
+.ghost-textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  padding: 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #334155;
+  height: 140px;
+}
+
+.ghost-input::placeholder,
+.ghost-textarea::placeholder {
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+/* Add Column Button */
+.add-col-cell {
+  width: 120px;
+  min-width: 120px;
+  vertical-align: middle;
+  text-align: center;
+  background: #f8fafc !important;
+  border-bottom: none !important;
+  border-right: none !important;
+}
+
+.add-col-btn {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  margin: 1rem;
+  width: calc(100% - 2rem);
+  color: #94a3b8;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.add-col-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.04);
+}
+
+/* Delete Button */
+.delete-col-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.matrix-cell:hover .delete-col-btn {
+  opacity: 1;
+}
+
+/* Utilities */
+.text-slate-900 {
+  color: #0f172a !important;
+}
+.text-slate-500 {
+  color: #64748b !important;
+}
+
+.centered-input :deep(input) {
+  text-align: center;
+}

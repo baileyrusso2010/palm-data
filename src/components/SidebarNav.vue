@@ -9,7 +9,7 @@
   >
     <v-sheet class="px-3 pt-4 pb-2 d-flex align-center" color="transparent">
       <div v-if="!rail" class="sidebar-title-area">
-        <h1 class="sidebar-title">EduData</h1>
+        <h1 class="sidebar-title">ByteLeaf</h1>
       </div>
       <v-spacer />
       <v-btn
@@ -45,9 +45,9 @@
     <v-divider class="my-2" />
 
     <v-list density="comfortable" nav>
-      <v-list-subheader v-if="!rail">Forms</v-list-subheader>
+      <v-list-subheader v-if="!rail">Admin</v-list-subheader>
       <v-list-item
-        v-for="item in formItems"
+        v-for="item in adminItems"
         :key="item.to"
         :to="item.to"
         :title="rail ? undefined : item.title"
@@ -74,6 +74,10 @@
         @click="emit('toggle-theme')"
       />
     </v-list>
+
+    <div v-if="!rail" class="px-4 py-2 text-center">
+      <div class="text-caption text-medium-emphasis">Beta {{ version }}</div>
+    </div>
   </v-navigation-drawer>
 </template>
 
@@ -90,7 +94,11 @@ import {
   PhUserList,
   PhChartBar,
   PhList,
+  PhFileText,
+  PhGridNine,
 } from '@phosphor-icons/vue'
+
+const version = import.meta.env.version
 
 interface NavItem {
   to: string
@@ -142,39 +150,36 @@ const mainItems = computed<NavItem[]>(() => [
     iconComp: PhStudent,
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
-  {
-    to: '/breakdown',
-    title: 'Analyze Data',
-    iconComp: PhChartBar,
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
+  // {
+  //   to: '/breakdown',
+  //   title: 'Analyze Data',
+  //   iconComp: PhChartBar,
+  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  // },
 ])
 
 const formItems = computed<NavItem[]>(() => [
   // {
-  //   to: '/student-form',
-  //   title: 'Assign Forms',
-  //   iconComp: PhUserList,
+  //   to: '/forms/select',
+  //   title: 'Deploy Forms',
+  //   iconComp: PhFileText,
   //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
   // },
-  // {
-  //   to: '/assessments',
-  //   title: 'Assessments',
-  //   iconComp: PhExam,
-  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  // },
-  // {
-  //   to: '/rubric/create',
-  //   title: 'Create Rubric',
-  //   iconComp: PhTable,
-  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  // },
-  // {
-  //   to: '/settings',
-  //   title: 'Settings',
-  //   iconComp: PhGear,
-  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  // },
+])
+
+const adminItems = computed<NavItem[]>(() => [
+  {
+    to: '/forms/',
+    title: 'Create Template',
+    iconComp: PhFileText,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
+  {
+    to: '/forms/rubric',
+    title: 'Create Rubric',
+    iconComp: PhGridNine,
+    iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  },
 ])
 
 function isActive(to: string) {

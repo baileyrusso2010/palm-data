@@ -129,6 +129,21 @@ const handleClick = () => {
       {{ item.title }}
     </div>
   </div>
+
+  <!-- Referral Marker -->
+  <div
+    v-else-if="item.type === 'referral'"
+    class="timeline-item timeline-referral"
+    :style="{ left: itemStyle.left }"
+    @click="handleClick"
+  >
+    <div class="referral-marker">
+      <v-icon size="20" :color="item.color || 'orange'">ph:warning-circle</v-icon>
+    </div>
+    <div class="referral-label">
+      {{ item.title }}
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -344,6 +359,58 @@ const handleClick = () => {
 }
 
 .timeline-meeting:hover .meeting-label {
+  opacity: 1;
+}
+
+/* Referral Markers */
+.timeline-referral {
+  top: 50%;
+  margin-top: -16px;
+  height: 32px;
+  width: 32px !important;
+  transform: translateX(-50%);
+}
+
+.referral-marker {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid #f97316; /* Orange 500 */
+  transition: transform 0.2s;
+}
+
+.timeline-referral:hover .referral-marker {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: scale(1.15);
+}
+
+.referral-label {
+  position: absolute;
+  top: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  z-index: 30;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.timeline-referral:hover .referral-label {
   opacity: 1;
 }
 </style>

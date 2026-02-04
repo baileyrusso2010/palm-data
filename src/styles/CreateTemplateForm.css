@@ -1,0 +1,150 @@
+.create-form-page {
+  background: #f5f7fa;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Page Header */
+.page-header {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0.25rem 0 0 0;
+}
+
+/* Section Cards */
+.section-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease-in-out;
+}
+
+.section-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.section-header {
+  background: #ffffff;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.section-meta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.grid-wrapper {
+  height: 320px;
+  width: 100%;
+  background: #ffffff;
+}
+
+/* Add Section Card */
+.add-section-card {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  background: transparent;
+  box-shadow: none !important;
+}
+
+.add-section-card:hover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.add-section-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.add-section-hint {
+  font-size: 0.813rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+/* Dialog Cards */
+.dialog-card {
+  border-radius: 12px;
+}
+
+.dialog-title {
+  font-size: 1.25rem !important;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem 0.5rem !important;
+}
+
+/* Vuetify Overrides */
+:deep(.v-card) {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+:deep(.v-btn) {
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+:deep(.ag-theme-quartz) {
+  --ag-border-color: #e2e8f0;
+  --ag-header-background-color: #f8fafc;
+  --ag-odd-row-background-color: #ffffff;
+  --ag-row-hover-color: #f1f5f9;
+}
+
+/* Modal Specific Styles */
+.text-slate-900 {
+  color: #0f172a !important;
+}
+
+.text-slate-700 {
+  color: #334155 !important;
+}
+
+.text-slate-500 {
+  color: #64748b !important;
+}
+
+.text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.gap-3 {
+  gap: 0.75rem;
+}
+
+.dialog-tabs :deep(.v-tab) {
+  letter-spacing: normal;
+  font-weight: 600;
+}
+
+.window-content {
+  padding-top: 0.5rem;
+}
