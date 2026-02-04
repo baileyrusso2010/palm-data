@@ -248,6 +248,80 @@
                   class="mb-6 w-100 max-width-400"
                   prepend-inner-icon="mdi-school-outline"
                 ></v-select>
+
+                <!-- Rubric Selection -->
+                <div class="w-100 max-width-600 mt-4">
+                  <v-divider class="mb-6"></v-divider>
+                  <h3 class="text-h6 font-weight-bold mb-4 text-grey-darken-2 text-left">
+                    <v-icon class="mr-2" color="primary">mdi-format-list-checks</v-icon>
+                    Attach Rubric (Optional)
+                  </h3>
+
+                  <v-select
+                    v-model="selectedRubricId"
+                    :items="rubrics"
+                    item-title="name"
+                    item-value="id"
+                    label="Select Rubric"
+                    placeholder="Choose a grading rubric"
+                    variant="outlined"
+                    clearable
+                    hide-details="auto"
+                    prepend-inner-icon="mdi-ruler"
+                    @update:model-value="onRubricSelected"
+                  >
+                    <template #no-data>
+                      <div class="pa-4 text-center text-medium-emphasis">No rubrics available</div>
+                    </template>
+                  </v-select>
+
+                  <!-- Rubric Preview -->
+                  <v-expand-transition>
+                    <v-card
+                      v-if="selectedRubric"
+                      class="mt-4 text-left"
+                      variant="outlined"
+                      color="primary"
+                    >
+                      <v-card-title class="d-flex align-center bg-primary-lighten-5 py-3">
+                        <v-icon color="primary" class="mr-2">mdi-ruler</v-icon>
+                        <span class="text-primary font-weight-bold">{{ selectedRubric.name }}</span>
+                      </v-card-title>
+                      <v-card-text class="pt-4">
+                        <p
+                          v-if="selectedRubric.description"
+                          class="text-body-2 text-grey-darken-1 mb-4"
+                        >
+                          {{ selectedRubric.description }}
+                        </p>
+
+                        <div class="text-subtitle-2 font-weight-bold mb-2 text-grey-darken-2">
+                          Scoring Levels
+                        </div>
+                        <v-table density="compact" class="rounded-lg">
+                          <thead>
+                            <tr class="bg-grey-lighten-4">
+                              <th class="text-left" style="width: 60px">Score</th>
+                              <th class="text-left">Level</th>
+                              <th class="text-left">Description</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr v-for="level in selectedRubric.levels" :key="level.id">
+                              <td>
+                                <v-chip size="small" color="primary" variant="tonal">
+                                  {{ level.value }}
+                                </v-chip>
+                              </td>
+                              <td class="font-weight-medium">{{ level.label }}</td>
+                              <td class="text-grey-darken-1">{{ level.description }}</td>
+                            </tr>
+                          </tbody>
+                        </v-table>
+                      </v-card-text>
+                    </v-card>
+                  </v-expand-transition>
+                </div>
               </div>
             </div>
           </div>
@@ -377,9 +451,14 @@ const mockClasses = ref<any[]>([])
 
 const isArray = ref(false)
 
+// Rubric state
+const rubrics = ref<any[]>([])
+const selectedRubricId = ref<number | null>(null)
+const selectedRubric = ref<any>(null)
+
 onMounted(async () => {
   const classId = route.query.classId ? Number(route.query.classId) : null
-  await Promise.all([getForms(), getTeacherCourses(classId)])
+  await Promise.all([getForms(), getTeacherCourses(classId), fetchRubrics()])
 })
 
 async function getTeacherCourses(classId: number | null) {
@@ -444,6 +523,33 @@ async function getForms() {
     })
   } catch (error) {
     console.error('Failed to fetch forms:', error)
+  }
+}
+
+async function fetchRubrics() {
+  try {
+    const results = await api.get('/rubrics')
+    rubrics.value = results.data
+  } catch (error) {
+    console.error('Failed to fetch rubrics:', error)
+  }
+}
+
+async function onRubricSelected(rubricId: number | null) {
+  if (!rubricId) {
+    selectedRubric.value = null
+    return
+  }
+
+  try {
+    const result = await api.get(`/rubrics/${rubricId}`)
+    selectedRubric.value = {
+      ...result.data,
+      levels: result.data.rubric_levels?.sort((a: any, b: any) => b.value - a.value) || [],
+    }
+  } catch (error) {
+    console.error('Failed to fetch rubric details:', error)
+    selectedRubric.value = null
   }
 }
 
@@ -517,15 +623,26 @@ async function deployForm() {
     const payload = {
       classId: classID,
       updatedSections,
+      rubric_id: selectedRubricId.value || null,
     }
 
+    console.log('payload', payload)
     //TODO
-    await api.post(`/evaluations/${form_id}/convert`, payload)
+    let response = await api.post(`/evaluations/${form_id}/convert`, payload)
+
+    const _formId = response.data.formId
 
     // router.push({ name: 'form-list' })
     snackbar.value = true
     snackbarText.value = 'Form deployed successfully'
     snackbarColor.value = 'success'
+
+    //wait for 1 second and show on snackbar redirecting
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    snackbar.value = true
+    snackbarText.value = 'Redirecting to grading page'
+    snackbarColor.value = 'success'
+    router.push({ path: `/forms/grading/${classID}/${_formId}` })
   } catch (e) {
     console.error('Failed to deploy form', e)
     snackbar.value = true

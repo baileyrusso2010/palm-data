@@ -9,7 +9,7 @@
           class="text-subtitle-2 text-medium-emphasis text-uppercase font-weight-bold"
           style="letter-spacing: 1px"
         >
-          Rochester CSD • East HS
+          Tempalte School
         </span>
       </div>
       <div class="d-flex align-center justify-space-between">

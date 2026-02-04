@@ -43,7 +43,7 @@
     </section>
 
     <!-- New Charts Section -->
-    <section class="charts-row card">
+    <!-- <section class="charts-row card">
       <header>
         <p class="eyebrow">Performance Overview</p>
       </header>
@@ -61,7 +61,7 @@
           <canvas ref="behaviorCanvas"></canvas>
         </div>
       </div>
-    </section>
+    </section> -->
 
     <section class="profile-body">
       <!-- Grades Section: own full row in profile-body -->

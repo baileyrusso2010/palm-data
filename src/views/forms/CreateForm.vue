@@ -265,6 +265,17 @@
               </v-select>
             </div>
           </v-slide-y-transition>
+
+          <v-divider class="my-4" />
+
+          <v-switch
+            v-model="newSectionUsesRubric"
+            label="Uses Rubric"
+            hint="Enable if this section should be graded using a rubric"
+            persistent-hint
+            color="primary"
+            hide-details="auto"
+          />
         </v-card-text>
         <v-card-actions class="pa-4 pt-0">
           <v-spacer />
@@ -313,6 +324,9 @@
               type="number"
               variant="outlined"
               hide-details="auto"
+              :disabled="activeSection?.uses_rubric"
+              :hint="activeSection?.uses_rubric ? 'Determined by rubric' : ''"
+              :persistent-hint="activeSection?.uses_rubric"
             />
             <v-text-field
               v-model.number="newColumnMax"
@@ -320,6 +334,9 @@
               type="number"
               variant="outlined"
               hide-details="auto"
+              :disabled="activeSection?.uses_rubric"
+              :hint="activeSection?.uses_rubric ? 'Determined by rubric' : ''"
+              :persistent-hint="activeSection?.uses_rubric"
             />
           </div>
         </v-card-text>
@@ -432,6 +449,17 @@
               </v-select>
             </div>
           </v-slide-y-transition>
+
+          <v-divider class="my-4" />
+
+          <v-switch
+            v-model="editSectionData.usesRubric"
+            label="Uses Rubric"
+            hint="Enable if this section should be graded using a rubric"
+            persistent-hint
+            color="primary"
+            hide-details="auto"
+          />
         </v-card-text>
         <v-card-actions class="pa-4 pt-2">
           <v-spacer />
@@ -486,6 +514,7 @@ const showAddSectionDialog = ref(false)
 const newSectionName = ref('')
 const newSectionDataMode = ref('manual')
 const newSectionLinkedSource = ref(null)
+const newSectionUsesRubric = ref(false)
 
 // Add Column Modal state
 const showAddColumnDialog = ref(false)
@@ -494,6 +523,7 @@ const newColumnType = ref('text')
 const newColumnMin = ref(null)
 const newColumnMax = ref(null)
 const activeSectionId = ref(null)
+const activeSection = ref(null)
 
 const showAddRowDialog = ref(false)
 const newRowLabel = ref('')
@@ -504,6 +534,7 @@ const sectionToEdit = ref(null)
 const editSectionData = reactive({
   dataMode: 'manual',
   linkedSource: null,
+  usesRubric: false,
 })
 
 const snackbar = ref(false)
@@ -584,9 +615,8 @@ function getColumnDefs(section) {
     cols.push({
       field: col.key,
       headerName: col.label,
-      editable: true,
-      headerTooltip: 'Testing',
-      editable: false,
+      editable: col.config?.editable !== false, // Default to editable unless explicitly disabled
+      headerTooltip: col.label,
     })
   })
 
@@ -616,6 +646,7 @@ function cancelAddSection() {
   newSectionName.value = ''
   newSectionDataMode.value = 'manual'
   newSectionLinkedSource.value = null
+  newSectionUsesRubric.value = false
 }
 
 async function confirmAddSection() {
@@ -627,6 +658,7 @@ async function confirmAddSection() {
       label: name,
       section_type: newSectionDataMode.value,
       source_table: newSectionLinkedSource.value,
+      uses_rubric: newSectionUsesRubric.value,
     })
 
     if (newSectionDataMode.value === 'linked' && newSectionLinkedSource.value === 'wbl_hours') {
@@ -655,6 +687,7 @@ async function confirmAddSection() {
     newSectionName.value = ''
     newSectionDataMode.value = 'manual'
     newSectionLinkedSource.value = null
+    newSectionUsesRubric.value = false
     showAddSectionDialog.value = false
 
     snackbarMessage.value = 'Section created successfully'
@@ -669,27 +702,43 @@ async function confirmAddSection() {
 
 function openEditSectionDialog(section) {
   sectionToEdit.value = section
-  editSectionData.dataMode = section.dataMode || 'manual'
-  editSectionData.linkedSource = section.linkedSource || null
+  editSectionData.dataMode = section.section_type || 'manual'
+  editSectionData.linkedSource = section.source_table || null
+  editSectionData.usesRubric = section.uses_rubric || false
   showEditSectionDialog.value = true
 }
 
-function saveSectionSettings() {
-  if (!sectionToEdit.value) return
+async function saveSectionSettings() {
+  if (!sectionToEdit.value || !formId.value) return
 
-  // Update local state
-  sectionToEdit.value.dataMode = editSectionData.dataMode
-  sectionToEdit.value.linkedSource = editSectionData.linkedSource
+  try {
+    await api.patch(`/evaluations/templates/${formId.value}/sections/${sectionToEdit.value.id}`, {
+      section_type: editSectionData.dataMode,
+      source_table: editSectionData.linkedSource,
+      uses_rubric: editSectionData.usesRubric,
+    })
 
-  showEditSectionDialog.value = false
-  snackbarMessage.value = 'Section settings updated'
-  snackbarColor.value = 'success'
-  snackbar.value = true
+    // Update local state
+    sectionToEdit.value.section_type = editSectionData.dataMode
+    sectionToEdit.value.source_table = editSectionData.linkedSource
+    sectionToEdit.value.uses_rubric = editSectionData.usesRubric
+
+    showEditSectionDialog.value = false
+    snackbarMessage.value = 'Section settings updated'
+    snackbarColor.value = 'success'
+    snackbar.value = true
+  } catch (e) {
+    console.error(e)
+    snackbarMessage.value = 'Error updating section settings'
+    snackbarColor.value = 'error'
+    snackbar.value = true
+  }
 }
 
 // COLUMN
 function openAddColumnDialog(section) {
   activeSectionId.value = section.id
+  activeSection.value = section
   newColumnLabel.value = ''
   newColumnType.value = 'text'
   newColumnMin.value = null
@@ -704,6 +753,7 @@ function cancelAddColumn() {
   newColumnMin.value = null
   newColumnMax.value = null
   activeSectionId.value = null
+  activeSection.value = null
 }
 
 // ROW

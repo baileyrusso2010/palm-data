@@ -14,42 +14,28 @@
           :key="student.id"
           :active="selectedStudentId === student.id"
           @click="selectStudent(student.id)"
-          lines="two"
           rounded="lg"
           class="mb-1"
-          :class="{
-            'bg-blue-lighten-5 text-primary': selectedStudentId === student.id,
-            'text-grey-darken-2': selectedStudentId !== student.id,
-          }"
+          color="primary"
+          :variant="selectedStudentId === student.id ? 'tonal' : 'text'"
         >
           <template v-slot:prepend>
-            <v-avatar
-              :color="selectedStudentId === student.id ? 'primary' : 'grey-lighten-3'"
-              class="font-weight-bold"
-              :class="selectedStudentId === student.id ? 'text-white' : 'text-grey-darken-3'"
-              size="40"
-            >
-              {{ getInitials(student) }}
+            <v-avatar color="primary" variant="tonal" size="40" class="mr-3">
+              <span class="font-weight-bold">{{ getInitials(student) }}</span>
             </v-avatar>
           </template>
 
-          <v-list-item-title class="font-weight-bold ml-2">
+          <v-list-item-title class="font-weight-medium">
             {{ student.first_name }} {{ student.last_name }}
           </v-list-item-title>
 
-          <v-list-item-subtitle class="d-flex align-center mt-1 ml-2">
-            <v-chip
-              size="x-small"
-              :color="getStatusColor(student.id)"
-              :text-color="
-                getStatusColor(student.id).includes('lighten') ? 'grey-darken-4' : 'white'
-              "
-              variant="flat"
-              class="font-weight-bold px-2"
-            >
-              <v-icon start size="10" class="mr-1">{{ getStatusIcon(student.id) }}</v-icon>
+          <v-list-item-subtitle class="d-flex align-center mt-1">
+            <v-icon size="12" :color="getStatusColor(student.id)" class="mr-1">
+              {{ getStatusIcon(student.id) }}
+            </v-icon>
+            <span class="text-caption" :class="`text-${getStatusColor(student.id)}`">
               {{ getStatusText(student.id) }}
-            </v-chip>
+            </span>
           </v-list-item-subtitle>
         </v-list-item>
       </v-list>
@@ -144,14 +130,21 @@
                 <v-card elevation="2" class="section-card">
                   <div class="section-header pa-4">
                     <div class="d-flex align-center justify-space-between">
-                      <div>
+                      <div class="d-flex align-center gap-2">
                         <h3 class="section-title">{{ section.label }}</h3>
-                        <div
-                          v-if="section.description"
-                          class="text-caption text-grey-darken-1 mt-1"
+                        <v-chip
+                          v-if="section.section_type === 'linked'"
+                          size="x-small"
+                          color="blue"
+                          variant="tonal"
+                          class="font-weight-medium"
                         >
-                          {{ section.description }}
-                        </div>
+                          <v-icon start size="12">mdi-link-variant</v-icon>
+                          Linked
+                        </v-chip>
+                      </div>
+                      <div v-if="section.description" class="text-caption text-grey-darken-1">
+                        {{ section.description }}
                       </div>
                     </div>
                   </div>
@@ -428,15 +421,20 @@ function getStatusText(studentId) {
   }
   const studentData = allCells.value[String(studentId)]
   if (!studentData || Object.keys(studentData).length === 0) return 'Not Graded'
-  // Simple check: if student has ANY data in cache, consider graded/in-progress
-  // Real check would be deeper
-  return 'Graded'
+
+  // Only consider it graded if there is data in a non-linked section
+  const hasManualData = Object.keys(studentData).some((sectionKey) => {
+    const section = form.value.sections.find((s) => s.key === sectionKey)
+    return section && section.section_type !== 'linked'
+  })
+
+  return hasManualData ? 'Graded' : 'Not Graded'
 }
 
 function getStatusColor(studentId) {
   const status = getStatusText(studentId)
-  if (status === 'Graded') return 'green-lighten-4'
-  return 'amber-lighten-4'
+  if (status === 'Graded') return 'success'
+  return 'warning'
 }
 
 function getStatusIcon(studentId) {
@@ -456,8 +454,10 @@ const defaultColDef = {
 }
 
 function getColumnDefs(section) {
-  const cols = [
-    {
+  const cols = []
+
+  if (section.section_type !== 'linked') {
+    cols.push({
       field: 'rowLabel',
       headerName: 'Assessment Criteria',
       pinned: 'left',
@@ -465,8 +465,8 @@ function getColumnDefs(section) {
       width: 250,
       minWidth: 200,
       cellClass: 'font-weight-medium',
-    },
-  ]
+    })
+  }
 
   section.columns.forEach((col) => {
     const colDef = {

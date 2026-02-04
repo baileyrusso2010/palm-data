@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="pa-4 students-page">
     <!-- Context Bar -->
-    <v-row class="mb-3">
+    <!-- <v-row class="mb-3">
       <v-col cols="12" class="d-flex align-center justify-space-between">
         <div class="d-flex align-center text-subtitle-2 font-weight-medium">
           <span class="mr-2">District: {{ district }}</span>
@@ -37,10 +37,10 @@
           </v-menu>
         </div>
       </v-col>
-    </v-row>
+    </v-row> -->
 
     <!-- Quick Stats Row (Filler) -->
-    <v-row class="mb-4">
+    <!-- <v-row class="mb-4">
       <v-col cols="12" sm="6" md="3">
         <v-card elevation="2" class="pa-4 h-100">
           <div class="d-flex justify-space-between align-center">
@@ -129,10 +129,10 @@
           </div>
         </v-card>
       </v-col>
-    </v-row>
+    </v-row> -->
 
     <!-- 3 Graphs Section -->
-    <div class="mb-6">
+    <!-- <div class="mb-6">
       <div class="text-h6 font-weight-bold mb-4 px-1">Overview</div>
       <v-row>
         <v-col cols="12" md="4">
@@ -180,10 +180,10 @@
           </v-card>
         </v-col>
       </v-row>
-    </div>
+    </div> -->
 
     <!-- MTSS Stats / Filler Section -->
-    <div class="mb-6">
+    <!-- <div class="mb-6">
       <div class="text-h6 font-weight-bold mb-4 px-1">Student Support System (MTSS)</div>
       <v-row>
         <v-col cols="12" md="8">
@@ -198,7 +198,7 @@
               <v-btn variant="text" size="small" color="primary">View Report</v-btn>
             </div>
 
-            <!-- Fake Visuals -->
+            Fake Visuals
             <div class="mb-4">
               <div class="d-flex justify-space-between text-caption mb-1">
                 <span class="font-weight-medium">Tier 1 - Core Instruction</span>
@@ -324,7 +324,7 @@
           </v-card>
         </v-col>
       </v-row>
-    </div>
+    </div> -->
 
     <!-- Course Cards Section -->
     <div>

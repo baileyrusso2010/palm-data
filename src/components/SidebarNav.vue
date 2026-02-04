@@ -150,12 +150,12 @@ const mainItems = computed<NavItem[]>(() => [
     iconComp: PhStudent,
     iconCompProps: { size: 22, color: '', weight: 'duotone' },
   },
-  {
-    to: '/breakdown',
-    title: 'Analyze Data',
-    iconComp: PhChartBar,
-    iconCompProps: { size: 22, color: '', weight: 'duotone' },
-  },
+  // {
+  //   to: '/breakdown',
+  //   title: 'Analyze Data',
+  //   iconComp: PhChartBar,
+  //   iconCompProps: { size: 22, color: '', weight: 'duotone' },
+  // },
 ])
 
 const formItems = computed<NavItem[]>(() => [
