@@ -118,6 +118,33 @@
           </div>
         </div>
 
+        <!-- Rubric Legend -->
+        <div v-if="rubric.length" class="bg-grey-lighten-5 px-6 py-3 border-b flex-shrink-0">
+          <div class="text-caption font-weight-bold text-uppercase text-grey-darken-1 mb-2">
+            Grading Rubric
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <v-sheet
+              v-for="(item, i) in rubric"
+              :key="i"
+              class="d-flex flex-column pa-3 rounded border"
+              color="white"
+              width="200"
+              elevation="0"
+            >
+              <div class="d-flex align-center justify-space-between mb-1">
+                <span class="text-subtitle-2 font-weight-bold text-truncate">{{ item.label }}</span>
+                <v-chip size="x-small" color="primary" variant="flat" class="font-weight-bold">
+                  {{ item.value }}
+                </v-chip>
+              </div>
+              <div class="text-caption text-grey-darken-1 text-wrap" style="line-height: 1.2">
+                {{ item.description }}
+              </div>
+            </v-sheet>
+          </div>
+        </div>
+
         <!-- Scrollable Form Area -->
         <div class="flex-grow-1 overflow-y-auto pa-6 pb-12">
           <v-container class="max-width-1000 pa-0">
@@ -159,6 +186,7 @@
                       :columnDefs="getColumnDefs(section)"
                       :rowData="getGridRowData(section)"
                       :defaultColDef="defaultColDef"
+                      :getRowId="getRowId"
                       :animateRows="true"
                       @cell-value-changed="onCellValueChanged"
                     />
@@ -251,6 +279,7 @@ function getInitials(student) {
   return ((student.first_name?.[0] || '') + (student.last_name?.[0] || '')).toUpperCase()
 }
 
+const rubric = ref([])
 // Selection & Data Binding
 async function selectStudent(id) {
   // If unsaved changes, we could prompt, but we'll assume seamless switch for now
@@ -264,7 +293,9 @@ async function selectStudent(id) {
     const formId = route.params.formId
     const response = await api.get(`/evaluations/${formId}?student_id=${id}`)
     form.value = response.data.form || { sections: [] }
-    console.log(form.value)
+
+    rubric.value = response.data.form.rubric?.levels || []
+    console.log(rubric.value)
 
     // Update cells (this includes the injected WBL data)
     if (response.data.cells) {
@@ -507,6 +538,8 @@ function getGridRowData(section) {
     return rowData
   })
 }
+
+const getRowId = (params) => params.data.rowKey
 
 function onCellValueChanged(params) {
   const sectionKey = params.data.sectionKey

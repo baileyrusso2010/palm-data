@@ -808,7 +808,7 @@ async function confirmAddColumn() {
     // Generate a key from the label (simple lowercase snake_case)
     const key = label.toLowerCase().replace(/\s+/g, '_')
 
-    const config = {}
+    const config = { editable: true }
     if (newColumnType.value === 'number') {
       if (newColumnMin.value !== null && newColumnMin.value !== '') config.min = newColumnMin.value
       if (newColumnMax.value !== null && newColumnMax.value !== '') config.max = newColumnMax.value
